@@ -377,7 +377,7 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Linked Strategy</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recovery Strategy</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -448,6 +448,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Bets / Week</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last 10</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recovery Strategy</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -455,10 +456,17 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             ${activeBots.map(b => {
                                 const strategy = strategies.find(s => s.id === b.strategy_id);
+                                const recoveryStrategy = strategies.find(s => s.id === (strategy ? strategy.linked_strategy_id : null));
                                 const last10 = (b.bet_history || []).slice(-10).map(bet => {
                                     const outcomeClass = bet.outcome === 'W' ? 'win-char' : 'loss-char';
                                     return `<span class="${outcomeClass}">${bet.outcome}</span>`;
                                 }).join('');
+
+                                const recoveryButtonText = b.is_recovery_active ? 'Deactivate Recovery' : 'Activate Recovery';
+                                const recoveryButtonColor = b.is_recovery_active ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600';
+                                const recoveryButtonDisabled = !recoveryStrategy;
+                                const recoveryButtonClasses = `p-2 text-white font-semibold rounded-lg transition duration-300 text-xs ${recoveryButtonColor} ${recoveryButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`;
+
                                 return `
                                     <tr id="bot-row-${b.id}" class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">${b.name}</td>
@@ -469,6 +477,9 @@
                                         <td class="px-6 py-4 whitespace-nowrap">${b.max_bets_per_week || 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${b.career_wins || 0}/${b.career_losses || 0}</td>
                                         <td class="px-6 py-4 whitespace-nowrap font-mono">${last10}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <button onclick="window.toggleRecoveryStrategy('${b.id}')" class="${recoveryButtonClasses}" ${recoveryButtonDisabled ? 'disabled' : ''}>${recoveryButtonText}</button>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${b.status}</span>
                                         </td>
@@ -503,6 +514,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Bets / Week</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last 10</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recovery Strategy</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -510,10 +522,17 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             ${inactiveBots.map(b => {
                                 const strategy = strategies.find(s => s.id === b.strategy_id);
+                                const recoveryStrategy = strategies.find(s => s.id === (strategy ? strategy.linked_strategy_id : null));
                                 const last10 = (b.bet_history || []).slice(-10).map(bet => {
                                     const outcomeClass = bet.outcome === 'W' ? 'win-char' : 'loss-char';
                                     return `<span class="${outcomeClass}">${bet.outcome}</span>`;
                                 }).join('');
+
+                                const recoveryButtonText = b.is_recovery_active ? 'Deactivate Recovery' : 'Activate Recovery';
+                                const recoveryButtonColor = b.is_recovery_active ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600';
+                                const recoveryButtonDisabled = !recoveryStrategy;
+                                const recoveryButtonClasses = `p-2 text-white font-semibold rounded-lg transition duration-300 text-xs ${recoveryButtonColor} ${recoveryButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`;
+
                                 return `
                                     <tr id="bot-row-${b.id}" class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">${b.name}</td>
@@ -524,6 +543,9 @@
                                         <td class="px-6 py-4 whitespace-nowrap">${b.max_bets_per_week || 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${b.career_wins || 0}/${b.career_losses || 0}</td>
                                         <td class="px-6 py-4 whitespace-nowrap font-mono">${last10}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <button onclick="window.toggleRecoveryStrategy('${b.id}')" class="${recoveryButtonClasses}" ${recoveryButtonDisabled ? 'disabled' : ''}>${recoveryButtonText}</button>
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">${b.status}</span>
                                         </td>
@@ -737,6 +759,7 @@
                 const botRef = await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bots`), {
                     ...botData,
                     status: 'Inactive',
+                    is_recovery_active: false,
                     career_wins: 0,
                     career_losses: 0,
                     current_win_streak: 0,
@@ -854,6 +877,28 @@
             } catch (error) {
                 console.error("Error toggling bot status:", error);
                 showMessage('Failed to toggle bot status.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        window.toggleRecoveryStrategy = async function(botId) {
+            showLoading();
+            try {
+                const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botId);
+                const botDoc = await getDoc(botRef);
+                if (botDoc.exists()) {
+                    const currentBot = botDoc.data();
+                    const newRecoveryState = !currentBot.is_recovery_active;
+                    await updateDoc(botRef, { is_recovery_active: newRecoveryState });
+                    await logBotAction(botId, `Recovery strategy ${newRecoveryState ? 'activated' : 'deactivated'}.`);
+                    showMessage(`Recovery strategy ${newRecoveryState ? 'activated' : 'deactivated'}.`, 'success');
+                } else {
+                    showMessage('Bot not found.', 'error');
+                }
+            } catch (error) {
+                console.error("Error toggling recovery strategy:", error);
+                showMessage('Failed to toggle recovery strategy.', 'error');
             } finally {
                 hideLoading();
             }
