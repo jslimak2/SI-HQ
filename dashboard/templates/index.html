@@ -108,8 +108,79 @@
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
 
-        <section class="mb-12">
-            <p class="text-center text-gray-500">Dashboard metrics and charts will be populated here with real data once bots have been created and used. Add a bot below to get started.</p>
+        <section id="overall-stats-section" class="mb-12">
+            <h2 class="text-2xl font-bold mb-4">Overall Stats</h2>
+            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="metric-card">
+                    <div class="flex items-center space-x-4">
+                        <span class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v4m-4 0h8a2 2 0 002-2v-4a2 2 0 00-2-2h-8a2 2 0 00-2 2v4a2 2 0 002 2z" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Profit/Loss</p>
+                            <p id="total-profit" class="text-3xl font-bold text-gray-900">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="flex items-center space-x-4">
+                        <span class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13c0 1.105-.895 2-2 2h-4a2 2 0 01-2-2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Wagers</p>
+                            <p id="total-wagers" class="text-3xl font-bold text-gray-900">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="flex items-center space-x-4">
+                        <span class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Win Rate</p>
+                            <p id="win-rate" class="text-3xl font-bold text-gray-900">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="flex items-center space-x-4">
+                        <span class="p-3 rounded-full bg-purple-100 text-purple-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.484 9.231 5.02 7.828 5.467 6.425 5.914 5.345 6.953 4.933 8.322c-.412 1.37-.23 2.825.43 4.143l1.832 3.663a9.08 9.08 0 005.65 2.768m0-13c1.168 0 2.167.464 2.828 1.125.66.66 1.125 1.66 1.125 2.828v2.75l-1.832 3.663c-.66 1.318-.842 2.773-.43 4.143l.43 1.442M12 6.253v13" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Best Bot</p>
+                            <p id="best-bot-name" class="text-lg font-bold text-gray-900">-</p>
+                            <p id="best-bot-profit" class="text-sm font-medium text-gray-600">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="flex items-center space-x-4">
+                        <span class="p-3 rounded-full bg-red-100 text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Worst Bot</p>
+                            <p id="worst-bot-name" class="text-lg font-bold text-gray-900">-</p>
+                            <p id="worst-bot-profit" class="text-sm font-medium text-gray-600">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
         
         <section class="table-container mb-12">
@@ -219,8 +290,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Parameters</label>
                     <div id="strategy-modal-parameters" class="mt-1 space-y-3">
-                        <!-- Dynamic inputs for parameters will be inserted here -->
-                    </div>
+                        </div>
                 </div>
                 <button type="submit" class="w-full p-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-300">Save Changes</button>
             </form>
@@ -293,8 +363,6 @@
         // --- FIREBASE SETUP & AUTHENTICATION ---
         window.onload = async function() {
             try {
-                // IMPORTANT: Replace the entire object below with your Firebase config.
-                // You can find this config in your Firebase project settings.
                 const firebaseConfig = {
                 apiKey: "AIzaSyCmtCJTzQN81oN_2sHKEq8P2ededP5y8gY",
                 authDomain: "si-hq-7a4d5.firebaseapp.com",
@@ -304,11 +372,10 @@
                 appId: "1:945213178297:web:40f6e200fd00148754b668"
                 };
 
-                // IMPORTANT: Check for a valid projectId before initializing Firebase
                 if (!firebaseConfig.projectId || firebaseConfig.projectId === "None") {
                     console.warn("Firebase initialization skipped: 'projectId' not provided in the configuration.");
                     showMessage('App is running in demo mode. No database connection.', 'error');
-                    return; // Stop further Firebase-related code execution
+                    return;
                 }
 
                 const app = initializeApp(firebaseConfig); 
@@ -320,12 +387,11 @@
                         userId = user.uid;
                         document.getElementById('user-id').textContent = userId;
                         setupFirestoreListeners();
+                        fetchOverallStats();
                     } else {
-                        // Attempt to sign in with the provided custom token
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
                         } else {
-                            // If no token is available, sign in anonymously as a fallback
                             await signInAnonymously(auth);
                         }
                     }
@@ -338,7 +404,6 @@
 
         // --- FIREBASE LISTENERS ---
         function setupFirestoreListeners() {
-            // Listen for changes to the strategies collection
             const strategiesRef = collection(db, `artifacts/${appId}/users/${userId}/strategies`);
             onSnapshot(strategiesRef, (snapshot) => {
                 strategies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -350,16 +415,71 @@
                 showMessage("Failed to load strategies.", 'error');
             });
 
-            // Listen for changes to the bots collection
             const botsRef = collection(db, `artifacts/${appId}/users/${userId}/bots`);
             onSnapshot(botsRef, (snapshot) => {
                 bots = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderBots();
+                fetchOverallStats(); // Refresh overall stats on bot data change
                 console.log("Bots updated:", bots);
             }, (error) => {
                 console.error("Error fetching bots:", error);
                 showMessage("Failed to load bots.", 'error');
             });
+        }
+
+        // --- OVERALL STATS FETCH ---
+        async function fetchOverallStats() {
+            showLoading();
+            try {
+                const response = await fetch('/api/overall-stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const stats = result.stats;
+                    
+                    const totalProfitElement = document.getElementById('total-profit');
+                    totalProfitElement.textContent = `$${stats.total_profit.toFixed(2)}`;
+                    if (stats.total_profit >= 0) {
+                        totalProfitElement.classList.add('profit');
+                        totalProfitElement.classList.remove('loss');
+                    } else {
+                        totalProfitElement.classList.add('loss');
+                        totalProfitElement.classList.remove('profit');
+                    }
+
+                    document.getElementById('total-wagers').textContent = `$${stats.total_wagered.toFixed(2)}`;
+                    document.getElementById('win-rate').textContent = `${stats.win_rate.toFixed(2)}%`;
+                    
+                    document.getElementById('best-bot-name').textContent = stats.best_bot.name;
+                    const bestBotProfitElement = document.getElementById('best-bot-profit');
+                    bestBotProfitElement.textContent = `P/L: $${stats.best_bot.profit_loss.toFixed(2)}`;
+                    if (stats.best_bot.profit_loss >= 0) {
+                        bestBotProfitElement.classList.add('profit');
+                        bestBotProfitElement.classList.remove('loss');
+                    } else {
+                        bestBotProfitElement.classList.add('loss');
+                        bestBotProfitElement.classList.remove('profit');
+                    }
+                    
+                    document.getElementById('worst-bot-name').textContent = stats.worst_bot.name;
+                    const worstBotProfitElement = document.getElementById('worst-bot-profit');
+                    worstBotProfitElement.textContent = `P/L: $${stats.worst_bot.profit_loss.toFixed(2)}`;
+                    if (stats.worst_bot.profit_loss >= 0) {
+                        worstBotProfitElement.classList.add('profit');
+                        worstBotProfitElement.classList.remove('loss');
+                    } else {
+                        worstBotProfitElement.classList.add('loss');
+                        worstBotProfitElement.classList.remove('profit');
+                    }
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                console.error("Failed to fetch overall stats:", error);
+                showMessage('Failed to fetch overall stats.', 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
         // --- RENDERING FUNCTIONS ---
@@ -432,7 +552,6 @@
             const activeBots = bots.filter(b => b.status === 'Active');
             const inactiveBots = bots.filter(b => b.status !== 'Active');
             
-            // Render Active Bots Table
             let activeBotsHtml = `<p class="text-center text-gray-500 mt-4">No bots are currently active.</p>`;
             if (activeBots.length > 0) {
                 activeBotsHtml = `
@@ -498,7 +617,6 @@
             }
             activeBotsContainer.innerHTML = activeBotsHtml;
 
-            // Render Inactive Bots Table
             let inactiveBotsHtml = `<p class="text-center text-gray-500 mt-4">No inactive bots found. Add a new bot to get started!</p>`;
             if (inactiveBots.length > 0) {
                 inactiveBotsHtml = `
@@ -606,7 +724,6 @@
                 document.getElementById('modal-bet-percent').value = bot.bet_percentage;
                 document.getElementById('modal-max-bets').value = bot.max_bets_per_week || '';
                 
-                // Populate strategy dropdown
                 const modalStrategySelect = document.getElementById('modal-strategy');
                 modalStrategySelect.innerHTML = '';
                 strategies.forEach(strategy => {
@@ -642,7 +759,6 @@
                 const parametersContainer = document.getElementById('strategy-modal-parameters');
                 parametersContainer.innerHTML = '';
 
-                // Dynamically create form inputs for each parameter
                 if (strategy.parameters) {
                     for (const key in strategy.parameters) {
                         const param = strategy.parameters[key];
@@ -805,7 +921,6 @@
             }
         }
 
-
         window.deleteBot = async function(botId) {
             showLoading();
             try {
@@ -823,7 +938,6 @@
         window.addStrategy = async function(strategyData) {
             showLoading();
             try {
-                // Add default description and parameters for new strategies
                 const defaultParameters = {
                     min_odds: { value: 1.5, type: 'number' },
                     max_odds: { value: 3.0, type: 'number' },
@@ -961,7 +1075,6 @@
                 const type = input.type;
                 let value = input.value;
 
-                // Convert to number if the original type was number
                 if (type === 'number') {
                     value = parseFloat(value);
                 }

@@ -1,8 +1,3 @@
-"""
-This is the main backend for the Professional Sports Dashboard.
-It uses Flask to serve a REST API and Google Cloud Firestore for data persistence.
-The application handles bot management, strategy management, and backtesting simulations.
-"""
 import os
 import random
 import datetime
@@ -11,9 +6,6 @@ from firebase_admin import credentials, firestore
 from flask import Flask, request, jsonify
 
 # --- Firebase Initialization ---
-# To run this, you must have a Firestore service account key file named 'serviceAccountKey.json'
-# in the same directory as this script.
-# You can get this key from your Firebase project settings -> Service accounts.
 try:
     cred = credentials.Certificate('serviceAccountKey.json')
     firebase_admin.initialize_app(cred)
@@ -26,10 +18,9 @@ except Exception as e:
 app = Flask(__name__)
 
 # Firestore Collection references
-# For a real-world app, you would use a user-specific path, e.g.,
-# 'artifacts/{appId}/users/{userId}/bots'
-# For this demonstration, we'll use a single, shared path.
-app_id = "1:945213178297:web:40f6e200fd00148754b668"  # Use your web app's ID
+app_id = "1:945213178297:web:40f6e200fd00148754b668"
+bots_collection = db.collection(f'artifacts/{app_id}/public/data/bots')
+strategies_collection = db.collection(f'artifacts/{app_id}/public/data/strategies')
 
 # --- Helper Functions ---
 def simulate_real_world_bet(bot_data):
@@ -42,7 +33,6 @@ def simulate_real_world_bet(bot_data):
     Returns:
         dict: The updated bot_data dictionary.
     """
-    # Simple probability-based model
     win_probability = 0.52
     payout_multiplier = 1.8
 
@@ -53,15 +43,11 @@ def simulate_real_world_bet(bot_data):
     ]
     team1, team2 = random.choice(teams)
 
-    # Calculate the bet amount based on the bot's configured bet percentage
     bet_amount = bot_data['current_balance'] * (bot_data['bet_percentage'] / 100)
-    
     winnings = 0.0
     
-    # Simulate the outcome of the bet
     is_win = random.random() < win_probability
     
-    # Update bot stats based on the outcome
     if is_win:
         winnings = bet_amount * payout_multiplier
         bot_data['current_balance'] += winnings
@@ -71,7 +57,6 @@ def simulate_real_world_bet(bot_data):
         bot_data['current_balance'] -= bet_amount
         bot_data['career_losses'] = bot_data.get('career_losses', 0) + 1
 
-    # Record the bet history
     bet_receipt = {
         'timestamp': datetime.datetime.now().isoformat(),
         'teams': f"{team1} vs {team2}",
@@ -91,6 +76,66 @@ def index():
     """Renders the main dashboard page."""
     return "The Python backend is running. Please access the front-end via index.html."
 
+@app.route('/api/overall-stats', methods=['GET'])
+def get_overall_stats():
+    """Calculates and returns overall statistics across all bots."""
+    if not db:
+        return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+    
+    try:
+        bots_docs = bots_collection.stream()
+        
+        total_profit = 0.0
+        total_wagered = 0.0
+        total_wins = 0
+        total_losses = 0
+        
+        # To calculate average P/L, and find best/worst bot
+        all_profit_losses = []
+        
+        for doc in bots_docs:
+            bot = doc.to_dict()
+            bot_profit_loss = 0.0
+            
+            # The 'bet_history' is an array in the document. We sum up the 'payout' for each bet.
+            if 'bet_history' in bot and bot['bet_history']:
+                for bet in bot['bet_history']:
+                    total_profit += bet['payout']
+                    total_wagered += bet['wager']
+                    bot_profit_loss += bet['payout']
+                    if bet['outcome'] == 'W':
+                        total_wins += 1
+                    else:
+                        total_losses += 1
+                        
+            all_profit_losses.append({'name': bot.get('name', 'N/A'), 'profit_loss': bot_profit_loss})
+
+        total_bets = total_wins + total_losses
+        win_rate = (total_wins / total_bets) * 100 if total_bets > 0 else 0
+        average_profit_loss_per_bot = sum(item['profit_loss'] for item in all_profit_losses) / len(all_profit_losses) if all_profit_losses else 0
+        
+        # Find best and worst performing bots
+        best_bot = max(all_profit_losses, key=lambda item: item['profit_loss']) if all_profit_losses else {'name': 'N/A', 'profit_loss': 0}
+        worst_bot = min(all_profit_losses, key=lambda item: item['profit_loss']) if all_profit_losses else {'name': 'N/A', 'profit_loss': 0}
+
+        stats = {
+            'total_profit': total_profit,
+            'total_wagered': total_wagered,
+            'total_wins': total_wins,
+            'total_losses': total_losses,
+            'total_bets': total_bets,
+            'win_rate': win_rate,
+            'average_profit_loss_per_bot': average_profit_loss_per_bot,
+            'best_bot': best_bot,
+            'worst_bot': worst_bot
+        }
+        
+        return jsonify({'success': True, 'stats': stats}), 200
+
+    except Exception as e:
+        print(f"Failed to get overall stats: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get overall stats: {e}'}), 500
+
 @app.route('/api/run-backtest', methods=['POST'])
 def run_backtest():
     """Simulates a series of bets for a selected bot."""
@@ -100,14 +145,7 @@ def run_backtest():
     data = request.json
     bot_id = data.get('botId')
     num_bets = data.get('numBets')
-    user_id = data.get('userId') # Get user ID from the request
 
-    if not user_id:
-        return jsonify({'success': False, 'message': 'User ID is missing.'}), 400
-
-    bots_collection = db.collection(f'artifacts/{app_id}/users/{user_id}/bots')
-    
-    # Fetch the bot from Firestore
     bot_ref = bots_collection.document(str(bot_id))
     bot_doc = bot_ref.get()
 
@@ -115,47 +153,49 @@ def run_backtest():
         return jsonify({'success': False, 'message': 'Bot not found.'}), 404
 
     bot = bot_doc.to_dict()
+    
     initial_balance = bot['current_balance']
     bankroll_history = [{'bet_number': 0, 'balance': initial_balance}]
     
-    # Ensure bet_history is a list
     if 'bet_history' not in bot:
         bot['bet_history'] = []
-
-    # Run the simulation
+    
+    initial_bets_count = len(bot['bet_history'])
+    
     for i in range(num_bets):
         bot = simulate_real_world_bet(bot)
-        bankroll_history.append({'bet_number': i + 1, 'balance': bot['current_balance']})
+        bankroll_history.append({'bet_number': initial_bets_count + i + 1, 'balance': bot['current_balance']})
     
     final_balance = bot['current_balance']
     total_profit = final_balance - initial_balance
-    total_bets = bot['career_wins'] + bot['career_losses']
-    win_rate = (bot['career_wins'] / total_bets) * 100 if total_bets > 0 else 0
-    roi = (total_profit / initial_balance) * 100 if initial_balance > 0 else 0
+    total_wagered = sum(bet['wager'] for bet in bot['bet_history'][-num_bets:])
+    total_bets_after_test = len(bot['bet_history'])
     
-    # Save the updated bot data to Firestore
     try:
         bot_ref.update({
             'current_balance': final_balance,
             'career_wins': bot['career_wins'],
             'career_losses': bot['career_losses'],
-            'bet_history': firestore.ArrayUnion(bot['bet_history'])
+            'bet_history': firestore.ArrayUnion(bot['bet_history'][-num_bets:])
         })
         
         report = {
             'initial_bankroll': initial_balance,
             'final_bankroll': final_balance,
             'total_profit': total_profit,
+            'total_wagered': total_wagered,
             'total_bets': num_bets,
-            'win_rate': (total_wins / num_bets) * 100 if num_bets > 0 else 0,
-            'roi': (total_profit / total_wagered) * 100 if total_wagered > 0 else 0
+            'win_rate': (bot['career_wins'] / (bot['career_wins'] + bot['career_losses'])) * 100 if (bot['career_wins'] + bot['career_losses']) > 0 else 0,
+            'roi': (total_profit / initial_balance) * 100 if initial_balance > 0 else 0,
         }
     
-        return {
+        return jsonify({
+            'success': True,
             'report': report,
             'bankroll_history': bankroll_history
-        }
+        }), 200
     except Exception as e:
+        print(f"Failed to update bot data after backtest: {e}")
         return jsonify({'success': False, 'message': f'Failed to update bot data after backtest: {e}'}), 500
 
 @app.route('/api/manage-funds', methods=['POST'])
@@ -168,12 +208,6 @@ def manage_funds():
     bot_id = data.get('botId')
     amount = data.get('amount')
     fund_type = data.get('type')
-    user_id = data.get('userId') # Get user ID from the request
-
-    if not user_id:
-        return jsonify({'success': False, 'message': 'User ID is missing.'}), 400
-
-    bots_collection = db.collection(f'artifacts/{app_id}/users/{user_id}/bots')
 
     bot_ref = bots_collection.document(str(bot_id))
     bot_doc = bot_ref.get()
@@ -204,13 +238,12 @@ def manage_funds():
         'amount': transaction_amount,
     }
     
-    # Save the updated balance and add the transaction to history
     try:
         bot_ref.update({
             'current_balance': bot['current_balance'],
             'fund_history': firestore.ArrayUnion([fund_receipt])
         })
-        return jsonify({'success': True, 'message': message})
+        return jsonify({'success': True, 'message': message}), 200
     except Exception as e:
         return jsonify({'success': False, 'message': f'Failed to save funds transaction: {e}'}), 500
 
