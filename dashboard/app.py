@@ -29,9 +29,7 @@ app = Flask(__name__)
 # For a real-world app, you would use a user-specific path, e.g.,
 # 'artifacts/{appId}/users/{userId}/bots'
 # For this demonstration, we'll use a single, shared path.
-app_id = "si-hq-7a4d5"  # Replace with a unique ID for your app
-bots_collection = db.collection(f'artifacts/{app_id}/public/data/bots')
-strategies_collection = db.collection(f'artifacts/{app_id}/public/data/strategies')
+app_id = "1:945213178297:web:40f6e200fd00148754b668"  # Use your web app's ID
 
 # --- Helper Functions ---
 def simulate_real_world_bet(bot_data):
@@ -102,7 +100,13 @@ def run_backtest():
     data = request.json
     bot_id = data.get('botId')
     num_bets = data.get('numBets')
+    user_id = data.get('userId') # Get user ID from the request
 
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is missing.'}), 400
+
+    bots_collection = db.collection(f'artifacts/{app_id}/users/{user_id}/bots')
+    
     # Fetch the bot from Firestore
     bot_ref = bots_collection.document(str(bot_id))
     bot_doc = bot_ref.get()
@@ -142,11 +146,15 @@ def run_backtest():
             'initial_bankroll': initial_balance,
             'final_bankroll': final_balance,
             'total_profit': total_profit,
-            'total_bets': total_bets,
-            'win_rate': win_rate,
-            'roi': roi,
+            'total_bets': num_bets,
+            'win_rate': (total_wins / num_bets) * 100 if num_bets > 0 else 0,
+            'roi': (total_profit / total_wagered) * 100 if total_wagered > 0 else 0
         }
-        return jsonify({'success': True, 'message': 'Backtest simulation complete.', 'report': report, 'bankroll_history': bankroll_history})
+    
+        return {
+            'report': report,
+            'bankroll_history': bankroll_history
+        }
     except Exception as e:
         return jsonify({'success': False, 'message': f'Failed to update bot data after backtest: {e}'}), 500
 
@@ -160,6 +168,12 @@ def manage_funds():
     bot_id = data.get('botId')
     amount = data.get('amount')
     fund_type = data.get('type')
+    user_id = data.get('userId') # Get user ID from the request
+
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is missing.'}), 400
+
+    bots_collection = db.collection(f'artifacts/{app_id}/users/{user_id}/bots')
 
     bot_ref = bots_collection.document(str(bot_id))
     bot_doc = bot_ref.get()

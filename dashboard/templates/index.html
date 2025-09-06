@@ -108,12 +108,10 @@
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
 
-        <!-- Metrics and Chart Section (Placeholder for now) -->
         <section class="mb-12">
             <p class="text-center text-gray-500">Dashboard metrics and charts will be populated here with real data once bots have been created and used. Add a bot below to get started.</p>
         </section>
         
-        <!-- Active Bots Section -->
         <section class="table-container mb-12">
             <h2 class="text-2xl font-bold mb-4">Active Bots</h2>
             <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
@@ -121,7 +119,6 @@
             </div>
         </section>
 
-        <!-- Bot Manager Section (for inactive bots) -->
         <section class="table-container mb-12">
             <h2 class="text-2xl font-bold mb-4">Bot Manager</h2>
             
@@ -140,7 +137,6 @@
             </div>
         </section>
 
-        <!-- Strategies Section -->
         <section class="table-container">
             <h2 class="text-2xl font-bold mb-4">Strategy Editor</h2>
             
@@ -163,7 +159,6 @@
         </section>
     </div>
     
-    <!-- Bot Details Modal -->
     <div id="bot-details-modal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="closeModal('bot-details-modal')">&times;</span>
@@ -177,8 +172,7 @@
                 <div>
                     <label for="modal-strategy" class="block text-sm font-medium text-gray-700">Strategy</label>
                     <select id="modal-strategy" name="strategy_id" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <!-- Options will be populated by JS -->
-                    </select>
+                        </select>
                 </div>
                 <div>
                     <label for="modal-balance" class="block text-sm font-medium text-gray-700">Current Balance</label>
@@ -197,7 +191,6 @@
         </div>
     </div>
     
-    <!-- Bot History Modal -->
     <div id="history-modal" class="modal">
         <div class="modal-content max-w-2xl">
             <span class="modal-close" onclick="closeModal('history-modal')">&times;</span>
@@ -215,8 +208,7 @@
                         </tr>
                     </thead>
                     <tbody id="history-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- History will be populated here by JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -232,7 +224,7 @@
         setLogLevel('Debug');
 
         // --- GLOBAL VARIABLES & INITIALIZATION ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : '1:945213178297:web:40f6e200fd00148754b668';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
         // Firestore data collections
@@ -265,7 +257,7 @@
                 };
 
                 // IMPORTANT: Check for a valid projectId before initializing Firebase
-                if (!firebaseConfig.projectId || firebaseConfig.projectId === "si-hq-7a4d5") {
+                if (!firebaseConfig.projectId || firebaseConfig.projectId === "None") {
                     console.warn("Firebase initialization skipped: 'projectId' not provided in the configuration.");
                     showMessage('App is running in demo mode. No database connection.', 'error');
                     return; // Stop further Firebase-related code execution
@@ -350,7 +342,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">${s.type}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${linkedStrategy ? linkedStrategy.name : 'None'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button onclick="deleteStrategy('${s.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
+                                            <button onclick="window.deleteStrategy('${s.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
                                         </td>
                                     </tr>
                                 `;
@@ -418,8 +410,8 @@
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${b.status}</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4 flex items-center justify-end">
-                                            <button onclick="toggleBotStatus('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Deactivate</button>
-                                            <button onclick="showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
+                                            <button onclick="window.toggleBotStatus('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Deactivate</button>
+                                            <button onclick="window.showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
                                         </td>
                                     </tr>
                                 `;
@@ -458,10 +450,10 @@
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">${b.status}</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                                            <button onclick="toggleBotStatus('${b.id}')" class="text-green-600 hover:text-green-900 transition duration-300">Activate</button>
-                                            <button onclick="deleteBot('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
-                                            <button onclick="showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
-                                            <button onclick="showBotDetails('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View Details</button>
+                                            <button onclick="window.toggleBotStatus('${b.id}')" class="text-green-600 hover:text-green-900 transition duration-300">Activate</button>
+                                            <button onclick="window.deleteBot('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
+                                            <button onclick="window.showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
+                                            <button onclick="window.showBotDetails('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View Details</button>
                                         </td>
                                     </tr>
                                 `;
@@ -475,7 +467,8 @@
         }
 
         // --- UI FUNCTIONS ---
-        function showMessage(message, type) {
+        // Expose functions to the global scope
+        window.showMessage = function(message, type) {
             const msgBox = document.getElementById('message-box');
             msgBox.textContent = message;
             msgBox.className = `message-box visible ${type}`;
@@ -484,7 +477,7 @@
             }, 3000);
         }
 
-        function closeModal(modalId) {
+        window.closeModal = function(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
 
@@ -496,7 +489,7 @@
             document.getElementById('loading-spinner').classList.add('hidden');
         }
         
-        function showBotDetails(botId) {
+        window.showBotDetails = function(botId) {
             const bot = bots.find(b => b.id === botId);
             if (!bot) {
                 console.error('Bot not found for ID:', botId);
@@ -531,7 +524,7 @@
             }
         }
         
-        function showHistoryModal(botId) {
+        window.showHistoryModal = function(botId) {
             const bot = bots.find(b => b.id === botId);
             if (!bot) {
                 console.error('Bot not found for ID:', botId);
@@ -572,7 +565,7 @@
         }
 
         // --- FIREBASE CRUD OPERATIONS ---
-        async function addBot(botData) {
+        window.addBot = async function(botData) {
             showLoading();
             try {
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bots`), {
@@ -593,7 +586,7 @@
             }
         }
         
-        async function editBot(botData) {
+        window.editBot = async function(botData) {
             showLoading();
             try {
                 const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botData.id);
@@ -607,7 +600,7 @@
             }
         }
 
-        async function deleteBot(botId) {
+        window.deleteBot = async function(botId) {
             showLoading();
             try {
                 const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botId);
@@ -621,7 +614,7 @@
             }
         }
 
-        async function addStrategy(strategyData) {
+        window.addStrategy = async function(strategyData) {
             showLoading();
             try {
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/strategies`), strategyData);
@@ -634,7 +627,7 @@
             }
         }
 
-        async function deleteStrategy(strategyId) {
+        window.deleteStrategy = async function(strategyId) {
             showLoading();
             try {
                 const strategyRef = doc(db, `artifacts/${appId}/users/${userId}/strategies`, strategyId);
@@ -648,7 +641,7 @@
             }
         }
 
-        async function toggleBotStatus(botId) {
+        window.toggleBotStatus = async function(botId) {
             showLoading();
             try {
                 const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botId);
@@ -680,7 +673,7 @@
                 bet_percentage: parseFloat(form.bet_percentage.value),
                 strategy_id: form.strategy_id.value
             };
-            await addBot(botData);
+            await window.addBot(botData);
             form.reset();
         });
 
@@ -693,8 +686,8 @@
                 strategy_id: form['modal-strategy'].value,
                 bet_percentage: parseFloat(form['modal-bet-percent'].value)
             };
-            await editBot(botData);
-            closeModal('bot-details-modal');
+            await window.editBot(botData);
+            window.closeModal('bot-details-modal');
         });
 
         document.getElementById('add-strategy-form').addEventListener('submit', async function(event) {
@@ -705,7 +698,7 @@
                 type: form.type.value,
                 linked_strategy_id: form.linked_strategy_id.value || null
             };
-            await addStrategy(strategyData);
+            await window.addStrategy(strategyData);
             form.reset();
         });
     </script>
