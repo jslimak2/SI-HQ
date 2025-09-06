@@ -1,0 +1,4006 @@
+[
+    {
+        "bet_number": 0,
+        "balance": 1000.0
+    },
+    {
+        "bet_number": 1,
+        "balance": 1027.0
+    },
+    {
+        "bet_number": 2,
+        "balance": 1054.729
+    },
+    {
+        "bet_number": 3,
+        "balance": 1083.206683
+    },
+    {
+        "bet_number": 4,
+        "balance": 1066.9585827550002
+    },
+    {
+        "bet_number": 5,
+        "balance": 1050.9542040136753
+    },
+    {
+        "bet_number": 6,
+        "balance": 1079.3299675220446
+    },
+    {
+        "bet_number": 7,
+        "balance": 1063.140018009214
+    },
+    {
+        "bet_number": 8,
+        "balance": 1091.8447984954628
+    },
+    {
+        "bet_number": 9,
+        "balance": 1075.467126518031
+    },
+    {
+        "bet_number": 10,
+        "balance": 1104.5047389340177
+    },
+    {
+        "bet_number": 11,
+        "balance": 1134.3263668852362
+    },
+    {
+        "bet_number": 12,
+        "balance": 1164.9531787911376
+    },
+    {
+        "bet_number": 13,
+        "balance": 1196.4069146184984
+    },
+    {
+        "bet_number": 14,
+        "balance": 1178.4608108992209
+    },
+    {
+        "bet_number": 15,
+        "balance": 1210.2792527934998
+    },
+    {
+        "bet_number": 16,
+        "balance": 1192.1250640015974
+    },
+    {
+        "bet_number": 17,
+        "balance": 1174.2431880415734
+    },
+    {
+        "bet_number": 18,
+        "balance": 1156.6295402209498
+    },
+    {
+        "bet_number": 19,
+        "balance": 1187.8585378069154
+    },
+    {
+        "bet_number": 20,
+        "balance": 1170.0406597398116
+    },
+    {
+        "bet_number": 21,
+        "balance": 1201.6317575527867
+    },
+    {
+        "bet_number": 22,
+        "balance": 1234.075815006712
+    },
+    {
+        "bet_number": 23,
+        "balance": 1215.5646777816114
+    },
+    {
+        "bet_number": 24,
+        "balance": 1248.3849240817149
+    },
+    {
+        "bet_number": 25,
+        "balance": 1229.6591502204892
+    },
+    {
+        "bet_number": 26,
+        "balance": 1211.2142629671819
+    },
+    {
+        "bet_number": 27,
+        "balance": 1243.9170480672958
+    },
+    {
+        "bet_number": 28,
+        "balance": 1277.5028083651127
+    },
+    {
+        "bet_number": 29,
+        "balance": 1311.9953841909708
+    },
+    {
+        "bet_number": 30,
+        "balance": 1292.3154534281061
+    },
+    {
+        "bet_number": 31,
+        "balance": 1327.207970670665
+    },
+    {
+        "bet_number": 32,
+        "balance": 1307.299851110605
+    },
+    {
+        "bet_number": 33,
+        "balance": 1287.6903533439458
+    },
+    {
+        "bet_number": 34,
+        "balance": 1322.4579928842325
+    },
+    {
+        "bet_number": 35,
+        "balance": 1302.621122990969
+    },
+    {
+        "bet_number": 36,
+        "balance": 1337.7918933117253
+    },
+    {
+        "bet_number": 37,
+        "balance": 1317.7250149120493
+    },
+    {
+        "bet_number": 38,
+        "balance": 1353.3035903146747
+    },
+    {
+        "bet_number": 39,
+        "balance": 1389.8427872531709
+    },
+    {
+        "bet_number": 40,
+        "balance": 1427.3685425090064
+    },
+    {
+        "bet_number": 41,
+        "balance": 1465.9074931567495
+    },
+    {
+        "bet_number": 42,
+        "balance": 1443.9188807593982
+    },
+    {
+        "bet_number": 43,
+        "balance": 1422.2600975480073
+    },
+    {
+        "bet_number": 44,
+        "balance": 1400.926196084787
+    },
+    {
+        "bet_number": 45,
+        "balance": 1438.7512033790763
+    },
+    {
+        "bet_number": 46,
+        "balance": 1477.5974858703114
+    },
+    {
+        "bet_number": 47,
+        "balance": 1455.4335235822568
+    },
+    {
+        "bet_number": 48,
+        "balance": 1433.602020728523
+    },
+    {
+        "bet_number": 49,
+        "balance": 1472.3092752881932
+    },
+    {
+        "bet_number": 50,
+        "balance": 1450.2246361588705
+    },
+    {
+        "bet_number": 51,
+        "balance": 1489.38070133516
+    },
+    {
+        "bet_number": 52,
+        "balance": 1529.5939802712094
+    },
+    {
+        "bet_number": 53,
+        "balance": 1570.893017738532
+    },
+    {
+        "bet_number": 54,
+        "balance": 1613.3071292174725
+    },
+    {
+        "bet_number": 55,
+        "balance": 1656.8664217063442
+    },
+    {
+        "bet_number": 56,
+        "balance": 1701.6018150924156
+    },
+    {
+        "bet_number": 57,
+        "balance": 1747.5450640999109
+    },
+    {
+        "bet_number": 58,
+        "balance": 1794.7287808306085
+    },
+    {
+        "bet_number": 59,
+        "balance": 1843.186457913035
+    },
+    {
+        "bet_number": 60,
+        "balance": 1892.9524922766868
+    },
+    {
+        "bet_number": 61,
+        "balance": 1864.5582048925364
+    },
+    {
+        "bet_number": 62,
+        "balance": 1836.5898318191485
+    },
+    {
+        "bet_number": 63,
+        "balance": 1809.0409843418613
+    },
+    {
+        "bet_number": 64,
+        "balance": 1781.9053695767334
+    },
+    {
+        "bet_number": 65,
+        "balance": 1755.1767890330823
+    },
+    {
+        "bet_number": 66,
+        "balance": 1728.849137197586
+    },
+    {
+        "bet_number": 67,
+        "balance": 1775.5280639019209
+    },
+    {
+        "bet_number": 68,
+        "balance": 1823.4673216272727
+    },
+    {
+        "bet_number": 69,
+        "balance": 1872.700939311209
+    },
+    {
+        "bet_number": 70,
+        "balance": 1923.2638646726116
+    },
+    {
+        "bet_number": 71,
+        "balance": 1894.4149067025223
+    },
+    {
+        "bet_number": 72,
+        "balance": 1865.9986831019844
+    },
+    {
+        "bet_number": 73,
+        "balance": 1838.0087028554547
+    },
+    {
+        "bet_number": 74,
+        "balance": 1810.438572312623
+    },
+    {
+        "bet_number": 75,
+        "balance": 1783.2819937279335
+    },
+    {
+        "bet_number": 76,
+        "balance": 1756.5327638220144
+    },
+    {
+        "bet_number": 77,
+        "balance": 1730.1847723646842
+    },
+    {
+        "bet_number": 78,
+        "balance": 1704.2320007792139
+    },
+    {
+        "bet_number": 79,
+        "balance": 1750.2462648002527
+    },
+    {
+        "bet_number": 80,
+        "balance": 1797.5029139498595
+    },
+    {
+        "bet_number": 81,
+        "balance": 1846.0354926265056
+    },
+    {
+        "bet_number": 82,
+        "balance": 1895.8784509274212
+    },
+    {
+        "bet_number": 83,
+        "balance": 1867.44027416351
+    },
+    {
+        "bet_number": 84,
+        "balance": 1839.4286700510572
+    },
+    {
+        "bet_number": 85,
+        "balance": 1811.8372400002913
+    },
+    {
+        "bet_number": 86,
+        "balance": 1860.7568454802993
+    },
+    {
+        "bet_number": 87,
+        "balance": 1910.9972803082674
+    },
+    {
+        "bet_number": 88,
+        "balance": 1962.5942068765905
+    },
+    {
+        "bet_number": 89,
+        "balance": 1933.1552937734416
+    },
+    {
+        "bet_number": 90,
+        "balance": 1904.15796436684
+    },
+    {
+        "bet_number": 91,
+        "balance": 1955.5702294047446
+    },
+    {
+        "bet_number": 92,
+        "balance": 1926.2366759636734
+    },
+    {
+        "bet_number": 93,
+        "balance": 1978.2450662146925
+    },
+    {
+        "bet_number": 94,
+        "balance": 2031.6576830024892
+    },
+    {
+        "bet_number": 95,
+        "balance": 2001.1828177574519
+    },
+    {
+        "bet_number": 96,
+        "balance": 1971.1650754910902
+    },
+    {
+        "bet_number": 97,
+        "balance": 2024.3865325293496
+    },
+    {
+        "bet_number": 98,
+        "balance": 1994.0207345414094
+    },
+    {
+        "bet_number": 99,
+        "balance": 2047.8592943740275
+    },
+    {
+        "bet_number": 100,
+        "balance": 2017.141404958417
+    },
+    {
+        "bet_number": 101,
+        "balance": 2071.6042228922943
+    },
+    {
+        "bet_number": 102,
+        "balance": 2127.5375369103863
+    },
+    {
+        "bet_number": 103,
+        "balance": 2184.981050406967
+    },
+    {
+        "bet_number": 104,
+        "balance": 2243.975538767955
+    },
+    {
+        "bet_number": 105,
+        "balance": 2304.56287831469
+    },
+    {
+        "bet_number": 106,
+        "balance": 2269.9944351399695
+    },
+    {
+        "bet_number": 107,
+        "balance": 2331.2842848887485
+    },
+    {
+        "bet_number": 108,
+        "balance": 2296.3150206154173
+    },
+    {
+        "bet_number": 109,
+        "balance": 2261.870295306186
+    },
+    {
+        "bet_number": 110,
+        "balance": 2322.940793279453
+    },
+    {
+        "bet_number": 111,
+        "balance": 2288.096681380261
+    },
+    {
+        "bet_number": 112,
+        "balance": 2253.7752311595573
+    },
+    {
+        "bet_number": 113,
+        "balance": 2219.968602692164
+    },
+    {
+        "bet_number": 114,
+        "balance": 2186.6690736517817
+    },
+    {
+        "bet_number": 115,
+        "balance": 2153.869037547005
+    },
+    {
+        "bet_number": 116,
+        "balance": 2121.5610019838
+    },
+    {
+        "bet_number": 117,
+        "balance": 2178.8431490373628
+    },
+    {
+        "bet_number": 118,
+        "balance": 2146.160501801802
+    },
+    {
+        "bet_number": 119,
+        "balance": 2204.1068353504506
+    },
+    {
+        "bet_number": 120,
+        "balance": 2263.617719904913
+    },
+    {
+        "bet_number": 121,
+        "balance": 2324.7353983423454
+    },
+    {
+        "bet_number": 122,
+        "balance": 2289.8643673672104
+    },
+    {
+        "bet_number": 123,
+        "balance": 2351.690705286125
+    },
+    {
+        "bet_number": 124,
+        "balance": 2415.1863543288505
+    },
+    {
+        "bet_number": 125,
+        "balance": 2378.9585590139177
+    },
+    {
+        "bet_number": 126,
+        "balance": 2343.274180628709
+    },
+    {
+        "bet_number": 127,
+        "balance": 2406.542583505684
+    },
+    {
+        "bet_number": 128,
+        "balance": 2471.5192332603374
+    },
+    {
+        "bet_number": 129,
+        "balance": 2434.4464447614323
+    },
+    {
+        "bet_number": 130,
+        "balance": 2500.1764987699908
+    },
+    {
+        "bet_number": 131,
+        "balance": 2567.6812642367804
+    },
+    {
+        "bet_number": 132,
+        "balance": 2529.1660452732285
+    },
+    {
+        "bet_number": 133,
+        "balance": 2597.4535284956055
+    },
+    {
+        "bet_number": 134,
+        "balance": 2667.584773764987
+    },
+    {
+        "bet_number": 135,
+        "balance": 2739.6095626566416
+    },
+    {
+        "bet_number": 136,
+        "balance": 2698.515419216792
+    },
+    {
+        "bet_number": 137,
+        "balance": 2771.3753355356453
+    },
+    {
+        "bet_number": 138,
+        "balance": 2846.2024695951077
+    },
+    {
+        "bet_number": 139,
+        "balance": 2803.509432551181
+    },
+    {
+        "bet_number": 140,
+        "balance": 2879.204187230063
+    },
+    {
+        "bet_number": 141,
+        "balance": 2956.9427002852744
+    },
+    {
+        "bet_number": 142,
+        "balance": 2912.588559780995
+    },
+    {
+        "bet_number": 143,
+        "balance": 2868.89973138428
+    },
+    {
+        "bet_number": 144,
+        "balance": 2946.360024131656
+    },
+    {
+        "bet_number": 145,
+        "balance": 2902.164623769681
+    },
+    {
+        "bet_number": 146,
+        "balance": 2858.6321544131356
+    },
+    {
+        "bet_number": 147,
+        "balance": 2935.81522258229
+    },
+    {
+        "bet_number": 148,
+        "balance": 3015.082233592012
+    },
+    {
+        "bet_number": 149,
+        "balance": 2969.8560000881316
+    },
+    {
+        "bet_number": 150,
+        "balance": 3050.042112090511
+    },
+    {
+        "bet_number": 151,
+        "balance": 3004.2914804091533
+    },
+    {
+        "bet_number": 152,
+        "balance": 3085.4073503802006
+    },
+    {
+        "bet_number": 153,
+        "balance": 3168.713348840466
+    },
+    {
+        "bet_number": 154,
+        "balance": 3254.268609259159
+    },
+    {
+        "bet_number": 155,
+        "balance": 3205.4545801202717
+    },
+    {
+        "bet_number": 156,
+        "balance": 3157.3727614184677
+    },
+    {
+        "bet_number": 157,
+        "balance": 3110.0121699971905
+    },
+    {
+        "bet_number": 158,
+        "balance": 3193.9824985871146
+    },
+    {
+        "bet_number": 159,
+        "balance": 3146.072761108308
+    },
+    {
+        "bet_number": 160,
+        "balance": 3098.8816696916833
+    },
+    {
+        "bet_number": 161,
+        "balance": 3182.5514747733587
+    },
+    {
+        "bet_number": 162,
+        "balance": 3268.4803645922393
+    },
+    {
+        "bet_number": 163,
+        "balance": 3219.453159123356
+    },
+    {
+        "bet_number": 164,
+        "balance": 3306.3783944196866
+    },
+    {
+        "bet_number": 165,
+        "balance": 3256.782718503391
+    },
+    {
+        "bet_number": 166,
+        "balance": 3344.7158519029826
+    },
+    {
+        "bet_number": 167,
+        "balance": 3294.545114124438
+    },
+    {
+        "bet_number": 168,
+        "balance": 3383.4978322057977
+    },
+    {
+        "bet_number": 169,
+        "balance": 3474.8522736753544
+    },
+    {
+        "bet_number": 170,
+        "balance": 3568.673285064589
+    },
+    {
+        "bet_number": 171,
+        "balance": 3515.14318578862
+    },
+    {
+        "bet_number": 172,
+        "balance": 3462.4160380017906
+    },
+    {
+        "bet_number": 173,
+        "balance": 3410.479797431764
+    },
+    {
+        "bet_number": 174,
+        "balance": 3502.5627519624218
+    },
+    {
+        "bet_number": 175,
+        "balance": 3450.0243106829853
+    },
+    {
+        "bet_number": 176,
+        "balance": 3398.2739460227403
+    },
+    {
+        "bet_number": 177,
+        "balance": 3490.0273425653545
+    },
+    {
+        "bet_number": 178,
+        "balance": 3584.258080814619
+    },
+    {
+        "bet_number": 179,
+        "balance": 3530.4942096023997
+    },
+    {
+        "bet_number": 180,
+        "balance": 3625.8175532616647
+    },
+    {
+        "bet_number": 181,
+        "balance": 3723.7146271997294
+    },
+    {
+        "bet_number": 182,
+        "balance": 3667.8589077917336
+    },
+    {
+        "bet_number": 183,
+        "balance": 3612.8410241748575
+    },
+    {
+        "bet_number": 184,
+        "balance": 3710.3877318275786
+    },
+    {
+        "bet_number": 185,
+        "balance": 3810.568200586923
+    },
+    {
+        "bet_number": 186,
+        "balance": 3913.45354200277
+    },
+    {
+        "bet_number": 187,
+        "balance": 3854.7517388727283
+    },
+    {
+        "bet_number": 188,
+        "balance": 3796.930462789637
+    },
+    {
+        "bet_number": 189,
+        "balance": 3899.4475852849573
+    },
+    {
+        "bet_number": 190,
+        "balance": 4004.732670087651
+    },
+    {
+        "bet_number": 191,
+        "balance": 3944.6616800363363
+    },
+    {
+        "bet_number": 192,
+        "balance": 4051.1675453973176
+    },
+    {
+        "bet_number": 193,
+        "balance": 3990.400032216358
+    },
+    {
+        "bet_number": 194,
+        "balance": 4098.1408330862
+    },
+    {
+        "bet_number": 195,
+        "balance": 4208.790635579527
+    },
+    {
+        "bet_number": 196,
+        "balance": 4322.427982740174
+    },
+    {
+        "bet_number": 197,
+        "balance": 4439.133538274159
+    },
+    {
+        "bet_number": 198,
+        "balance": 4372.5465352000465
+    },
+    {
+        "bet_number": 199,
+        "balance": 4490.605291650448
+    },
+    {
+        "bet_number": 200,
+        "balance": 4611.85163452501
+    },
+    {
+        "bet_number": 201,
+        "balance": 4736.371628657185
+    },
+    {
+        "bet_number": 202,
+        "balance": 4665.326054227327
+    },
+    {
+        "bet_number": 203,
+        "balance": 4791.289857691465
+    },
+    {
+        "bet_number": 204,
+        "balance": 4719.420509826093
+    },
+    {
+        "bet_number": 205,
+        "balance": 4846.844863591397
+    },
+    {
+        "bet_number": 206,
+        "balance": 4774.142190637526
+    },
+    {
+        "bet_number": 207,
+        "balance": 4903.04402978474
+    },
+    {
+        "bet_number": 208,
+        "balance": 4829.498369337969
+    },
+    {
+        "bet_number": 209,
+        "balance": 4757.055893797899
+    },
+    {
+        "bet_number": 210,
+        "balance": 4885.496402930443
+    },
+    {
+        "bet_number": 211,
+        "balance": 5017.404805809565
+    },
+    {
+        "bet_number": 212,
+        "balance": 4942.1437337224215
+    },
+    {
+        "bet_number": 213,
+        "balance": 4868.011577716586
+    },
+    {
+        "bet_number": 214,
+        "balance": 4794.9914040508365
+    },
+    {
+        "bet_number": 215,
+        "balance": 4924.456171960209
+    },
+    {
+        "bet_number": 216,
+        "balance": 4850.589329380806
+    },
+    {
+        "bet_number": 217,
+        "balance": 4981.555241274087
+    },
+    {
+        "bet_number": 218,
+        "balance": 4906.831912654976
+    },
+    {
+        "bet_number": 219,
+        "balance": 4833.229433965152
+    },
+    {
+        "bet_number": 220,
+        "balance": 4760.730992455675
+    },
+    {
+        "bet_number": 221,
+        "balance": 4889.270729251978
+    },
+    {
+        "bet_number": 222,
+        "balance": 4815.931668313198
+    },
+    {
+        "bet_number": 223,
+        "balance": 4945.961823357655
+    },
+    {
+        "bet_number": 224,
+        "balance": 5079.502792588311
+    },
+    {
+        "bet_number": 225,
+        "balance": 5216.649367988196
+    },
+    {
+        "bet_number": 226,
+        "balance": 5357.498900923877
+    },
+    {
+        "bet_number": 227,
+        "balance": 5277.136417410019
+    },
+    {
+        "bet_number": 228,
+        "balance": 5419.619100680089
+    },
+    {
+        "bet_number": 229,
+        "balance": 5565.9488163984515
+    },
+    {
+        "bet_number": 230,
+        "balance": 5716.229434441209
+    },
+    {
+        "bet_number": 231,
+        "balance": 5630.485992924591
+    },
+    {
+        "bet_number": 232,
+        "balance": 5546.028703030723
+    },
+    {
+        "bet_number": 233,
+        "balance": 5695.7714780125525
+    },
+    {
+        "bet_number": 234,
+        "balance": 5610.334905842365
+    },
+    {
+        "bet_number": 235,
+        "balance": 5526.179882254729
+    },
+    {
+        "bet_number": 236,
+        "balance": 5675.386739075607
+    },
+    {
+        "bet_number": 237,
+        "balance": 5828.622181030648
+    },
+    {
+        "bet_number": 238,
+        "balance": 5985.994979918475
+    },
+    {
+        "bet_number": 239,
+        "balance": 6147.616844376274
+    },
+    {
+        "bet_number": 240,
+        "balance": 6055.402591710629
+    },
+    {
+        "bet_number": 241,
+        "balance": 6218.8984616868165
+    },
+    {
+        "bet_number": 242,
+        "balance": 6125.614984761514
+    },
+    {
+        "bet_number": 243,
+        "balance": 6291.006589350075
+    },
+    {
+        "bet_number": 244,
+        "balance": 6196.641490509824
+    },
+    {
+        "bet_number": 245,
+        "balance": 6363.9508107535885
+    },
+    {
+        "bet_number": 246,
+        "balance": 6535.777482643935
+    },
+    {
+        "bet_number": 247,
+        "balance": 6437.740820404277
+    },
+    {
+        "bet_number": 248,
+        "balance": 6611.559822555192
+    },
+    {
+        "bet_number": 249,
+        "balance": 6512.386425216864
+    },
+    {
+        "bet_number": 250,
+        "balance": 6414.700628838611
+    },
+    {
+        "bet_number": 251,
+        "balance": 6587.897545817254
+    },
+    {
+        "bet_number": 252,
+        "balance": 6489.079082629994
+    },
+    {
+        "bet_number": 253,
+        "balance": 6664.284217861004
+    },
+    {
+        "bet_number": 254,
+        "balance": 6844.2198917432515
+    },
+    {
+        "bet_number": 255,
+        "balance": 7029.01382882032
+    },
+    {
+        "bet_number": 256,
+        "balance": 7218.797202198469
+    },
+    {
+        "bet_number": 257,
+        "balance": 7413.704726657827
+    },
+    {
+        "bet_number": 258,
+        "balance": 7302.49915575796
+    },
+    {
+        "bet_number": 259,
+        "balance": 7192.961668421591
+    },
+    {
+        "bet_number": 260,
+        "balance": 7387.171633468974
+    },
+    {
+        "bet_number": 261,
+        "balance": 7276.364058966939
+    },
+    {
+        "bet_number": 262,
+        "balance": 7167.218598082435
+    },
+    {
+        "bet_number": 263,
+        "balance": 7059.710319111198
+    },
+    {
+        "bet_number": 264,
+        "balance": 6953.81466432453
+    },
+    {
+        "bet_number": 265,
+        "balance": 6849.507444359662
+    },
+    {
+        "bet_number": 266,
+        "balance": 6746.764832694267
+    },
+    {
+        "bet_number": 267,
+        "balance": 6928.927483177013
+    },
+    {
+        "bet_number": 268,
+        "balance": 6824.993570929358
+    },
+    {
+        "bet_number": 269,
+        "balance": 7009.26839734445
+    },
+    {
+        "bet_number": 270,
+        "balance": 7198.51864407275
+    },
+    {
+        "bet_number": 271,
+        "balance": 7090.540864411659
+    },
+    {
+        "bet_number": 272,
+        "balance": 6984.1827514454835
+    },
+    {
+        "bet_number": 273,
+        "balance": 7172.755685734512
+    },
+    {
+        "bet_number": 274,
+        "balance": 7366.420089249344
+    },
+    {
+        "bet_number": 275,
+        "balance": 7255.923787910603
+    },
+    {
+        "bet_number": 276,
+        "balance": 7147.084931091944
+    },
+    {
+        "bet_number": 277,
+        "balance": 7039.878657125565
+    },
+    {
+        "bet_number": 278,
+        "balance": 7229.955380867956
+    },
+    {
+        "bet_number": 279,
+        "balance": 7121.506050154936
+    },
+    {
+        "bet_number": 280,
+        "balance": 7014.683459402612
+    },
+    {
+        "bet_number": 281,
+        "balance": 7204.079912806483
+    },
+    {
+        "bet_number": 282,
+        "balance": 7096.018714114385
+    },
+    {
+        "bet_number": 283,
+        "balance": 6989.578433402669
+    },
+    {
+        "bet_number": 284,
+        "balance": 6884.734756901629
+    },
+    {
+        "bet_number": 285,
+        "balance": 6781.4637355481045
+    },
+    {
+        "bet_number": 286,
+        "balance": 6964.563256407903
+    },
+    {
+        "bet_number": 287,
+        "balance": 7152.606464330916
+    },
+    {
+        "bet_number": 288,
+        "balance": 7345.726838867851
+    },
+    {
+        "bet_number": 289,
+        "balance": 7235.540936284833
+    },
+    {
+        "bet_number": 290,
+        "balance": 7127.007822240561
+    },
+    {
+        "bet_number": 291,
+        "balance": 7319.437033441056
+    },
+    {
+        "bet_number": 292,
+        "balance": 7209.64547793944
+    },
+    {
+        "bet_number": 293,
+        "balance": 7404.305905843805
+    },
+    {
+        "bet_number": 294,
+        "balance": 7293.241317256147
+    },
+    {
+        "bet_number": 295,
+        "balance": 7490.158832822063
+    },
+    {
+        "bet_number": 296,
+        "balance": 7692.393121308259
+    },
+    {
+        "bet_number": 297,
+        "balance": 7900.087735583582
+    },
+    {
+        "bet_number": 298,
+        "balance": 7781.586419549828
+    },
+    {
+        "bet_number": 299,
+        "balance": 7664.86262325658
+    },
+    {
+        "bet_number": 300,
+        "balance": 7871.813914084508
+    },
+    {
+        "bet_number": 301,
+        "balance": 8084.352889764789
+    },
+    {
+        "bet_number": 302,
+        "balance": 8302.63041778844
+    },
+    {
+        "bet_number": 303,
+        "balance": 8526.801439068728
+    },
+    {
+        "bet_number": 304,
+        "balance": 8398.899417482697
+    },
+    {
+        "bet_number": 305,
+        "balance": 8625.66970175473
+    },
+    {
+        "bet_number": 306,
+        "balance": 8496.28465622841
+    },
+    {
+        "bet_number": 307,
+        "balance": 8725.684341946577
+    },
+    {
+        "bet_number": 308,
+        "balance": 8594.799076817379
+    },
+    {
+        "bet_number": 309,
+        "balance": 8826.858651891447
+    },
+    {
+        "bet_number": 310,
+        "balance": 9065.183835492517
+    },
+    {
+        "bet_number": 311,
+        "balance": 8929.206077960129
+    },
+    {
+        "bet_number": 312,
+        "balance": 9170.294642065051
+    },
+    {
+        "bet_number": 313,
+        "balance": 9417.892597400807
+    },
+    {
+        "bet_number": 314,
+        "balance": 9276.624208439795
+    },
+    {
+        "bet_number": 315,
+        "balance": 9137.474845313198
+    },
+    {
+        "bet_number": 316,
+        "balance": 9384.186666136655
+    },
+    {
+        "bet_number": 317,
+        "balance": 9243.423866144605
+    },
+    {
+        "bet_number": 318,
+        "balance": 9104.772508152437
+    },
+    {
+        "bet_number": 319,
+        "balance": 8968.200920530151
+    },
+    {
+        "bet_number": 320,
+        "balance": 8833.6779067222
+    },
+    {
+        "bet_number": 321,
+        "balance": 9072.1872102037
+    },
+    {
+        "bet_number": 322,
+        "balance": 8936.104402050643
+    },
+    {
+        "bet_number": 323,
+        "balance": 8802.062836019884
+    },
+    {
+        "bet_number": 324,
+        "balance": 9039.718532592422
+    },
+    {
+        "bet_number": 325,
+        "balance": 9283.790932972417
+    },
+    {
+        "bet_number": 326,
+        "balance": 9144.534068977831
+    },
+    {
+        "bet_number": 327,
+        "balance": 9007.366057943163
+    },
+    {
+        "bet_number": 328,
+        "balance": 9250.56494150763
+    },
+    {
+        "bet_number": 329,
+        "balance": 9111.806467385015
+    },
+    {
+        "bet_number": 330,
+        "balance": 9357.82524200441
+    },
+    {
+        "bet_number": 331,
+        "balance": 9217.457863374344
+    },
+    {
+        "bet_number": 332,
+        "balance": 9079.195995423728
+    },
+    {
+        "bet_number": 333,
+        "balance": 8943.008055492372
+    },
+    {
+        "bet_number": 334,
+        "balance": 9184.469272990666
+    },
+    {
+        "bet_number": 335,
+        "balance": 9432.449943361413
+    },
+    {
+        "bet_number": 336,
+        "balance": 9290.963194210992
+    },
+    {
+        "bet_number": 337,
+        "balance": 9541.819200454689
+    },
+    {
+        "bet_number": 338,
+        "balance": 9799.448318866966
+    },
+    {
+        "bet_number": 339,
+        "balance": 10064.033423476374
+    },
+    {
+        "bet_number": 340,
+        "balance": 9913.072922124229
+    },
+    {
+        "bet_number": 341,
+        "balance": 10180.725891021582
+    },
+    {
+        "bet_number": 342,
+        "balance": 10028.015002656259
+    },
+    {
+        "bet_number": 343,
+        "balance": 9877.594777616416
+    },
+    {
+        "bet_number": 344,
+        "balance": 10144.289836612059
+    },
+    {
+        "bet_number": 345,
+        "balance": 9992.125489062879
+    },
+    {
+        "bet_number": 346,
+        "balance": 10261.912877267576
+    },
+    {
+        "bet_number": 347,
+        "balance": 10538.984524953801
+    },
+    {
+        "bet_number": 348,
+        "balance": 10823.537107127553
+    },
+    {
+        "bet_number": 349,
+        "balance": 11115.772609019998
+    },
+    {
+        "bet_number": 350,
+        "balance": 11415.898469463538
+    },
+    {
+        "bet_number": 351,
+        "balance": 11724.127728139054
+    },
+    {
+        "bet_number": 352,
+        "balance": 12040.679176798809
+    },
+    {
+        "bet_number": 353,
+        "balance": 11860.068989146826
+    },
+    {
+        "bet_number": 354,
+        "balance": 12180.290851853792
+    },
+    {
+        "bet_number": 355,
+        "balance": 11997.586489075984
+    },
+    {
+        "bet_number": 356,
+        "balance": 12321.521324281035
+    },
+    {
+        "bet_number": 357,
+        "balance": 12136.69850441682
+    },
+    {
+        "bet_number": 358,
+        "balance": 11954.648026850567
+    },
+    {
+        "bet_number": 359,
+        "balance": 11775.32830644781
+    },
+    {
+        "bet_number": 360,
+        "balance": 11598.698381851093
+    },
+    {
+        "bet_number": 361,
+        "balance": 11911.863238161071
+    },
+    {
+        "bet_number": 362,
+        "balance": 12233.48354559142
+    },
+    {
+        "bet_number": 363,
+        "balance": 12049.981292407549
+    },
+    {
+        "bet_number": 364,
+        "balance": 11869.231573021436
+    },
+    {
+        "bet_number": 365,
+        "balance": 11691.193099426115
+    },
+    {
+        "bet_number": 366,
+        "balance": 11515.825202934722
+    },
+    {
+        "bet_number": 367,
+        "balance": 11826.75248341396
+    },
+    {
+        "bet_number": 368,
+        "balance": 12146.074800466136
+    },
+    {
+        "bet_number": 369,
+        "balance": 12474.018820078722
+    },
+    {
+        "bet_number": 370,
+        "balance": 12810.817328220846
+    },
+    {
+        "bet_number": 371,
+        "balance": 12618.655068297534
+    },
+    {
+        "bet_number": 372,
+        "balance": 12959.358755141568
+    },
+    {
+        "bet_number": 373,
+        "balance": 13309.26144153039
+    },
+    {
+        "bet_number": 374,
+        "balance": 13109.622519907434
+    },
+    {
+        "bet_number": 375,
+        "balance": 13463.582327944934
+    },
+    {
+        "bet_number": 376,
+        "balance": 13827.099050799447
+    },
+    {
+        "bet_number": 377,
+        "balance": 14200.430725171032
+    },
+    {
+        "bet_number": 378,
+        "balance": 14583.84235475065
+    },
+    {
+        "bet_number": 379,
+        "balance": 14977.606098328917
+    },
+    {
+        "bet_number": 380,
+        "balance": 15382.001462983797
+    },
+    {
+        "bet_number": 381,
+        "balance": 15797.31550248436
+    },
+    {
+        "bet_number": 382,
+        "balance": 16223.843021051438
+    },
+    {
+        "bet_number": 383,
+        "balance": 15980.485375735667
+    },
+    {
+        "bet_number": 384,
+        "balance": 15740.778095099631
+    },
+    {
+        "bet_number": 385,
+        "balance": 16165.77910366732
+    },
+    {
+        "bet_number": 386,
+        "balance": 16602.25513946634
+    },
+    {
+        "bet_number": 387,
+        "balance": 16353.221312374344
+    },
+    {
+        "bet_number": 388,
+        "balance": 16794.75828780845
+    },
+    {
+        "bet_number": 389,
+        "balance": 17248.21676157928
+    },
+    {
+        "bet_number": 390,
+        "balance": 17713.91861414192
+    },
+    {
+        "bet_number": 391,
+        "balance": 17448.209834929792
+    },
+    {
+        "bet_number": 392,
+        "balance": 17919.311500472897
+    },
+    {
+        "bet_number": 393,
+        "balance": 18403.132910985667
+    },
+    {
+        "bet_number": 394,
+        "balance": 18900.01749958228
+    },
+    {
+        "bet_number": 395,
+        "balance": 18616.51723708855
+    },
+    {
+        "bet_number": 396,
+        "balance": 18337.26947853222
+    },
+    {
+        "bet_number": 397,
+        "balance": 18832.37575445259
+    },
+    {
+        "bet_number": 398,
+        "balance": 18549.8901181358
+    },
+    {
+        "bet_number": 399,
+        "balance": 19050.73715132547
+    },
+    {
+        "bet_number": 400,
+        "balance": 18764.976094055586
+    },
+    {
+        "bet_number": 401,
+        "balance": 19271.630448595086
+    },
+    {
+        "bet_number": 402,
+        "balance": 18982.55599186616
+    },
+    {
+        "bet_number": 403,
+        "balance": 18697.817651988167
+    },
+    {
+        "bet_number": 404,
+        "balance": 18417.350387208346
+    },
+    {
+        "bet_number": 405,
+        "balance": 18141.090131400222
+    },
+    {
+        "bet_number": 406,
+        "balance": 17868.97377942922
+    },
+    {
+        "bet_number": 407,
+        "balance": 18351.436071473807
+    },
+    {
+        "bet_number": 408,
+        "balance": 18846.9248454036
+    },
+    {
+        "bet_number": 409,
+        "balance": 18564.220972722545
+    },
+    {
+        "bet_number": 410,
+        "balance": 19065.454938986055
+    },
+    {
+        "bet_number": 411,
+        "balance": 19580.222222338678
+    },
+    {
+        "bet_number": 412,
+        "balance": 20108.888222341822
+    },
+    {
+        "bet_number": 413,
+        "balance": 20651.828204345053
+    },
+    {
+        "bet_number": 414,
+        "balance": 20342.050781279875
+    },
+    {
+        "bet_number": 415,
+        "balance": 20891.286152374432
+    },
+    {
+        "bet_number": 416,
+        "balance": 20577.916860088815
+    },
+    {
+        "bet_number": 417,
+        "balance": 20269.248107187483
+    },
+    {
+        "bet_number": 418,
+        "balance": 20816.517806081545
+    },
+    {
+        "bet_number": 419,
+        "balance": 20504.270038990322
+    },
+    {
+        "bet_number": 420,
+        "balance": 20196.70598840547
+    },
+    {
+        "bet_number": 421,
+        "balance": 20742.017050092418
+    },
+    {
+        "bet_number": 422,
+        "balance": 21302.05151044491
+    },
+    {
+        "bet_number": 423,
+        "balance": 20982.520737788236
+    },
+    {
+        "bet_number": 424,
+        "balance": 20667.78292672141
+    },
+    {
+        "bet_number": 425,
+        "balance": 20357.76618282059
+    },
+    {
+        "bet_number": 426,
+        "balance": 20907.425869756746
+    },
+    {
+        "bet_number": 427,
+        "balance": 21471.926368240176
+    },
+    {
+        "bet_number": 428,
+        "balance": 22051.668380182662
+    },
+    {
+        "bet_number": 429,
+        "balance": 21720.893354479922
+    },
+    {
+        "bet_number": 430,
+        "balance": 21395.079954162724
+    },
+    {
+        "bet_number": 431,
+        "balance": 21074.153754850282
+    },
+    {
+        "bet_number": 432,
+        "balance": 21643.15590623124
+    },
+    {
+        "bet_number": 433,
+        "balance": 21318.50856763777
+    },
+    {
+        "bet_number": 434,
+        "balance": 20998.730939123205
+    },
+    {
+        "bet_number": 435,
+        "balance": 20683.749975036357
+    },
+    {
+        "bet_number": 436,
+        "balance": 21242.211224362338
+    },
+    {
+        "bet_number": 437,
+        "balance": 21815.750927420122
+    },
+    {
+        "bet_number": 438,
+        "balance": 22404.776202460467
+    },
+    {
+        "bet_number": 439,
+        "balance": 22068.70455942356
+    },
+    {
+        "bet_number": 440,
+        "balance": 21737.673991032207
+    },
+    {
+        "bet_number": 441,
+        "balance": 22324.591188790077
+    },
+    {
+        "bet_number": 442,
+        "balance": 22927.355150887408
+    },
+    {
+        "bet_number": 443,
+        "balance": 22583.444823624097
+    },
+    {
+        "bet_number": 444,
+        "balance": 23193.19783386195
+    },
+    {
+        "bet_number": 445,
+        "balance": 22845.29986635402
+    },
+    {
+        "bet_number": 446,
+        "balance": 23462.12296274558
+    },
+    {
+        "bet_number": 447,
+        "balance": 23110.191118304396
+    },
+    {
+        "bet_number": 448,
+        "balance": 23734.166278498615
+    },
+    {
+        "bet_number": 449,
+        "balance": 24374.988768018076
+    },
+    {
+        "bet_number": 450,
+        "balance": 25033.113464754566
+    },
+    {
+        "bet_number": 451,
+        "balance": 25709.00752830294
+    },
+    {
+        "bet_number": 452,
+        "balance": 25323.372415378395
+    },
+    {
+        "bet_number": 453,
+        "balance": 26007.10347059361
+    },
+    {
+        "bet_number": 454,
+        "balance": 26709.29526429964
+    },
+    {
+        "bet_number": 455,
+        "balance": 27430.446236435728
+    },
+    {
+        "bet_number": 456,
+        "balance": 27018.98954288919
+    },
+    {
+        "bet_number": 457,
+        "balance": 26613.704699745853
+    },
+    {
+        "bet_number": 458,
+        "balance": 27332.274726638992
+    },
+    {
+        "bet_number": 459,
+        "balance": 28070.246144258246
+    },
+    {
+        "bet_number": 460,
+        "balance": 28828.14279015322
+    },
+    {
+        "bet_number": 461,
+        "balance": 28395.72064830092
+    },
+    {
+        "bet_number": 462,
+        "balance": 29162.405105805046
+    },
+    {
+        "bet_number": 463,
+        "balance": 29949.790043661782
+    },
+    {
+        "bet_number": 464,
+        "balance": 29500.543193006855
+    },
+    {
+        "bet_number": 465,
+        "balance": 30297.05785921804
+    },
+    {
+        "bet_number": 466,
+        "balance": 31115.078421416925
+    },
+    {
+        "bet_number": 467,
+        "balance": 31955.185538795184
+    },
+    {
+        "bet_number": 468,
+        "balance": 32817.975548342656
+    },
+    {
+        "bet_number": 469,
+        "balance": 32325.705915117516
+    },
+    {
+        "bet_number": 470,
+        "balance": 33198.49997482569
+    },
+    {
+        "bet_number": 471,
+        "balance": 34094.85947414598
+    },
+    {
+        "bet_number": 472,
+        "balance": 33583.43658203379
+    },
+    {
+        "bet_number": 473,
+        "balance": 33079.685033303285
+    },
+    {
+        "bet_number": 474,
+        "balance": 32583.489757803734
+    },
+    {
+        "bet_number": 475,
+        "balance": 32094.73741143668
+    },
+    {
+        "bet_number": 476,
+        "balance": 32961.29532154547
+    },
+    {
+        "bet_number": 477,
+        "balance": 32466.875891722288
+    },
+    {
+        "bet_number": 478,
+        "balance": 33343.48154079879
+    },
+    {
+        "bet_number": 479,
+        "balance": 34243.75554240036
+    },
+    {
+        "bet_number": 480,
+        "balance": 35168.33694204517
+    },
+    {
+        "bet_number": 481,
+        "balance": 36117.88203948039
+    },
+    {
+        "bet_number": 482,
+        "balance": 35576.113808888185
+    },
+    {
+        "bet_number": 483,
+        "balance": 35042.472101754865
+    },
+    {
+        "bet_number": 484,
+        "balance": 34516.835020228544
+    },
+    {
+        "bet_number": 485,
+        "balance": 33999.08249492512
+    },
+    {
+        "bet_number": 486,
+        "balance": 34917.0577222881
+    },
+    {
+        "bet_number": 487,
+        "balance": 35859.81828078988
+    },
+    {
+        "bet_number": 488,
+        "balance": 36828.0333743712
+    },
+    {
+        "bet_number": 489,
+        "balance": 36275.612873755636
+    },
+    {
+        "bet_number": 490,
+        "balance": 37255.054421347035
+    },
+    {
+        "bet_number": 491,
+        "balance": 38260.9408907234
+    },
+    {
+        "bet_number": 492,
+        "balance": 37687.02677736255
+    },
+    {
+        "bet_number": 493,
+        "balance": 38704.576500351344
+    },
+    {
+        "bet_number": 494,
+        "balance": 39749.60006586083
+    },
+    {
+        "bet_number": 495,
+        "balance": 40822.83926763907
+    },
+    {
+        "bet_number": 496,
+        "balance": 40210.496678624484
+    },
+    {
+        "bet_number": 497,
+        "balance": 41296.180088947345
+    },
+    {
+        "bet_number": 498,
+        "balance": 42411.17695134893
+    },
+    {
+        "bet_number": 499,
+        "balance": 43556.27872903535
+    },
+    {
+        "bet_number": 500,
+        "balance": 44732.29825471931
+    },
+    {
+        "bet_number": 501,
+        "balance": 44061.31378089852
+    },
+    {
+        "bet_number": 502,
+        "balance": 43400.39407418504
+    },
+    {
+        "bet_number": 503,
+        "balance": 42749.38816307226
+    },
+    {
+        "bet_number": 504,
+        "balance": 43903.62164347521
+    },
+    {
+        "bet_number": 505,
+        "balance": 45089.019427849045
+    },
+    {
+        "bet_number": 506,
+        "balance": 44412.68413643131
+    },
+    {
+        "bet_number": 507,
+        "balance": 45611.826608114956
+    },
+    {
+        "bet_number": 508,
+        "balance": 46843.34592653406
+    },
+    {
+        "bet_number": 509,
+        "balance": 48108.116266550474
+    },
+    {
+        "bet_number": 510,
+        "balance": 49407.03540574734
+    },
+    {
+        "bet_number": 511,
+        "balance": 48665.92987466113
+    },
+    {
+        "bet_number": 512,
+        "balance": 49979.90998127698
+    },
+    {
+        "bet_number": 513,
+        "balance": 49230.211331557824
+    },
+    {
+        "bet_number": 514,
+        "balance": 48491.758161584454
+    },
+    {
+        "bet_number": 515,
+        "balance": 47764.38178916069
+    },
+    {
+        "bet_number": 516,
+        "balance": 49054.02009746803
+    },
+    {
+        "bet_number": 517,
+        "balance": 48318.209796006005
+    },
+    {
+        "bet_number": 518,
+        "balance": 49622.801460498165
+    },
+    {
+        "bet_number": 519,
+        "balance": 48878.45943859069
+    },
+    {
+        "bet_number": 520,
+        "balance": 48145.282547011826
+    },
+    {
+        "bet_number": 521,
+        "balance": 47423.10330880665
+    },
+    {
+        "bet_number": 522,
+        "balance": 46711.75675917455
+    },
+    {
+        "bet_number": 523,
+        "balance": 47972.974191672256
+    },
+    {
+        "bet_number": 524,
+        "balance": 47253.379578797176
+    },
+    {
+        "bet_number": 525,
+        "balance": 46544.57888511522
+    },
+    {
+        "bet_number": 526,
+        "balance": 45846.41020183849
+    },
+    {
+        "bet_number": 527,
+        "balance": 45158.71404881091
+    },
+    {
+        "bet_number": 528,
+        "balance": 46377.999328128804
+    },
+    {
+        "bet_number": 529,
+        "balance": 47630.20530998828
+    },
+    {
+        "bet_number": 530,
+        "balance": 46915.75223033846
+    },
+    {
+        "bet_number": 531,
+        "balance": 48182.4775405576
+    },
+    {
+        "bet_number": 532,
+        "balance": 47459.740377449234
+    },
+    {
+        "bet_number": 533,
+        "balance": 48741.15336764036
+    },
+    {
+        "bet_number": 534,
+        "balance": 50057.16450856665
+    },
+    {
+        "bet_number": 535,
+        "balance": 51408.707950297954
+    },
+    {
+        "bet_number": 536,
+        "balance": 50637.57733104348
+    },
+    {
+        "bet_number": 537,
+        "balance": 52004.79191898165
+    },
+    {
+        "bet_number": 538,
+        "balance": 51224.72004019693
+    },
+    {
+        "bet_number": 539,
+        "balance": 52607.78748128225
+    },
+    {
+        "bet_number": 540,
+        "balance": 51818.670669063016
+    },
+    {
+        "bet_number": 541,
+        "balance": 51041.39060902707
+    },
+    {
+        "bet_number": 542,
+        "balance": 52419.5081554708
+    },
+    {
+        "bet_number": 543,
+        "balance": 53834.834875668515
+    },
+    {
+        "bet_number": 544,
+        "balance": 53027.31235253349
+    },
+    {
+        "bet_number": 545,
+        "balance": 52231.902667245486
+    },
+    {
+        "bet_number": 546,
+        "balance": 51448.4241272368
+    },
+    {
+        "bet_number": 547,
+        "balance": 52837.5315786722
+    },
+    {
+        "bet_number": 548,
+        "balance": 52044.968604992115
+    },
+    {
+        "bet_number": 549,
+        "balance": 53450.182757326904
+    },
+    {
+        "bet_number": 550,
+        "balance": 54893.33769177473
+    },
+    {
+        "bet_number": 551,
+        "balance": 54069.93762639811
+    },
+    {
+        "bet_number": 552,
+        "balance": 55529.82594231086
+    },
+    {
+        "bet_number": 553,
+        "balance": 54696.8785531762
+    },
+    {
+        "bet_number": 554,
+        "balance": 56173.69427411196
+    },
+    {
+        "bet_number": 555,
+        "balance": 57690.38401951298
+    },
+    {
+        "bet_number": 556,
+        "balance": 59248.024388039834
+    },
+    {
+        "bet_number": 557,
+        "balance": 60847.72104651691
+    },
+    {
+        "bet_number": 558,
+        "balance": 62490.60951477287
+    },
+    {
+        "bet_number": 559,
+        "balance": 61553.250372051276
+    },
+    {
+        "bet_number": 560,
+        "balance": 63215.188132096664
+    },
+    {
+        "bet_number": 561,
+        "balance": 62266.96031011522
+    },
+    {
+        "bet_number": 562,
+        "balance": 61332.95590546349
+    },
+    {
+        "bet_number": 563,
+        "balance": 62988.945714911
+    },
+    {
+        "bet_number": 564,
+        "balance": 62044.111529187336
+    },
+    {
+        "bet_number": 565,
+        "balance": 61113.44985624953
+    },
+    {
+        "bet_number": 566,
+        "balance": 60196.74810840579
+    },
+    {
+        "bet_number": 567,
+        "balance": 59293.7968867797
+    },
+    {
+        "bet_number": 568,
+        "balance": 60894.729402722754
+    },
+    {
+        "bet_number": 569,
+        "balance": 62538.88709659627
+    },
+    {
+        "bet_number": 570,
+        "balance": 61600.80379014733
+    },
+    {
+        "bet_number": 571,
+        "balance": 60676.79173329512
+    },
+    {
+        "bet_number": 572,
+        "balance": 59766.63985729569
+    },
+    {
+        "bet_number": 573,
+        "balance": 58870.14025943625
+    },
+    {
+        "bet_number": 574,
+        "balance": 57987.088155544705
+    },
+    {
+        "bet_number": 575,
+        "balance": 59552.73953574441
+    },
+    {
+        "bet_number": 576,
+        "balance": 58659.44844270824
+    },
+    {
+        "bet_number": 577,
+        "balance": 57779.55671606762
+    },
+    {
+        "bet_number": 578,
+        "balance": 59339.60474740145
+    },
+    {
+        "bet_number": 579,
+        "balance": 58449.510676190424
+    },
+    {
+        "bet_number": 580,
+        "balance": 60027.64746444757
+    },
+    {
+        "bet_number": 581,
+        "balance": 61648.39394598765
+    },
+    {
+        "bet_number": 582,
+        "balance": 60723.66803679783
+    },
+    {
+        "bet_number": 583,
+        "balance": 59812.81301624587
+    },
+    {
+        "bet_number": 584,
+        "balance": 58915.62082100218
+    },
+    {
+        "bet_number": 585,
+        "balance": 58031.886508687145
+    },
+    {
+        "bet_number": 586,
+        "balance": 59598.7474444217
+    },
+    {
+        "bet_number": 587,
+        "balance": 58704.76623275538
+    },
+    {
+        "bet_number": 588,
+        "balance": 57824.19473926404
+    },
+    {
+        "bet_number": 589,
+        "balance": 56956.83181817508
+    },
+    {
+        "bet_number": 590,
+        "balance": 58494.66627726581
+    },
+    {
+        "bet_number": 591,
+        "balance": 57617.24628310682
+    },
+    {
+        "bet_number": 592,
+        "balance": 56752.98758886022
+    },
+    {
+        "bet_number": 593,
+        "balance": 58285.31825375945
+    },
+    {
+        "bet_number": 594,
+        "balance": 57411.03847995306
+    },
+    {
+        "bet_number": 595,
+        "balance": 56549.87290275376
+    },
+    {
+        "bet_number": 596,
+        "balance": 58076.71947112811
+    },
+    {
+        "bet_number": 597,
+        "balance": 57205.56867906119
+    },
+    {
+        "bet_number": 598,
+        "balance": 58750.11903339584
+    },
+    {
+        "bet_number": 599,
+        "balance": 60336.37224729752
+    },
+    {
+        "bet_number": 600,
+        "balance": 61965.45429797455
+    },
+    {
+        "bet_number": 601,
+        "balance": 61035.972483504935
+    },
+    {
+        "bet_number": 602,
+        "balance": 62683.94374055957
+    },
+    {
+        "bet_number": 603,
+        "balance": 61743.68458445118
+    },
+    {
+        "bet_number": 604,
+        "balance": 60817.52931568441
+    },
+    {
+        "bet_number": 605,
+        "balance": 62459.60260720789
+    },
+    {
+        "bet_number": 606,
+        "balance": 64146.011877602505
+    },
+    {
+        "bet_number": 607,
+        "balance": 65877.95419829777
+    },
+    {
+        "bet_number": 608,
+        "balance": 67656.6589616518
+    },
+    {
+        "bet_number": 609,
+        "balance": 66641.80907722702
+    },
+    {
+        "bet_number": 610,
+        "balance": 65642.18194106861
+    },
+    {
+        "bet_number": 611,
+        "balance": 64657.54921195259
+    },
+    {
+        "bet_number": 612,
+        "balance": 66403.30304067531
+    },
+    {
+        "bet_number": 613,
+        "balance": 68196.19222277355
+    },
+    {
+        "bet_number": 614,
+        "balance": 70037.48941278843
+    },
+    {
+        "bet_number": 615,
+        "balance": 68986.92707159661
+    },
+    {
+        "bet_number": 616,
+        "balance": 67952.12316552266
+    },
+    {
+        "bet_number": 617,
+        "balance": 69786.83049099176
+    },
+    {
+        "bet_number": 618,
+        "balance": 68740.02803362689
+    },
+    {
+        "bet_number": 619,
+        "balance": 70596.00879053482
+    },
+    {
+        "bet_number": 620,
+        "balance": 69537.0686586768
+    },
+    {
+        "bet_number": 621,
+        "balance": 68494.01262879664
+    },
+    {
+        "bet_number": 622,
+        "balance": 70343.35096977415
+    },
+    {
+        "bet_number": 623,
+        "balance": 72242.62144595805
+    },
+    {
+        "bet_number": 624,
+        "balance": 74193.17222499893
+    },
+    {
+        "bet_number": 625,
+        "balance": 73080.27464162394
+    },
+    {
+        "bet_number": 626,
+        "balance": 71984.07052199959
+    },
+    {
+        "bet_number": 627,
+        "balance": 73927.64042609358
+    },
+    {
+        "bet_number": 628,
+        "balance": 72818.72581970217
+    },
+    {
+        "bet_number": 629,
+        "balance": 74784.83141683413
+    },
+    {
+        "bet_number": 630,
+        "balance": 73663.05894558162
+    },
+    {
+        "bet_number": 631,
+        "balance": 75651.96153711232
+    },
+    {
+        "bet_number": 632,
+        "balance": 77694.56449861436
+    },
+    {
+        "bet_number": 633,
+        "balance": 76529.14603113514
+    },
+    {
+        "bet_number": 634,
+        "balance": 78595.4329739758
+    },
+    {
+        "bet_number": 635,
+        "balance": 80717.50966427314
+    },
+    {
+        "bet_number": 636,
+        "balance": 79506.74701930904
+    },
+    {
+        "bet_number": 637,
+        "balance": 81653.42918883039
+    },
+    {
+        "bet_number": 638,
+        "balance": 80428.62775099793
+    },
+    {
+        "bet_number": 639,
+        "balance": 82600.20070027487
+    },
+    {
+        "bet_number": 640,
+        "balance": 81361.19768977075
+    },
+    {
+        "bet_number": 641,
+        "balance": 83557.95002739456
+    },
+    {
+        "bet_number": 642,
+        "balance": 82304.58077698364
+    },
+    {
+        "bet_number": 643,
+        "balance": 81070.01206532889
+    },
+    {
+        "bet_number": 644,
+        "balance": 79853.96188434896
+    },
+    {
+        "bet_number": 645,
+        "balance": 82010.01885522639
+    },
+    {
+        "bet_number": 646,
+        "balance": 80779.86857239799
+    },
+    {
+        "bet_number": 647,
+        "balance": 79568.17054381201
+    },
+    {
+        "bet_number": 648,
+        "balance": 81716.51114849493
+    },
+    {
+        "bet_number": 649,
+        "balance": 83922.85694950429
+    },
+    {
+        "bet_number": 650,
+        "balance": 86188.7740871409
+    },
+    {
+        "bet_number": 651,
+        "balance": 84895.94247583378
+    },
+    {
+        "bet_number": 652,
+        "balance": 87188.1329226813
+    },
+    {
+        "bet_number": 653,
+        "balance": 85880.31092884108
+    },
+    {
+        "bet_number": 654,
+        "balance": 88199.07932391978
+    },
+    {
+        "bet_number": 655,
+        "balance": 90580.45446566562
+    },
+    {
+        "bet_number": 656,
+        "balance": 93026.1267362386
+    },
+    {
+        "bet_number": 657,
+        "balance": 91630.73483519502
+    },
+    {
+        "bet_number": 658,
+        "balance": 94104.76467574529
+    },
+    {
+        "bet_number": 659,
+        "balance": 96645.59332199041
+    },
+    {
+        "bet_number": 660,
+        "balance": 99255.02434168415
+    },
+    {
+        "bet_number": 661,
+        "balance": 97766.1989765589
+    },
+    {
+        "bet_number": 662,
+        "balance": 96299.70599191051
+    },
+    {
+        "bet_number": 663,
+        "balance": 94855.21040203185
+    },
+    {
+        "bet_number": 664,
+        "balance": 93432.38224600138
+    },
+    {
+        "bet_number": 665,
+        "balance": 95955.05656664341
+    },
+    {
+        "bet_number": 666,
+        "balance": 94515.73071814376
+    },
+    {
+        "bet_number": 667,
+        "balance": 93097.9947573716
+    },
+    {
+        "bet_number": 668,
+        "balance": 95611.64061582064
+    },
+    {
+        "bet_number": 669,
+        "balance": 98193.15491244779
+    },
+    {
+        "bet_number": 670,
+        "balance": 96720.25758876107
+    },
+    {
+        "bet_number": 671,
+        "balance": 95269.45372492966
+    },
+    {
+        "bet_number": 672,
+        "balance": 97841.72897550276
+    },
+    {
+        "bet_number": 673,
+        "balance": 100483.45565784133
+    },
+    {
+        "bet_number": 674,
+        "balance": 103196.50896060305
+    },
+    {
+        "bet_number": 675,
+        "balance": 101648.561326194
+    },
+    {
+        "bet_number": 676,
+        "balance": 100123.83290630109
+    },
+    {
+        "bet_number": 677,
+        "balance": 102827.17639477122
+    },
+    {
+        "bet_number": 678,
+        "balance": 105603.51015743004
+    },
+    {
+        "bet_number": 679,
+        "balance": 104019.45750506858
+    },
+    {
+        "bet_number": 680,
+        "balance": 102459.16564249255
+    },
+    {
+        "bet_number": 681,
+        "balance": 100922.27815785515
+    },
+    {
+        "bet_number": 682,
+        "balance": 103647.17966811724
+    },
+    {
+        "bet_number": 683,
+        "balance": 106445.6535191564
+    },
+    {
+        "bet_number": 684,
+        "balance": 109319.68616417363
+    },
+    {
+        "bet_number": 685,
+        "balance": 107679.89087171103
+    },
+    {
+        "bet_number": 686,
+        "balance": 106064.69250863537
+    },
+    {
+        "bet_number": 687,
+        "balance": 104473.72212100585
+    },
+    {
+        "bet_number": 688,
+        "balance": 102906.61628919076
+    },
+    {
+        "bet_number": 689,
+        "balance": 105685.09492899891
+    },
+    {
+        "bet_number": 690,
+        "balance": 104099.81850506393
+    },
+    {
+        "bet_number": 691,
+        "balance": 102538.32122748798
+    },
+    {
+        "bet_number": 692,
+        "balance": 105306.85590063015
+    },
+    {
+        "bet_number": 693,
+        "balance": 103727.2530621207
+    },
+    {
+        "bet_number": 694,
+        "balance": 102171.34426618888
+    },
+    {
+        "bet_number": 695,
+        "balance": 100638.77410219605
+    },
+    {
+        "bet_number": 696,
+        "balance": 99129.19249066312
+    },
+    {
+        "bet_number": 697,
+        "balance": 97642.25460330317
+    },
+    {
+        "bet_number": 698,
+        "balance": 100278.59547759236
+    },
+    {
+        "bet_number": 699,
+        "balance": 98774.41654542848
+    },
+    {
+        "bet_number": 700,
+        "balance": 101441.32579215505
+    },
+    {
+        "bet_number": 701,
+        "balance": 99919.70590527273
+    },
+    {
+        "bet_number": 702,
+        "balance": 98420.91031669364
+    },
+    {
+        "bet_number": 703,
+        "balance": 96944.59666194323
+    },
+    {
+        "bet_number": 704,
+        "balance": 95490.42771201408
+    },
+    {
+        "bet_number": 705,
+        "balance": 94058.07129633386
+    },
+    {
+        "bet_number": 706,
+        "balance": 92647.20022688885
+    },
+    {
+        "bet_number": 707,
+        "balance": 95148.67463301485
+    },
+    {
+        "bet_number": 708,
+        "balance": 93721.44451351963
+    },
+    {
+        "bet_number": 709,
+        "balance": 96251.92351538465
+    },
+    {
+        "bet_number": 710,
+        "balance": 94808.14466265388
+    },
+    {
+        "bet_number": 711,
+        "balance": 93386.02249271408
+    },
+    {
+        "bet_number": 712,
+        "balance": 91985.23215532336
+    },
+    {
+        "bet_number": 713,
+        "balance": 90605.4536729935
+    },
+    {
+        "bet_number": 714,
+        "balance": 89246.3718678986
+    },
+    {
+        "bet_number": 715,
+        "balance": 91656.02390833187
+    },
+    {
+        "bet_number": 716,
+        "balance": 90281.1835497069
+    },
+    {
+        "bet_number": 717,
+        "balance": 92718.77550554898
+    },
+    {
+        "bet_number": 718,
+        "balance": 91327.99387296574
+    },
+    {
+        "bet_number": 719,
+        "balance": 89958.07396487126
+    },
+    {
+        "bet_number": 720,
+        "balance": 88608.7028553982
+    },
+    {
+        "bet_number": 721,
+        "balance": 87279.57231256722
+    },
+    {
+        "bet_number": 722,
+        "balance": 89636.12076500653
+    },
+    {
+        "bet_number": 723,
+        "balance": 92056.29602566171
+    },
+    {
+        "bet_number": 724,
+        "balance": 94541.81601835457
+    },
+    {
+        "bet_number": 725,
+        "balance": 93123.68877807925
+    },
+    {
+        "bet_number": 726,
+        "balance": 91726.83344640805
+    },
+    {
+        "bet_number": 727,
+        "balance": 94203.45794946107
+    },
+    {
+        "bet_number": 728,
+        "balance": 96746.95131409651
+    },
+    {
+        "bet_number": 729,
+        "balance": 95295.74704438506
+    },
+    {
+        "bet_number": 730,
+        "balance": 93866.31083871929
+    },
+    {
+        "bet_number": 731,
+        "balance": 96400.70123136471
+    },
+    {
+        "bet_number": 732,
+        "balance": 94954.69071289424
+    },
+    {
+        "bet_number": 733,
+        "balance": 93530.37035220083
+    },
+    {
+        "bet_number": 734,
+        "balance": 92127.41479691782
+    },
+    {
+        "bet_number": 735,
+        "balance": 90745.50357496405
+    },
+    {
+        "bet_number": 736,
+        "balance": 93195.63217148808
+    },
+    {
+        "bet_number": 737,
+        "balance": 91797.69768891575
+    },
+    {
+        "bet_number": 738,
+        "balance": 94276.23552651648
+    },
+    {
+        "bet_number": 739,
+        "balance": 92862.09199361873
+    },
+    {
+        "bet_number": 740,
+        "balance": 91469.16061371444
+    },
+    {
+        "bet_number": 741,
+        "balance": 93938.82795028473
+    },
+    {
+        "bet_number": 742,
+        "balance": 96475.17630494242
+    },
+    {
+        "bet_number": 743,
+        "balance": 99080.00606517587
+    },
+    {
+        "bet_number": 744,
+        "balance": 97593.80597419823
+    },
+    {
+        "bet_number": 745,
+        "balance": 96129.89888458526
+    },
+    {
+        "bet_number": 746,
+        "balance": 98725.40615446906
+    },
+    {
+        "bet_number": 747,
+        "balance": 97244.52506215202
+    },
+    {
+        "bet_number": 748,
+        "balance": 95785.85718621974
+    },
+    {
+        "bet_number": 749,
+        "balance": 98372.07533024768
+    },
+    {
+        "bet_number": 750,
+        "balance": 101028.12136416437
+    },
+    {
+        "bet_number": 751,
+        "balance": 99512.6995437019
+    },
+    {
+        "bet_number": 752,
+        "balance": 102199.54243138185
+    },
+    {
+        "bet_number": 753,
+        "balance": 100666.54929491112
+    },
+    {
+        "bet_number": 754,
+        "balance": 99156.55105548745
+    },
+    {
+        "bet_number": 755,
+        "balance": 101833.7779339856
+    },
+    {
+        "bet_number": 756,
+        "balance": 100306.27126497582
+    },
+    {
+        "bet_number": 757,
+        "balance": 103014.54058913016
+    },
+    {
+        "bet_number": 758,
+        "balance": 101469.32248029321
+    },
+    {
+        "bet_number": 759,
+        "balance": 104208.99418726112
+    },
+    {
+        "bet_number": 760,
+        "balance": 107022.63703031717
+    },
+    {
+        "bet_number": 761,
+        "balance": 109912.24823013574
+    },
+    {
+        "bet_number": 762,
+        "balance": 112879.8789323494
+    },
+    {
+        "bet_number": 763,
+        "balance": 111186.68074836416
+    },
+    {
+        "bet_number": 764,
+        "balance": 114188.72112856999
+    },
+    {
+        "bet_number": 765,
+        "balance": 117271.81659904138
+    },
+    {
+        "bet_number": 766,
+        "balance": 120438.1556472155
+    },
+    {
+        "bet_number": 767,
+        "balance": 123689.98584969032
+    },
+    {
+        "bet_number": 768,
+        "balance": 127029.61546763196
+    },
+    {
+        "bet_number": 769,
+        "balance": 130459.41508525802
+    },
+    {
+        "bet_number": 770,
+        "balance": 133981.81929256
+    },
+    {
+        "bet_number": 771,
+        "balance": 137599.3284134591
+    },
+    {
+        "bet_number": 772,
+        "balance": 141314.5102806225
+    },
+    {
+        "bet_number": 773,
+        "balance": 145130.0020581993
+    },
+    {
+        "bet_number": 774,
+        "balance": 142953.0520273263
+    },
+    {
+        "bet_number": 775,
+        "balance": 146812.78443206413
+    },
+    {
+        "bet_number": 776,
+        "balance": 150776.72961172985
+    },
+    {
+        "bet_number": 777,
+        "balance": 148515.0786675539
+    },
+    {
+        "bet_number": 778,
+        "balance": 146287.3524875406
+    },
+    {
+        "bet_number": 779,
+        "balance": 144093.0422002275
+    },
+    {
+        "bet_number": 780,
+        "balance": 141931.6465672241
+    },
+    {
+        "bet_number": 781,
+        "balance": 145763.80102453913
+    },
+    {
+        "bet_number": 782,
+        "balance": 149699.4236522017
+    },
+    {
+        "bet_number": 783,
+        "balance": 153741.30809081113
+    },
+    {
+        "bet_number": 784,
+        "balance": 157892.32340926304
+    },
+    {
+        "bet_number": 785,
+        "balance": 162155.41614131315
+    },
+    {
+        "bet_number": 786,
+        "balance": 159723.08489919346
+    },
+    {
+        "bet_number": 787,
+        "balance": 164035.6081914717
+    },
+    {
+        "bet_number": 788,
+        "balance": 168464.56961264144
+    },
+    {
+        "bet_number": 789,
+        "balance": 165937.60106845183
+    },
+    {
+        "bet_number": 790,
+        "balance": 170417.91629730002
+    },
+    {
+        "bet_number": 791,
+        "balance": 175019.20003732713
+    },
+    {
+        "bet_number": 792,
+        "balance": 179744.71843833497
+    },
+    {
+        "bet_number": 793,
+        "balance": 177048.54766175995
+    },
+    {
+        "bet_number": 794,
+        "balance": 174392.81944683354
+    },
+    {
+        "bet_number": 795,
+        "balance": 179101.42557189806
+    },
+    {
+        "bet_number": 796,
+        "balance": 176414.90418831958
+    },
+    {
+        "bet_number": 797,
+        "balance": 173768.68062549477
+    },
+    {
+        "bet_number": 798,
+        "balance": 178460.43500238314
+    },
+    {
+        "bet_number": 799,
+        "balance": 175783.5284773474
+    },
+    {
+        "bet_number": 800,
+        "balance": 180529.68374623577
+    },
+    {
+        "bet_number": 801,
+        "balance": 177821.73849004222
+    },
+    {
+        "bet_number": 802,
+        "balance": 182622.92542927337
+    },
+    {
+        "bet_number": 803,
+        "balance": 187553.74441586374
+    },
+    {
+        "bet_number": 804,
+        "balance": 192617.69551509205
+    },
+    {
+        "bet_number": 805,
+        "balance": 197818.37329399955
+    },
+    {
+        "bet_number": 806,
+        "balance": 203159.46937293754
+    },
+    {
+        "bet_number": 807,
+        "balance": 208644.77504600686
+    },
+    {
+        "bet_number": 808,
+        "balance": 214278.18397224904
+    },
+    {
+        "bet_number": 809,
+        "balance": 211064.0112126653
+    },
+    {
+        "bet_number": 810,
+        "balance": 207898.05104447532
+    },
+    {
+        "bet_number": 811,
+        "balance": 213511.29842267616
+    },
+    {
+        "bet_number": 812,
+        "balance": 219276.1034800884
+    },
+    {
+        "bet_number": 813,
+        "balance": 215986.96192788708
+    },
+    {
+        "bet_number": 814,
+        "balance": 221818.60989994003
+    },
+    {
+        "bet_number": 815,
+        "balance": 227807.71236723842
+    },
+    {
+        "bet_number": 816,
+        "balance": 233958.52060115387
+    },
+    {
+        "bet_number": 817,
+        "balance": 240275.40065738503
+    },
+    {
+        "bet_number": 818,
+        "balance": 246762.83647513442
+    },
+    {
+        "bet_number": 819,
+        "balance": 253425.43305996305
+    },
+    {
+        "bet_number": 820,
+        "balance": 260267.91975258206
+    },
+    {
+        "bet_number": 821,
+        "balance": 267295.1535859018
+    },
+    {
+        "bet_number": 822,
+        "balance": 263285.72628211323
+    },
+    {
+        "bet_number": 823,
+        "balance": 270394.4408917303
+    },
+    {
+        "bet_number": 824,
+        "balance": 277695.090795807
+    },
+    {
+        "bet_number": 825,
+        "balance": 273529.6644338699
+    },
+    {
+        "bet_number": 826,
+        "balance": 280914.96537358436
+    },
+    {
+        "bet_number": 827,
+        "balance": 276701.2408929806
+    },
+    {
+        "bet_number": 828,
+        "balance": 284172.1743970911
+    },
+    {
+        "bet_number": 829,
+        "balance": 291844.82310581254
+    },
+    {
+        "bet_number": 830,
+        "balance": 287467.15075922536
+    },
+    {
+        "bet_number": 831,
+        "balance": 283155.143497837
+    },
+    {
+        "bet_number": 832,
+        "balance": 278907.81634536944
+    },
+    {
+        "bet_number": 833,
+        "balance": 286438.32738669444
+    },
+    {
+        "bet_number": 834,
+        "balance": 282141.752475894
+    },
+    {
+        "bet_number": 835,
+        "balance": 289759.57979274314
+    },
+    {
+        "bet_number": 836,
+        "balance": 285413.186095852
+    },
+    {
+        "bet_number": 837,
+        "balance": 293119.34212044
+    },
+    {
+        "bet_number": 838,
+        "balance": 301033.56435769185
+    },
+    {
+        "bet_number": 839,
+        "balance": 296518.06089232647
+    },
+    {
+        "bet_number": 840,
+        "balance": 292070.28997894155
+    },
+    {
+        "bet_number": 841,
+        "balance": 287689.23562925746
+    },
+    {
+        "bet_number": 842,
+        "balance": 295456.8449912474
+    },
+    {
+        "bet_number": 843,
+        "balance": 303434.1798060111
+    },
+    {
+        "bet_number": 844,
+        "balance": 298882.6671089209
+    },
+    {
+        "bet_number": 845,
+        "balance": 294399.4271022871
+    },
+    {
+        "bet_number": 846,
+        "balance": 302348.2116340489
+    },
+    {
+        "bet_number": 847,
+        "balance": 310511.6133481682
+    },
+    {
+        "bet_number": 848,
+        "balance": 318895.42690856877
+    },
+    {
+        "bet_number": 849,
+        "balance": 314111.9955049402
+    },
+    {
+        "bet_number": 850,
+        "balance": 309400.3155723661
+    },
+    {
+        "bet_number": 851,
+        "balance": 304759.3108387806
+    },
+    {
+        "bet_number": 852,
+        "balance": 312987.8122314277
+    },
+    {
+        "bet_number": 853,
+        "balance": 308292.9950479563
+    },
+    {
+        "bet_number": 854,
+        "balance": 316616.9059142511
+    },
+    {
+        "bet_number": 855,
+        "balance": 311867.65232553735
+    },
+    {
+        "bet_number": 856,
+        "balance": 307189.6375406543
+    },
+    {
+        "bet_number": 857,
+        "balance": 315483.75775425194
+    },
+    {
+        "bet_number": 858,
+        "balance": 310751.50138793816
+    },
+    {
+        "bet_number": 859,
+        "balance": 319141.7919254125
+    },
+    {
+        "bet_number": 860,
+        "balance": 314354.6650465313
+    },
+    {
+        "bet_number": 861,
+        "balance": 322842.24100278766
+    },
+    {
+        "bet_number": 862,
+        "balance": 331558.98150986293
+    },
+    {
+        "bet_number": 863,
+        "balance": 326585.596787215
+    },
+    {
+        "bet_number": 864,
+        "balance": 335403.4079004698
+    },
+    {
+        "bet_number": 865,
+        "balance": 330372.35678196274
+    },
+    {
+        "bet_number": 866,
+        "balance": 325416.7714302333
+    },
+    {
+        "bet_number": 867,
+        "balance": 320535.5198587798
+    },
+    {
+        "bet_number": 868,
+        "balance": 315727.4870608981
+    },
+    {
+        "bet_number": 869,
+        "balance": 324252.1292115424
+    },
+    {
+        "bet_number": 870,
+        "balance": 319388.34727336926
+    },
+    {
+        "bet_number": 871,
+        "balance": 328011.8326497502
+    },
+    {
+        "bet_number": 872,
+        "balance": 336868.1521312935
+    },
+    {
+        "bet_number": 873,
+        "balance": 331815.1298493241
+    },
+    {
+        "bet_number": 874,
+        "balance": 326837.9029015843
+    },
+    {
+        "bet_number": 875,
+        "balance": 335662.52627992706
+    },
+    {
+        "bet_number": 876,
+        "balance": 330627.58838572813
+    },
+    {
+        "bet_number": 877,
+        "balance": 325668.1745599422
+    },
+    {
+        "bet_number": 878,
+        "balance": 334461.21527306066
+    },
+    {
+        "bet_number": 879,
+        "balance": 329444.29704396473
+    },
+    {
+        "bet_number": 880,
+        "balance": 324502.6325883053
+    },
+    {
+        "bet_number": 881,
+        "balance": 319635.0930994807
+    },
+    {
+        "bet_number": 882,
+        "balance": 328265.2406131667
+    },
+    {
+        "bet_number": 883,
+        "balance": 323341.2620039692
+    },
+    {
+        "bet_number": 884,
+        "balance": 332071.4760780764
+    },
+    {
+        "bet_number": 885,
+        "balance": 327090.40393690526
+    },
+    {
+        "bet_number": 886,
+        "balance": 335921.8448432017
+    },
+    {
+        "bet_number": 887,
+        "balance": 330883.0171705537
+    },
+    {
+        "bet_number": 888,
+        "balance": 325919.7719129954
+    },
+    {
+        "bet_number": 889,
+        "balance": 334719.60575464624
+    },
+    {
+        "bet_number": 890,
+        "balance": 329698.81166832655
+    },
+    {
+        "bet_number": 891,
+        "balance": 324753.32949330163
+    },
+    {
+        "bet_number": 892,
+        "balance": 333521.6693896208
+    },
+    {
+        "bet_number": 893,
+        "balance": 328518.84434877645
+    },
+    {
+        "bet_number": 894,
+        "balance": 323591.0616835448
+    },
+    {
+        "bet_number": 895,
+        "balance": 318737.1957582916
+    },
+    {
+        "bet_number": 896,
+        "balance": 313956.1378219172
+    },
+    {
+        "bet_number": 897,
+        "balance": 309246.79575458844
+    },
+    {
+        "bet_number": 898,
+        "balance": 317596.45923996234
+    },
+    {
+        "bet_number": 899,
+        "balance": 326171.56363944133
+    },
+    {
+        "bet_number": 900,
+        "balance": 334978.19585770625
+    },
+    {
+        "bet_number": 901,
+        "balance": 344022.60714586434
+    },
+    {
+        "bet_number": 902,
+        "balance": 338862.26803867635
+    },
+    {
+        "bet_number": 903,
+        "balance": 348011.5492757206
+    },
+    {
+        "bet_number": 904,
+        "balance": 357407.86110616504
+    },
+    {
+        "bet_number": 905,
+        "balance": 352046.7431895726
+    },
+    {
+        "bet_number": 906,
+        "balance": 361552.00525569107
+    },
+    {
+        "bet_number": 907,
+        "balance": 356128.7251768557
+    },
+    {
+        "bet_number": 908,
+        "balance": 350786.79429920285
+    },
+    {
+        "bet_number": 909,
+        "balance": 345524.99238471483
+    },
+    {
+        "bet_number": 910,
+        "balance": 340342.1174989441
+    },
+    {
+        "bet_number": 911,
+        "balance": 349531.3546714156
+    },
+    {
+        "bet_number": 912,
+        "balance": 358968.7012475438
+    },
+    {
+        "bet_number": 913,
+        "balance": 353584.1707288306
+    },
+    {
+        "bet_number": 914,
+        "balance": 348280.4081678982
+    },
+    {
+        "bet_number": 915,
+        "balance": 357683.97918843146
+    },
+    {
+        "bet_number": 916,
+        "balance": 352318.719500605
+    },
+    {
+        "bet_number": 917,
+        "balance": 361831.32492712134
+    },
+    {
+        "bet_number": 918,
+        "balance": 356403.85505321453
+    },
+    {
+        "bet_number": 919,
+        "balance": 366026.7591396513
+    },
+    {
+        "bet_number": 920,
+        "balance": 375909.4816364219
+    },
+    {
+        "bet_number": 921,
+        "balance": 370270.8394118755
+    },
+    {
+        "bet_number": 922,
+        "balance": 364716.7768206974
+    },
+    {
+        "bet_number": 923,
+        "balance": 359246.0251683869
+    },
+    {
+        "bet_number": 924,
+        "balance": 353857.3347908611
+    },
+    {
+        "bet_number": 925,
+        "balance": 363411.4828302144
+    },
+    {
+        "bet_number": 926,
+        "balance": 373223.5928666302
+    },
+    {
+        "bet_number": 927,
+        "balance": 367625.2389736307
+    },
+    {
+        "bet_number": 928,
+        "balance": 362110.86038902623
+    },
+    {
+        "bet_number": 929,
+        "balance": 371887.8536195299
+    },
+    {
+        "bet_number": 930,
+        "balance": 381928.82566725725
+    },
+    {
+        "bet_number": 931,
+        "balance": 392240.9039602732
+    },
+    {
+        "bet_number": 932,
+        "balance": 402831.4083672006
+    },
+    {
+        "bet_number": 933,
+        "balance": 396788.93724169256
+    },
+    {
+        "bet_number": 934,
+        "balance": 407502.23854721827
+    },
+    {
+        "bet_number": 935,
+        "balance": 418504.79898799316
+    },
+    {
+        "bet_number": 936,
+        "balance": 429804.42856066895
+    },
+    {
+        "bet_number": 937,
+        "balance": 423357.36213225895
+    },
+    {
+        "bet_number": 938,
+        "balance": 434788.0109098299
+    },
+    {
+        "bet_number": 939,
+        "balance": 446527.28720439534
+    },
+    {
+        "bet_number": 940,
+        "balance": 458583.52395891404
+    },
+    {
+        "bet_number": 941,
+        "balance": 470965.27910580474
+    },
+    {
+        "bet_number": 942,
+        "balance": 463900.79991921765
+    },
+    {
+        "bet_number": 943,
+        "balance": 456942.2879204294
+    },
+    {
+        "bet_number": 944,
+        "balance": 469279.72969428095
+    },
+    {
+        "bet_number": 945,
+        "balance": 462240.53374886676
+    },
+    {
+        "bet_number": 946,
+        "balance": 455306.92574263376
+    },
+    {
+        "bet_number": 947,
+        "balance": 467600.2127376849
+    },
+    {
+        "bet_number": 948,
+        "balance": 460586.2095466196
+    },
+    {
+        "bet_number": 949,
+        "balance": 473022.03720437834
+    },
+    {
+        "bet_number": 950,
+        "balance": 465926.70664631267
+    },
+    {
+        "bet_number": 951,
+        "balance": 458937.806046618
+    },
+    {
+        "bet_number": 952,
+        "balance": 452053.7389559187
+    },
+    {
+        "bet_number": 953,
+        "balance": 464259.1899077285
+    },
+    {
+        "bet_number": 954,
+        "balance": 476794.1880352372
+    },
+    {
+        "bet_number": 955,
+        "balance": 489667.6311121886
+    },
+    {
+        "bet_number": 956,
+        "balance": 482322.61664550577
+    },
+    {
+        "bet_number": 957,
+        "balance": 495345.3272949344
+    },
+    {
+        "bet_number": 958,
+        "balance": 508719.65113189764
+    },
+    {
+        "bet_number": 959,
+        "balance": 501088.85636491916
+    },
+    {
+        "bet_number": 960,
+        "balance": 493572.5235194454
+    },
+    {
+        "bet_number": 961,
+        "balance": 506898.98165447044
+    },
+    {
+        "bet_number": 962,
+        "balance": 520585.25415914116
+    },
+    {
+        "bet_number": 963,
+        "balance": 512776.475346754
+    },
+    {
+        "bet_number": 964,
+        "balance": 505084.8282165527
+    },
+    {
+        "bet_number": 965,
+        "balance": 518722.1185783996
+    },
+    {
+        "bet_number": 966,
+        "balance": 532727.6157800164
+    },
+    {
+        "bet_number": 967,
+        "balance": 547111.2614060768
+    },
+    {
+        "bet_number": 968,
+        "balance": 538904.5924849857
+    },
+    {
+        "bet_number": 969,
+        "balance": 530821.0235977109
+    },
+    {
+        "bet_number": 970,
+        "balance": 545153.191234849
+    },
+    {
+        "bet_number": 971,
+        "balance": 559872.3273981899
+    },
+    {
+        "bet_number": 972,
+        "balance": 551474.2424872171
+    },
+    {
+        "bet_number": 973,
+        "balance": 566364.0470343719
+    },
+    {
+        "bet_number": 974,
+        "balance": 581655.8763042999
+    },
+    {
+        "bet_number": 975,
+        "balance": 572931.0381597354
+    },
+    {
+        "bet_number": 976,
+        "balance": 564337.0725873393
+    },
+    {
+        "bet_number": 977,
+        "balance": 579574.1735471975
+    },
+    {
+        "bet_number": 978,
+        "balance": 595222.6762329718
+    },
+    {
+        "bet_number": 979,
+        "balance": 586294.3360894773
+    },
+    {
+        "bet_number": 980,
+        "balance": 577499.9210481351
+    },
+    {
+        "bet_number": 981,
+        "balance": 593092.4189164347
+    },
+    {
+        "bet_number": 982,
+        "balance": 584196.0326326882
+    },
+    {
+        "bet_number": 983,
+        "balance": 599969.3255137708
+    },
+    {
+        "bet_number": 984,
+        "balance": 590969.7856310642
+    },
+    {
+        "bet_number": 985,
+        "balance": 606925.969843103
+    },
+    {
+        "bet_number": 986,
+        "balance": 623312.9710288667
+    },
+    {
+        "bet_number": 987,
+        "balance": 613963.2764634338
+    },
+    {
+        "bet_number": 988,
+        "balance": 604753.8273164822
+    },
+    {
+        "bet_number": 989,
+        "balance": 595682.5199067349
+    },
+    {
+        "bet_number": 990,
+        "balance": 586747.2821081339
+    },
+    {
+        "bet_number": 991,
+        "balance": 602589.4587250535
+    },
+    {
+        "bet_number": 992,
+        "balance": 618859.3741106299
+    },
+    {
+        "bet_number": 993,
+        "balance": 609576.4834989704
+    },
+    {
+        "bet_number": 994,
+        "balance": 626035.0485534426
+    },
+    {
+        "bet_number": 995,
+        "balance": 642937.9948643856
+    },
+    {
+        "bet_number": 996,
+        "balance": 633293.9249414197
+    },
+    {
+        "bet_number": 997,
+        "balance": 623794.5160672985
+    },
+    {
+        "bet_number": 998,
+        "balance": 640636.9680011155
+    },
+    {
+        "bet_number": 999,
+        "balance": 657934.1661371456
+    },
+    {
+        "bet_number": 1000,
+        "balance": 648065.1536450884
+    }
+]

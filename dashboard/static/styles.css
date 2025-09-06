@@ -1,0 +1,173 @@
+/* Reset and global styles */
+:root {
+--bg-color: #f4f7f9;
+--card-bg-color: #ffffff;
+--text-color: #334155;
+--heading-color: #1a202c;
+--border-color: #e2e8f0;
+--shadow-color: rgba(0, 0, 0, 0.05);
+--profit-color: #22c55e;
+--loss-color: #ef4444;
+--running-color: #3b82f6;
+--inter-font: 'Inter', sans-serif;
+}
+
+{
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+}
+
+body {
+font-family: var(--inter-font);
+background-color: var(--bg-color);
+color: var(--text-color);
+line-height: 1.6;
+padding: 2rem;
+}
+
+.dashboard-container {
+max-width: 1200px;
+margin: 0 auto;
+}
+
+/* Header styles */
+.dashboard-header {
+text-align: center;
+margin-bottom: 2.5rem;
+}
+
+.dashboard-header h1 {
+font-size: 2.5rem;
+font-weight: 700;
+color: var(--heading-color);
+margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+font-size: 1.1rem;
+color: var(--text-color);
+}
+
+/* Section styles */
+.dashboard-section {
+margin-bottom: 2.5rem;
+}
+
+.section-title {
+font-size: 1.5rem;
+font-weight: 600;
+color: var(--heading-color);
+border-left: 4px solid var(--running-color);
+padding-left: 1rem;
+margin-bottom: 1.5rem;
+}
+
+/* Card styles */
+.card {
+background-color: var(--card-bg-color);
+border: 1px solid var(--border-color);
+border-radius: 0.5rem;
+padding: 1.5rem;
+box-shadow: 0 4px 6px var(--shadow-color);
+transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+transform: translateY(-5px);
+}
+
+.card h3 {
+font-size: 1.25rem;
+font-weight: 600;
+color: var(--heading-color);
+margin-bottom: 0.5rem;
+}
+
+.metric-value {
+font-size: 1.75rem;
+font-weight: 700;
+}
+
+.profit {
+color: var(--profit-color);
+}
+
+.loss {
+color: var(--loss-color);
+}
+
+/* Grid layout for metrics */
+.grid-container {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: 1.5rem;
+}
+
+/* Live bots section specific styles */
+.live-bots-container {
+display: flex;
+flex-wrap: wrap;
+gap: 1.5rem;
+}
+
+.bot-card {
+flex: 1 1 300px;
+}
+
+.status-badge {
+display: inline-block;
+padding: 0.25rem 0.75rem;
+border-radius: 9999px;
+font-size: 0.875rem;
+font-weight: 600;
+text-transform: uppercase;
+color: #fff;
+}
+
+.status-running {
+background-color: var(--running-color);
+}
+
+.status-stopped {
+background-color: var(--loss-color);
+}
+
+details {
+margin-top: 1rem;
+font-size: 0.9rem;
+}
+
+summary {
+cursor: pointer;
+list-style: none;
+font-weight: 600;
+}
+
+summary::-webkit-details-marker {
+display: none;
+}
+
+/* Log area styles */
+.log-area {
+background-color: #1e293b;
+color: #cbd5e1;
+font-family: 'Courier New', Courier, monospace;
+font-size: 0.85rem;
+overflow-x: auto;
+white-space: pre-wrap;
+word-wrap: break-word;
+border-radius: 0.5rem;
+box-shadow: 0 4px 6px var(--shadow-color);
+}
+
+pre {
+padding: 1.5rem;
+}
+
+/* Chart container styles */
+.chart-container {
+margin-top: 2rem;
+height: 400px;
+width: 100%;
+}

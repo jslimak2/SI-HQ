@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Sports Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 1400px;
+        }
+        .metric-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8gpx 12px rgba(0, 0, 0, 0.15);
+        }
+        .profit {
+            color: #10b981;
+        }
+        .loss {
+            color: #ef4444;
+        }
+        .chart-container, .card, .table-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            color: white;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.success { background-color: #10b981; }
+        .message-box.error { background-color: #ef4444; }
+        .message-box.visible { opacity: 1; }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .win { color: #10b981; font-weight: bold; }
+        .loss { color: #ef4444; font-weight: bold; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #2563eb;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-start min-h-screen p-8">
+    
+    <div id="message-box" class="message-box"></div>
+    <div id="loading-spinner" class="spinner hidden"></div>
+
+    <div class="container mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-5xl font-extrabold text-gray-800">Sports Betting Dashboard</h1>
+            <p class="text-xl text-gray-500 mt-2">Professional Analytics & Bot Management</p>
+            <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
+        </header>
+
+        <!-- Metrics and Chart Section (Placeholder for now) -->
+        <section class="mb-12">
+            <p class="text-center text-gray-500">Dashboard metrics and charts will be populated here with real data once bots have been created and used. Add a bot below to get started.</p>
+        </section>
+        
+        <!-- Active Bots Section -->
+        <section class="table-container mb-12">
+            <h2 class="text-2xl font-bold mb-4">Active Bots</h2>
+            <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
+                <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
+            </div>
+        </section>
+
+        <!-- Bot Manager Section (for inactive bots) -->
+        <section class="table-container mb-12">
+            <h2 class="text-2xl font-bold mb-4">Bot Manager</h2>
+            
+            <form id="add-bot-form" class="flex flex-col md:flex-row gap-4 mb-6">
+                <input type="text" name="name" placeholder="Bot Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="number" name="starting_balance" placeholder="Starting Balance" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="number" name="bet_percentage" placeholder="Bet %" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <select id="strategy-select" name="strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <option value="">Select Strategy</option>
+                </select>
+                <button type="submit" class="p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Add Bot</button>
+            </form>
+
+            <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
+                <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
+            </div>
+        </section>
+
+        <!-- Strategies Section -->
+        <section class="table-container">
+            <h2 class="text-2xl font-bold mb-4">Strategy Editor</h2>
+            
+            <form id="add-strategy-form" class="flex flex-col md:flex-row gap-4 mb-6">
+                <input type="text" name="name" placeholder="Strategy Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <select name="type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <option value="">Select Type</option>
+                    <option value="normal">Normal</option>
+                    <option value="recovery">Recovery</option>
+                </select>
+                <select id="linked-strategy-select" name="linked_strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Link Recovery Strategy (Optional)</option>
+                </select>
+                <button type="submit" class="p-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-300">Add Strategy</button>
+            </form>
+            
+            <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm">
+                <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Bot Details Modal -->
+    <div id="bot-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('bot-details-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Edit Bot: <span id="modal-bot-name"></span></h2>
+            <form id="edit-bot-form" class="space-y-4">
+                <input type="hidden" id="modal-bot-id">
+                <div>
+                    <label for="modal-name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="modal-name" name="name" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="modal-strategy" class="block text-sm font-medium text-gray-700">Strategy</label>
+                    <select id="modal-strategy" name="strategy_id" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-balance" class="block text-sm font-medium text-gray-700">Current Balance</label>
+                    <input type="number" step="0.01" id="modal-balance" name="current_balance" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" disabled>
+                </div>
+                <div>
+                    <label for="modal-bet-percent" class="block text-sm font-medium text-gray-700">Bet % of Balance</label>
+                    <input type="number" step="0.01" id="modal-bet-percent" name="bet_percentage" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="modal-loss-threshold" class="block text-sm font-medium text-gray-700">Loss Threshold</label>
+                    <input type="number" id="modal-loss-threshold" name="loss_threshold" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bot History Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content max-w-2xl">
+            <span class="modal-close" onclick="closeModal('history-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Bet History for <span id="history-bot-name"></span></h2>
+            <div class="overflow-y-auto max-h-96">
+                <table class="w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teams</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wager</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Odds</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payout</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- History will be populated here by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, getDoc, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Enable debug logging for Firestore
+        setLogLevel('Debug');
+
+        // --- GLOBAL VARIABLES & INITIALIZATION ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Firestore data collections
+        let db, auth;
+        let userId = 'anonymous';
+        let bots = [];
+        let strategies = [];
+        
+        // UI elements
+        const activeBotsContainer = document.getElementById('active-bots-container');
+        const inactiveBotsContainer = document.getElementById('inactive-bots-container');
+        const strategiesContainer = document.getElementById('strategies-container');
+        const strategySelect = document.getElementById('strategy-select');
+        const linkedStrategySelect = document.getElementById('linked-strategy-select');
+        const botDetailsModal = document.getElementById('bot-details-modal');
+        const historyModal = document.getElementById('history-modal');
+
+        // --- FIREBASE SETUP & AUTHENTICATION ---
+        window.onload = async function() {
+            try {
+                // IMPORTANT: Replace the entire object below with your Firebase config.
+                // You can find this config in your Firebase project settings.
+                const firebaseConfig = {
+                apiKey: "AIzaSyCmtCJTzQN81oN_2sHKEq8P2ededP5y8gY",
+                authDomain: "si-hq-7a4d5.firebaseapp.com",
+                projectId: "si-hq-7a4d5",
+                storageBucket: "si-hq-7a4d5.firebasestorage.app",
+                messagingSenderId: "945213178297",
+                appId: "1:945213178297:web:40f6e200fd00148754b668"
+                };
+
+                // IMPORTANT: Check for a valid projectId before initializing Firebase
+                if (!firebaseConfig.projectId || firebaseConfig.projectId === "si-hq-7a4d5") {
+                    console.warn("Firebase initialization skipped: 'projectId' not provided in the configuration.");
+                    showMessage('App is running in demo mode. No database connection.', 'error');
+                    return; // Stop further Firebase-related code execution
+                }
+
+                const app = initializeApp(firebaseConfig); 
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('user-id').textContent = userId;
+                        setupFirestoreListeners();
+                    } else {
+                        // Attempt to sign in with the provided custom token
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            // If no token is available, sign in anonymously as a fallback
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+                showMessage('Failed to initialize the app. Check the console.', 'error');
+            }
+        };
+
+        // --- FIREBASE LISTENERS ---
+        function setupFirestoreListeners() {
+            // Listen for changes to the strategies collection
+            const strategiesRef = collection(db, `artifacts/${appId}/users/${userId}/strategies`);
+            onSnapshot(strategiesRef, (snapshot) => {
+                strategies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderStrategies();
+                renderBotForms();
+                console.log("Strategies updated:", strategies);
+            }, (error) => {
+                console.error("Error fetching strategies:", error);
+                showMessage("Failed to load strategies.", 'error');
+            });
+
+            // Listen for changes to the bots collection
+            const botsRef = collection(db, `artifacts/${appId}/users/${userId}/bots`);
+            onSnapshot(botsRef, (snapshot) => {
+                bots = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderBots();
+                console.log("Bots updated:", bots);
+            }, (error) => {
+                console.error("Error fetching bots:", error);
+                showMessage("Failed to load bots.", 'error');
+            });
+        }
+
+        // --- RENDERING FUNCTIONS ---
+        function renderStrategies() {
+            const container = document.getElementById('strategies-container');
+            if (strategies.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 mt-4">No strategies found. Add a new one to get started!</p>`;
+                return;
+            }
+
+            const tableHtml = `
+                <div class="overflow-x-auto rounded-lg shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Linked Strategy</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${strategies.map(s => {
+                                const linkedStrategy = strategies.find(ls => ls.id === s.linked_strategy_id);
+                                return `
+                                    <tr id="strategy-row-${s.id}">
+                                        <td class="px-6 py-4 whitespace-nowrap">${s.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${s.type}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${linkedStrategy ? linkedStrategy.name : 'None'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button onclick="deleteStrategy('${s.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = tableHtml;
+        }
+
+        function renderBotForms() {
+            const normalStrategies = strategies.filter(s => s.type === 'normal');
+            const recoveryStrategies = strategies.filter(s => s.type === 'recovery');
+            
+            // Clear and populate strategy select for add bot form
+            strategySelect.innerHTML = '<option value="">Select Strategy</option>';
+            normalStrategies.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = s.name;
+                strategySelect.appendChild(option);
+            });
+
+            // Clear and populate linked strategy select for add strategy form
+            linkedStrategySelect.innerHTML = '<option value="">Link Recovery Strategy (Optional)</option>';
+            recoveryStrategies.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = s.name;
+                linkedStrategySelect.appendChild(option);
+            });
+        }
+
+        function renderBots() {
+            const activeBots = bots.filter(b => b.status === 'Active');
+            const inactiveBots = bots.filter(b => b.status !== 'Active');
+            
+            // Render Active Bots Table
+            let activeBotsHtml = `<p class="text-center text-gray-500 mt-4">No bots are currently active.</p>`;
+            if (activeBots.length > 0) {
+                activeBotsHtml = `
+                <div class="overflow-x-auto rounded-lg shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bet %</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${activeBots.map(b => {
+                                const strategy = strategies.find(s => s.id === b.strategy_id);
+                                return `
+                                    <tr id="bot-row-${b.id}" class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${strategy ? strategy.name : 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.current_balance.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.bet_percentage}%</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${b.status}</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4 flex items-center justify-end">
+                                            <button onclick="toggleBotStatus('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Deactivate</button>
+                                            <button onclick="showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                `;
+            }
+            activeBotsContainer.innerHTML = activeBotsHtml;
+
+            // Render Inactive Bots Table
+            let inactiveBotsHtml = `<p class="text-center text-gray-500 mt-4">No inactive bots found. Add a new bot to get started!</p>`;
+            if (inactiveBots.length > 0) {
+                inactiveBotsHtml = `
+                <div class="overflow-x-auto rounded-lg shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${inactiveBots.map(b => {
+                                const strategy = strategies.find(s => s.id === b.strategy_id);
+                                return `
+                                    <tr id="bot-row-${b.id}" class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${strategy ? strategy.name : 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.current_balance.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">${b.status}</span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                                            <button onclick="toggleBotStatus('${b.id}')" class="text-green-600 hover:text-green-900 transition duration-300">Activate</button>
+                                            <button onclick="deleteBot('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
+                                            <button onclick="showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
+                                            <button onclick="showBotDetails('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View Details</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                `;
+            }
+            inactiveBotsContainer.innerHTML = inactiveBotsHtml;
+        }
+
+        // --- UI FUNCTIONS ---
+        function showMessage(message, type) {
+            const msgBox = document.getElementById('message-box');
+            msgBox.textContent = message;
+            msgBox.className = `message-box visible ${type}`;
+            setTimeout(() => {
+                msgBox.className = `message-box ${type}`;
+            }, 3000);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showLoading() {
+            document.getElementById('loading-spinner').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-spinner').classList.add('hidden');
+        }
+        
+        function showBotDetails(botId) {
+            const bot = bots.find(b => b.id === botId);
+            if (!bot) {
+                console.error('Bot not found for ID:', botId);
+                showMessage('Could not find bot details.', 'error');
+                return;
+            }
+
+            try {
+                document.getElementById('modal-bot-id').value = bot.id;
+                document.getElementById('modal-bot-name').textContent = bot.name;
+                document.getElementById('modal-name').value = bot.name;
+                document.getElementById('modal-balance').value = bot.current_balance.toFixed(2);
+                document.getElementById('modal-bet-percent').value = bot.bet_percentage;
+                
+                // Populate strategy dropdown
+                const modalStrategySelect = document.getElementById('modal-strategy');
+                modalStrategySelect.innerHTML = '';
+                strategies.forEach(strategy => {
+                    const option = document.createElement('option');
+                    option.value = strategy.id;
+                    option.textContent = strategy.name;
+                    if (strategy.id === bot.strategy_id) {
+                        option.selected = true;
+                    }
+                    modalStrategySelect.appendChild(option);
+                });
+
+                botDetailsModal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error in showBotDetails:', error);
+                showMessage('An error occurred while opening the edit modal.', 'error');
+            }
+        }
+        
+        function showHistoryModal(botId) {
+            const bot = bots.find(b => b.id === botId);
+            if (!bot) {
+                console.error('Bot not found for ID:', botId);
+                showMessage('Could not display history. Bot not found.', 'error');
+                return;
+            }
+            
+            try {
+                document.getElementById('history-bot-name').textContent = bot.name;
+                const historyBody = document.getElementById('history-table-body');
+                historyBody.innerHTML = '';
+                
+                if (!bot.bet_history || bot.bet_history.length === 0) {
+                    historyBody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-4">No bet history available.</td></tr>';
+                } else {
+                    bot.bet_history.forEach((bet) => {
+                        const row = document.createElement('tr');
+                        const outcomeClass = bet.outcome === 'W' ? 'win' : 'loss';
+                        const payoutValue = bet.payout.toFixed(2);
+                        const payoutClass = bet.payout >= 0 ? 'profit' : 'loss';
+                        
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">${bet.timestamp.toDate().toLocaleString()}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">${bet.teams}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">${bet.wager.toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">${bet.odds}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="${payoutClass}">${payoutValue}</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="${outcomeClass}">${bet.outcome}</span></td>
+                        `;
+                        historyBody.appendChild(row);
+                    });
+                }
+                historyModal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error in showHistoryModal:', error);
+                showMessage('An error occurred while displaying history. Check console for details.', 'error');
+            }
+        }
+
+        // --- FIREBASE CRUD OPERATIONS ---
+        async function addBot(botData) {
+            showLoading();
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bots`), {
+                    ...botData,
+                    status: 'Inactive',
+                    career_wins: 0,
+                    career_losses: 0,
+                    current_win_streak: 0,
+                    current_loss_streak: 0,
+                    bet_history: []
+                });
+                showMessage('Bot added successfully!', 'success');
+            } catch (error) {
+                console.error("Error adding bot:", error);
+                showMessage('Failed to add bot.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function editBot(botData) {
+            showLoading();
+            try {
+                const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botData.id);
+                await updateDoc(botRef, botData);
+                showMessage('Bot updated successfully!', 'success');
+            } catch (error) {
+                console.error("Error updating bot:", error);
+                showMessage('Failed to update bot.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteBot(botId) {
+            showLoading();
+            try {
+                const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botId);
+                await deleteDoc(botRef);
+                showMessage('Bot deleted successfully!', 'success');
+            } catch (error) {
+                console.error("Error deleting bot:", error);
+                showMessage('Failed to delete bot.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function addStrategy(strategyData) {
+            showLoading();
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/strategies`), strategyData);
+                showMessage('Strategy added successfully!', 'success');
+            } catch (error) {
+                console.error("Error adding strategy:", error);
+                showMessage('Failed to add strategy.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteStrategy(strategyId) {
+            showLoading();
+            try {
+                const strategyRef = doc(db, `artifacts/${appId}/users/${userId}/strategies`, strategyId);
+                await deleteDoc(strategyRef);
+                showMessage('Strategy deleted successfully!', 'success');
+            } catch (error) {
+                console.error("Error deleting strategy:", error);
+                showMessage('Failed to delete strategy.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function toggleBotStatus(botId) {
+            showLoading();
+            try {
+                const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botId);
+                const botDoc = await getDoc(botRef);
+                if (botDoc.exists()) {
+                    const currentStatus = botDoc.data().status;
+                    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+                    await updateDoc(botRef, { status: newStatus });
+                    showMessage(`Bot status changed to ${newStatus}!`, 'success');
+                } else {
+                    showMessage('Bot not found.', 'error');
+                }
+            } catch (error) {
+                console.error("Error toggling bot status:", error);
+                showMessage('Failed to toggle bot status.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // --- FORM EVENT LISTENERS ---
+        document.getElementById('add-bot-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const botData = {
+                name: form.name.value,
+                starting_balance: parseFloat(form.starting_balance.value),
+                current_balance: parseFloat(form.starting_balance.value),
+                bet_percentage: parseFloat(form.bet_percentage.value),
+                strategy_id: form.strategy_id.value
+            };
+            await addBot(botData);
+            form.reset();
+        });
+
+        document.getElementById('edit-bot-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const botData = {
+                id: form['modal-bot-id'].value,
+                name: form['modal-name'].value,
+                strategy_id: form['modal-strategy'].value,
+                bet_percentage: parseFloat(form['modal-bet-percent'].value)
+            };
+            await editBot(botData);
+            closeModal('bot-details-modal');
+        });
+
+        document.getElementById('add-strategy-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const strategyData = {
+                name: form.name.value,
+                type: form.type.value,
+                linked_strategy_id: form.linked_strategy_id.value || null
+            };
+            await addStrategy(strategyData);
+            form.reset();
+        });
+    </script>
+</body>
+</html>
