@@ -23,7 +23,7 @@
         }
         .metric-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8gpx 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
         }
         .profit {
             color: #10b981;
@@ -80,8 +80,8 @@
             font-size: 1.5rem;
             cursor: pointer;
         }
-        .win { color: #10b981; font-weight: bold; }
-        .loss { color: #ef4444; font-weight: bold; }
+        .win-char { color: #10b981; font-weight: bold; }
+        .loss-char { color: #ef4444; font-weight: bold; }
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             width: 36px;
@@ -126,6 +126,7 @@
                 <input type="text" name="name" placeholder="Bot Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <input type="number" name="starting_balance" placeholder="Starting Balance" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <input type="number" name="bet_percentage" placeholder="Bet %" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <input type="number" name="max_bets_per_week" placeholder="Max Bets / Week" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 <select id="strategy-select" name="strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     <option value="">Select Strategy</option>
                 </select>
@@ -161,7 +162,7 @@
     
     <div id="bot-details-modal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="closeModal('bot-details-modal')">&times;</span>
+            <span class="modal-close" onclick="window.closeModal('bot-details-modal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Edit Bot: <span id="modal-bot-name"></span></h2>
             <form id="edit-bot-form" class="space-y-4">
                 <input type="hidden" id="modal-bot-id">
@@ -183,8 +184,8 @@
                     <input type="number" step="0.01" id="modal-bet-percent" name="bet_percentage" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
-                    <label for="modal-loss-threshold" class="block text-sm font-medium text-gray-700">Loss Threshold</label>
-                    <input type="number" id="modal-loss-threshold" name="loss_threshold" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <label for="modal-max-bets" class="block text-sm font-medium text-gray-700">Max Bets / Week</label>
+                    <input type="number" id="modal-max-bets" name="max_bets_per_week" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <button type="submit" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Save Changes</button>
             </form>
@@ -193,7 +194,7 @@
     
     <div id="history-modal" class="modal">
         <div class="modal-content max-w-2xl">
-            <span class="modal-close" onclick="closeModal('history-modal')">&times;</span>
+            <span class="modal-close" onclick="window.closeModal('history-modal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Bet History for <span id="history-bot-name"></span></h2>
             <div class="overflow-y-auto max-h-96">
                 <table class="w-full divide-y divide-gray-200">
@@ -210,6 +211,16 @@
                     <tbody id="history-table-body" class="bg-white divide-y divide-gray-200">
                         </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="bot-log-modal" class="modal">
+        <div class="modal-content max-w-2xl">
+            <span class="modal-close" onclick="window.closeModal('bot-log-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Bot Log for <span id="log-bot-name"></span></h2>
+            <div class="overflow-y-auto max-h-96 bg-gray-100 p-4 rounded-md text-sm font-mono whitespace-pre-wrap">
+                <pre id="bot-log-content"></pre>
             </div>
         </div>
     </div>
@@ -241,6 +252,7 @@
         const linkedStrategySelect = document.getElementById('linked-strategy-select');
         const botDetailsModal = document.getElementById('bot-details-modal');
         const historyModal = document.getElementById('history-modal');
+        const botLogModal = document.getElementById('bot-log-modal');
 
         // --- FIREBASE SETUP & AUTHENTICATION ---
         window.onload = async function() {
@@ -392,7 +404,9 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bet %</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Bets / Week</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last 10</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -400,18 +414,25 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             ${activeBots.map(b => {
                                 const strategy = strategies.find(s => s.id === b.strategy_id);
+                                const last10 = (b.bet_history || []).slice(-10).map(bet => {
+                                    const outcomeClass = bet.outcome === 'W' ? 'win-char' : 'loss-char';
+                                    return `<span class="${outcomeClass}">${bet.outcome}</span>`;
+                                }).join('');
                                 return `
                                     <tr id="bot-row-${b.id}" class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">${b.name}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${strategy ? strategy.name : 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${b.current_balance.toFixed(2)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">${b.bet_percentage}%</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.max_bets_per_week || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.career_wins || 0}/${b.career_losses || 0}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap font-mono">${last10}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${b.status}</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4 flex items-center justify-end">
                                             <button onclick="window.toggleBotStatus('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Deactivate</button>
                                             <button onclick="window.showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
+                                            <button onclick="window.showLogModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View Log</button>
                                         </td>
                                     </tr>
                                 `;
@@ -434,6 +455,9 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Bets / Week</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">W/L</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last 10</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -441,11 +465,18 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             ${inactiveBots.map(b => {
                                 const strategy = strategies.find(s => s.id === b.strategy_id);
+                                const last10 = (b.bet_history || []).slice(-10).map(bet => {
+                                    const outcomeClass = bet.outcome === 'W' ? 'win-char' : 'loss-char';
+                                    return `<span class="${outcomeClass}">${bet.outcome}</span>`;
+                                }).join('');
                                 return `
                                     <tr id="bot-row-${b.id}" class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">${b.name}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${strategy ? strategy.name : 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">${b.current_balance.toFixed(2)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.max_bets_per_week || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${b.career_wins || 0}/${b.career_losses || 0}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap font-mono">${last10}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">${b.status}</span>
                                         </td>
@@ -453,6 +484,7 @@
                                             <button onclick="window.toggleBotStatus('${b.id}')" class="text-green-600 hover:text-green-900 transition duration-300">Activate</button>
                                             <button onclick="window.deleteBot('${b.id}')" class="text-red-600 hover:text-red-900 transition duration-300">Delete</button>
                                             <button onclick="window.showHistoryModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View History</button>
+                                            <button onclick="window.showLogModal('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View Log</button>
                                             <button onclick="window.showBotDetails('${b.id}')" class="p-2 bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg hover:bg-gray-300 transition duration-300">View Details</button>
                                         </td>
                                     </tr>
@@ -503,6 +535,7 @@
                 document.getElementById('modal-name').value = bot.name;
                 document.getElementById('modal-balance').value = bot.current_balance.toFixed(2);
                 document.getElementById('modal-bet-percent').value = bot.bet_percentage;
+                document.getElementById('modal-max-bets').value = bot.max_bets_per_week || '';
                 
                 // Populate strategy dropdown
                 const modalStrategySelect = document.getElementById('modal-strategy');
@@ -564,19 +597,59 @@
             }
         }
 
+        window.showLogModal = function(botId) {
+            const bot = bots.find(b => b.id === botId);
+            if (!bot) {
+                showMessage('Could not find bot log.', 'error');
+                return;
+            }
+
+            document.getElementById('log-bot-name').textContent = bot.name;
+            const logContent = document.getElementById('bot-log-content');
+            
+            if (!bot.log_history || bot.log_history.length === 0) {
+                logContent.textContent = 'No log entries found for this bot.';
+            } else {
+                logContent.textContent = bot.log_history
+                    .map(entry => `[${entry.timestamp.toDate().toLocaleString()}] ${entry.message}`)
+                    .join('\n');
+            }
+            botLogModal.style.display = 'flex';
+        }
+
         // --- FIREBASE CRUD OPERATIONS ---
+        async function logBotAction(botId, message) {
+            try {
+                const botRef = doc(db, `artifacts/${appId}/users/${userId}/bots`, botId);
+                const logEntry = {
+                    message: message,
+                    timestamp: Timestamp.now()
+                };
+                await updateDoc(botRef, {
+                    log_history: [
+                        ...(bots.find(b => b.id === botId)?.log_history || []),
+                        logEntry
+                    ]
+                });
+            } catch (error) {
+                console.error("Error logging bot action:", error);
+            }
+        }
+
         window.addBot = async function(botData) {
             showLoading();
             try {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bots`), {
+                const botRef = await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bots`), {
                     ...botData,
                     status: 'Inactive',
                     career_wins: 0,
                     career_losses: 0,
                     current_win_streak: 0,
                     current_loss_streak: 0,
-                    bet_history: []
+                    bet_history: [],
+                    log_history: []
                 });
+                await logBotAction(botRef.id, `Bot initialized and created.`);
                 showMessage('Bot added successfully!', 'success');
             } catch (error) {
                 console.error("Error adding bot:", error);
@@ -650,6 +723,7 @@
                     const currentStatus = botDoc.data().status;
                     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
                     await updateDoc(botRef, { status: newStatus });
+                    await logBotAction(botId, `Bot status changed from ${currentStatus} to ${newStatus}.`);
                     showMessage(`Bot status changed to ${newStatus}!`, 'success');
                 } else {
                     showMessage('Bot not found.', 'error');
@@ -671,6 +745,7 @@
                 starting_balance: parseFloat(form.starting_balance.value),
                 current_balance: parseFloat(form.starting_balance.value),
                 bet_percentage: parseFloat(form.bet_percentage.value),
+                max_bets_per_week: parseInt(form.max_bets_per_week.value, 10),
                 strategy_id: form.strategy_id.value
             };
             await window.addBot(botData);
@@ -684,7 +759,8 @@
                 id: form['modal-bot-id'].value,
                 name: form['modal-name'].value,
                 strategy_id: form['modal-strategy'].value,
-                bet_percentage: parseFloat(form['modal-bet-percent'].value)
+                bet_percentage: parseFloat(form['modal-bet-percent'].value),
+                max_bets_per_week: parseInt(form['modal-max-bets'].value, 10)
             };
             await window.editBot(botData);
             window.closeModal('bot-details-modal');
