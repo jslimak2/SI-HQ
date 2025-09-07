@@ -95,9 +95,29 @@
             100% { transform: rotate(360deg); }
         }
     </style>
+
+    <script>
+        function showPage(pageId) {
+            const pages = ['dashboard-page', 'investments-page'];
+            pages.forEach(id => {
+                document.getElementById(id).style.display = (id === pageId) ? 'block' : 'none';
+            });
+            if (pageId === 'investments-page') {
+                // Ensure this function is globally available or called correctly
+                if (typeof window.fetchAndDisplayInvestments === 'function') {
+                    window.fetchAndDisplayInvestments();
+                } else {
+                    console.error("fetchAndDisplayInvestments is not defined.");
+                }
+            }
+        }
+    </script>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-start min-h-screen p-8">
-    
+    <nav class="flex space-x-4 mb-6">
+        <button onclick="showPage('dashboard-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Dashboard</button>
+        <button onclick="showPage('investments-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Available Investments</button>
+    </nav>
     <div id="message-box" class="message-box"></div>
     <div id="loading-spinner" class="spinner hidden"></div>
 
@@ -107,142 +127,155 @@
             <p class="text-xl text-gray-500 mt-2">Professional Analytics & Bot Management</p>
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
-
-        <section id="overall-stats-section" class="mb-12">
-            <h2 class="text-2xl font-bold mb-4">Overall Stats</h2>
-            <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="metric-card">
-                    <div class="flex items-center space-x-4">
-                        <span class="p-3 rounded-full bg-blue-100 text-blue-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v4m-4 0h8a2 2 0 002-2v-4a2 2 0 00-2-2h-8a2 2 0 00-2 2v4a2 2 0 002 2z" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Total Profit/Loss</p>
-                            <p id="total-profit" class="text-3xl font-bold text-gray-900">-</p>
+        <div id="dashboard-page">
+            <section id="overall-stats-section" class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">Overall Stats</h2>
+                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card">
+                        <div class="flex items-center space-x-4">
+                            <span class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v4m-4 0h8a2 2 0 002-2v-4a2 2 0 00-2-2h-8a2 2 0 00-2 2v4a2 2 0 002 2z" />
+                                </svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Profit/Loss</p>
+                                <p id="total-profit" class="text-3xl font-bold text-gray-900">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="flex items-center space-x-4">
+                            <span class="p-3 rounded-full bg-green-100 text-green-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13c0 1.105-.895 2-2 2h-4a2 2 0 01-2-2z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Total Wagers</p>
+                                <p id="total-wagers" class="text-3xl font-bold text-gray-900">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="flex items-center space-x-4">
+                            <span class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Win Rate</p>
+                                <p id="win-rate" class="text-3xl font-bold text-gray-900">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="flex items-center space-x-4">
+                            <span class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.484 9.231 5.02 7.828 5.467 6.425 5.914 5.345 6.953 4.933 8.322c-.412 1.37-.23 2.825.43 4.143l1.832 3.663a9.08 9.08 0 005.65 2.768m0-13c1.168 0 2.167.464 2.828 1.125.66.66 1.125 1.66 1.125 2.828v2.75l-1.832 3.663c-.66 1.318-.842 2.773-.43 4.143l.43 1.442M12 6.253v13" />
+                                </svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Best Bot</p>
+                                <p id="best-bot-name" class="text-lg font-bold text-gray-900">-</p>
+                                <p id="best-bot-profit" class="text-sm font-medium text-gray-600">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="flex items-center space-x-4">
+                            <span class="p-3 rounded-full bg-red-100 text-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Worst Bot</p>
+                                <p id="worst-bot-name" class="text-lg font-bold text-gray-900">-</p>
+                                <p id="worst-bot-profit" class="text-sm font-medium text-gray-600">-</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="metric-card">
-                    <div class="flex items-center space-x-4">
-                        <span class="p-3 rounded-full bg-green-100 text-green-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13c0 1.105-.895 2-2 2h-4a2 2 0 01-2-2z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Total Wagers</p>
-                            <p id="total-wagers" class="text-3xl font-bold text-gray-900">-</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="flex items-center space-x-4">
-                        <span class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Win Rate</p>
-                            <p id="win-rate" class="text-3xl font-bold text-gray-900">-</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="flex items-center space-x-4">
-                        <span class="p-3 rounded-full bg-purple-100 text-purple-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.484 9.231 5.02 7.828 5.467 6.425 5.914 5.345 6.953 4.933 8.322c-.412 1.37-.23 2.825.43 4.143l1.832 3.663a9.08 9.08 0 005.65 2.768m0-13c1.168 0 2.167.464 2.828 1.125.66.66 1.125 1.66 1.125 2.828v2.75l-1.832 3.663c-.66 1.318-.842 2.773-.43 4.143l.43 1.442M12 6.253v13" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Best Bot</p>
-                            <p id="best-bot-name" class="text-lg font-bold text-gray-900">-</p>
-                            <p id="best-bot-profit" class="text-sm font-medium text-gray-600">-</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="flex items-center space-x-4">
-                        <span class="p-3 rounded-full bg-red-100 text-red-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                            </svg>
-                        </span>
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Worst Bot</p>
-                            <p id="worst-bot-name" class="text-lg font-bold text-gray-900">-</p>
-                            <p id="worst-bot-profit" class="text-sm font-medium text-gray-600">-</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <section class="table-container mb-12">
-            <h2 class="text-2xl font-bold mb-4">Active Bots</h2>
-            <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
-                <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
-            </div>
-        </section>
-
-        <section class="table-container mb-12">
-            <h2 class="text-2xl font-bold mb-4">Bot Manager</h2>
+            </section>
             
-            <form id="add-bot-form" class="flex flex-col md:flex-row gap-4 mb-6">
-                <input type="text" name="name" placeholder="Bot Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="number" name="starting_balance" placeholder="Starting Balance" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="number" name="bet_percentage" placeholder="Bet %" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <input type="number" name="max_bets_per_week" placeholder="Max Bets / Week" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <select id="strategy-select" name="strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <option value="">Select Strategy</option>
-                </select>
-                <select name="sport" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <option value="">Select Sport</option>
-                    <option value="NBA">NBA</option>
-                    <option value="NFL">NFL</option>
-                    <option value="MLB">MLB</option>
-                    <option value="NCAAF">NCAAF</option>
-                    <option value="NCAAB">NCAAB</option>
-                </select>
-                <select name="bet_type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <option value="">Select Bet Type</option>
-                    <option value="Moneyline">Moneyline</option>
-                    <option value="Spread">Spread</option>
-                    <option value="Total">Total</option>
-                </select>
-                <button type="submit" class="p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Add Bot</button>
-            </form>
+            <section class="table-container mb-12">
+                <h2 class="text-2xl font-bold mb-4">Active Bots</h2>
+                <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
+                    <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
+                </div>
+            </section>
 
-            <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
-                <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
-            </div>
-        </section>
+            <section class="table-container mb-12">
+                <h2 class="text-2xl font-bold mb-4">Bot Manager</h2>
+                
+                <form id="add-bot-form" class="flex flex-col md:flex-row gap-4 mb-6">
+                    <input type="text" name="name" placeholder="Bot Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" name="starting_balance" placeholder="Starting Balance" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" name="bet_percentage" placeholder="Bet %" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <input type="number" name="max_bets_per_week" placeholder="Max Bets / Week" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <select id="strategy-select" name="strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Strategy</option>
+                    </select>
+                    <select name="sport" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Sport</option>
+                        <option value="NBA">NBA</option>
+                        <option value="NFL">NFL</option>
+                        <option value="MLB">MLB</option>
+                        <option value="NCAAF">NCAAF</option>
+                        <option value="NCAAB">NCAAB</option>
+                    </select>
+                    <select name="bet_type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Bet Type</option>
+                        <option value="Moneyline">Moneyline</option>
+                        <option value="Spread">Spread</option>
+                        <option value="Total">Total</option>
+                    </select>
+                    <button type="submit" class="p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Add Bot</button>
+                </form>
 
-        <section class="table-container">
-            <h2 class="text-2xl font-bold mb-4">Strategy Editor</h2>
-            
-            <form id="add-strategy-form" class="flex flex-col md:flex-row gap-4 mb-6">
-                <input type="text" name="name" placeholder="Strategy Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                <select name="type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                    <option value="">Select Type</option>
-                    <option value="normal">Normal</option>
-                    <option value="recovery">Recovery</option>
-                </select>
-                <select id="linked-strategy-select" name="linked_strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <option value="">Link Recovery Strategy (Optional)</option>
-                </select>
-                <button type="submit" class="p-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-300">Add Strategy</button>
-            </form>
-            
-            <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm">
-                <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
-            </div>
-        </section>
+                <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
+                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
+                </div>
+            </section>
+
+            <section class="table-container">
+                <h2 class="text-2xl font-bold mb-4">Strategy Editor</h2>
+                
+                <form id="add-strategy-form" class="flex flex-col md:flex-row gap-4 mb-6">
+                    <input type="text" name="name" placeholder="Strategy Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                    <select name="type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                        <option value="">Select Type</option>
+                        <option value="normal">Normal</option>
+                        <option value="recovery">Recovery</option>
+                    </select>
+                    <select id="linked-strategy-select" name="linked_strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">Link Recovery Strategy (Optional)</option>
+                    </select>
+                    <button type="submit" class="p-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-300">Add Strategy</button>
+                </form>
+                
+                <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm">
+                    <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
+                </div>
+            </section>
+        </div>
+
+        <div id="investments-page" class="mt-8 bg-white rounded-lg shadow-lg p-6" style="display: none;">
+            <header class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800">Available Investments</h2>
+                <button onclick="fetchAndDisplayInvestments()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
+                    Refresh Games
+                </button>
+            </header>
+            <div id="investments-list" class="space-y-6">
+                <p id="no-investments-message" class="text-gray-500 text-center">No upcoming games found. Check your API key or try again later.</p>
+        </div>
+        </div>
     </div>
     
     <div id="bot-details-modal" class="modal">
@@ -389,6 +422,9 @@
                         userId = user.uid;
                         document.getElementById('user-id').textContent = userId;
                         setupFirestoreListeners();
+                        // Set initial page view
+                        showPage('dashboard-page');
+
                     } else {
                         // Attempt to sign in with the provided custom token
                         if (initialAuthToken) {
@@ -404,6 +440,7 @@
                 showMessage('Failed to initialize the app. Check the console.', 'error');
             }
         };
+
 
         // --- FIREBASE LISTENERS ---
         function setupFirestoreListeners() {
@@ -429,6 +466,59 @@
                 console.error("Error fetching bots:", error);
                 showMessage("Failed to load bots.", 'error');
             });
+        }
+
+        window.fetchAndDisplayInvestments = async function() {
+            const investmentsList = document.getElementById('investments-list');
+            const noInvestmentsMessage = document.getElementById('no-investments-message');
+            investmentsList.innerHTML = '';
+            noInvestmentsMessage.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/available-investments');
+                const data = await response.json();
+
+                if (data.success && data.investments.length > 0) {
+                    noInvestmentsMessage.style.display = 'none';
+                    data.investments.forEach(game => {
+                        const gameCard = document.createElement('div');
+                        gameCard.className = 'bg-gray-100 p-4 rounded-lg shadow-md';
+                        
+                        let betsHtml = '';
+                        if (game.placed_bets && game.placed_bets.length > 0) {
+                            betsHtml = `
+                                <h4 class="font-semibold text-sm mt-2">Placed Bets:</h4>
+                                <ul class="list-disc list-inside text-xs">
+                                    ${game.placed_bets.map(bet => `<li>Bet on ${bet.teams} by Bot ${bet.wager} (Outcome: ${bet.outcome})</li>`).join('')}
+                                </ul>
+                            `;
+                        }
+
+                        gameCard.innerHTML = `
+                            <h3 class="font-bold text-lg">${game.teams}</h3>
+                            <p class="text-gray-600 text-sm">Sport: ${game.sport}</p>
+                            <p class="text-gray-600 text-sm">Time: ${new Date(game.commence_time).toLocaleString()}</p>
+                            <div class="mt-2">
+                                <p class="font-semibold text-sm">Odds:</p>
+                                <ul class="flex space-x-4">
+                                    ${game.odds.map(outcome => `
+                                        <li class="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs">
+                                            ${outcome.name}: ${outcome.price}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                            ${betsHtml}
+                        `;
+                        investmentsList.appendChild(gameCard);
+                    });
+                } else {
+                    noInvestmentsMessage.textContent = data.message || 'No upcoming games found.';
+                }
+            } catch (error) {
+                console.error("Error fetching available investments:", error);
+                noInvestmentsMessage.textContent = 'Failed to load investments. Check console for details.';
+            }
         }
 
         // --- RENDERING FUNCTIONS ---

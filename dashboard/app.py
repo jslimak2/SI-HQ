@@ -2,6 +2,7 @@ import os
 import random
 import datetime
 import firebase_admin
+import requests
 from firebase_admin import credentials, firestore
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
@@ -43,6 +44,11 @@ firebase_config = {
     'messagingSenderId': os.getenv('FIREBASE_MESSAGING_SENDER_ID'),
     'appId': os.getenv('FIREBASE_APP_ID')
 }
+
+# Load the external sports betting API key
+external_api_key = os.getenv('SPORTS_API_KEY')
+if not external_api_key:
+    print("Warning: SPORTS_API_KEY is not set in your .env file. The available investments feature will not work.")
 
 # Firestore Collection references
 bots_collection = db.collection(f'artifacts/{app_id}/public/data/bots')
@@ -254,6 +260,65 @@ def delete_strategy(strategy_id):
     except Exception as e:
         print(f"Failed to delete strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to delete strategy: {e}'}), 500
+
+@app.route('/api/available-investments', methods=['GET'])
+def get_available_investments():
+    """Fetches upcoming college football games and a list of bets placed on them by bots."""
+    if not external_api_key:
+        return jsonify({'success': False, 'message': 'SPORTS_API_KEY is not set.'}), 500
+    
+    try:
+        # Fetch upcoming college football games using the external API
+        sports_api_url = f"https://api.the-odds-api.com/v4/sports/americanfootball_ncaaf/odds/?apiKey={external_api_key}&regions=us&markets=h2h"
+        response = requests.get(sports_api_url)
+        response.raise_for_status()
+        upcoming_games = response.json()
+        
+        # Fetch all bots' bet history to check for existing bets
+        bots_snapshot = bots_collection.stream()
+        all_bet_history = []
+        for bot_doc in bots_snapshot:
+            all_bet_history.extend(bot_doc.to_dict().get('bet_history', []))
+        
+        # Combine game data with placed bets
+        investments = []
+        for game in upcoming_games:
+            game_bets = [
+                bet for bet in all_bet_history
+                if bet.get('teams', '') == f"{game.get('away_team')} vs {game.get('home_team')}"
+            ]
+            
+            # Add defensive checks for bookmakers and markets
+            bookmakers = game.get('bookmakers', [])
+            if not bookmakers:
+                continue # Skip to the next game if no bookmakers are found
+            
+            markets = bookmakers[0].get('markets', [])
+            if not markets:
+                continue # Skip to the next game if no markets are found
+            
+            odds = markets[0].get('outcomes', [])
+
+            investments.append({
+                'id': game['id'],
+                'sport': game['sport_title'],
+                'teams': f"{game.get('away_team')} vs {game.get('home_team')}",
+                'commence_time': game['commence_time'],
+                'odds': odds,
+                'placed_bets': game_bets
+            })
+            
+        return jsonify({
+            'success': True,
+            'investments': investments
+        }), 200
+
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP Error fetching sports data: {e}")
+        return jsonify({'success': False, 'message': f'HTTP Error: {e.response.text}'}), e.response.status_code
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({'success': False, 'message': f'An unexpected error occurred: {e}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
