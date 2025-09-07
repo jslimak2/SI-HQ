@@ -290,7 +290,8 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Parameters</label>
                     <div id="strategy-modal-parameters" class="mt-1 space-y-3">
-                        </div>
+                        <!-- Dynamic inputs for parameters will be inserted here -->
+                    </div>
                 </div>
                 <button type="submit" class="w-full p-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-300">Save Changes</button>
             </form>
@@ -363,35 +364,37 @@
         // --- FIREBASE SETUP & AUTHENTICATION ---
         window.onload = async function() {
             try {
-                const firebaseConfig = {
-                apiKey: "AIzaSyCmtCJTzQN81oN_2sHKEq8P2ededP5y8gY",
-                authDomain: "si-hq-7a4d5.firebaseapp.com",
-                projectId: "si-hq-7a4d5",
-                storageBucket: "si-hq-7a4d5.firebasestorage.app",
-                messagingSenderId: "945213178297",
-                appId: "1:945213178297:web:40f6e200fd00148754b668"
-                };
+                // Fetch Firebase config from the backend
+                const response = await fetch('/api/firebase-config');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const firebaseConfig = await response.json();
 
+                // IMPORTANT: Check for a valid projectId before initializing Firebase
                 if (!firebaseConfig.projectId || firebaseConfig.projectId === "None") {
                     console.warn("Firebase initialization skipped: 'projectId' not provided in the configuration.");
                     showMessage('App is running in demo mode. No database connection.', 'error');
-                    return;
+                    return; // Stop further Firebase-related code execution
                 }
 
+                // Initialize Firebase with the fetched config
                 const app = initializeApp(firebaseConfig); 
                 db = getFirestore(app);
                 auth = getAuth(app);
-                
+
+                // Continue with authentication logic
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
                         document.getElementById('user-id').textContent = userId;
                         setupFirestoreListeners();
-                        fetchOverallStats();
                     } else {
+                        // Attempt to sign in with the provided custom token
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
                         } else {
+                            // If no token is available, sign in anonymously as a fallback
                             await signInAnonymously(auth);
                         }
                     }
@@ -404,6 +407,7 @@
 
         // --- FIREBASE LISTENERS ---
         function setupFirestoreListeners() {
+            // Listen for changes to the strategies collection
             const strategiesRef = collection(db, `artifacts/${appId}/users/${userId}/strategies`);
             onSnapshot(strategiesRef, (snapshot) => {
                 strategies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -415,71 +419,16 @@
                 showMessage("Failed to load strategies.", 'error');
             });
 
+            // Listen for changes to the bots collection
             const botsRef = collection(db, `artifacts/${appId}/users/${userId}/bots`);
             onSnapshot(botsRef, (snapshot) => {
                 bots = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderBots();
-                fetchOverallStats(); // Refresh overall stats on bot data change
                 console.log("Bots updated:", bots);
             }, (error) => {
                 console.error("Error fetching bots:", error);
                 showMessage("Failed to load bots.", 'error');
             });
-        }
-
-        // --- OVERALL STATS FETCH ---
-        async function fetchOverallStats() {
-            showLoading();
-            try {
-                const response = await fetch('/api/overall-stats');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const stats = result.stats;
-                    
-                    const totalProfitElement = document.getElementById('total-profit');
-                    totalProfitElement.textContent = `$${stats.total_profit.toFixed(2)}`;
-                    if (stats.total_profit >= 0) {
-                        totalProfitElement.classList.add('profit');
-                        totalProfitElement.classList.remove('loss');
-                    } else {
-                        totalProfitElement.classList.add('loss');
-                        totalProfitElement.classList.remove('profit');
-                    }
-
-                    document.getElementById('total-wagers').textContent = `$${stats.total_wagered.toFixed(2)}`;
-                    document.getElementById('win-rate').textContent = `${stats.win_rate.toFixed(2)}%`;
-                    
-                    document.getElementById('best-bot-name').textContent = stats.best_bot.name;
-                    const bestBotProfitElement = document.getElementById('best-bot-profit');
-                    bestBotProfitElement.textContent = `P/L: $${stats.best_bot.profit_loss.toFixed(2)}`;
-                    if (stats.best_bot.profit_loss >= 0) {
-                        bestBotProfitElement.classList.add('profit');
-                        bestBotProfitElement.classList.remove('loss');
-                    } else {
-                        bestBotProfitElement.classList.add('loss');
-                        bestBotProfitElement.classList.remove('profit');
-                    }
-                    
-                    document.getElementById('worst-bot-name').textContent = stats.worst_bot.name;
-                    const worstBotProfitElement = document.getElementById('worst-bot-profit');
-                    worstBotProfitElement.textContent = `P/L: $${stats.worst_bot.profit_loss.toFixed(2)}`;
-                    if (stats.worst_bot.profit_loss >= 0) {
-                        worstBotProfitElement.classList.add('profit');
-                        worstBotProfitElement.classList.remove('loss');
-                    } else {
-                        worstBotProfitElement.classList.add('loss');
-                        worstBotProfitElement.classList.remove('profit');
-                    }
-                } else {
-                    showMessage(result.message, 'error');
-                }
-            } catch (error) {
-                console.error("Failed to fetch overall stats:", error);
-                showMessage('Failed to fetch overall stats.', 'error');
-            } finally {
-                hideLoading();
-            }
         }
 
         // --- RENDERING FUNCTIONS ---
@@ -552,6 +501,7 @@
             const activeBots = bots.filter(b => b.status === 'Active');
             const inactiveBots = bots.filter(b => b.status !== 'Active');
             
+            // Render Active Bots Table
             let activeBotsHtml = `<p class="text-center text-gray-500 mt-4">No bots are currently active.</p>`;
             if (activeBots.length > 0) {
                 activeBotsHtml = `
@@ -617,6 +567,7 @@
             }
             activeBotsContainer.innerHTML = activeBotsHtml;
 
+            // Render Inactive Bots Table
             let inactiveBotsHtml = `<p class="text-center text-gray-500 mt-4">No inactive bots found. Add a new bot to get started!</p>`;
             if (inactiveBots.length > 0) {
                 inactiveBotsHtml = `
@@ -724,6 +675,7 @@
                 document.getElementById('modal-bet-percent').value = bot.bet_percentage;
                 document.getElementById('modal-max-bets').value = bot.max_bets_per_week || '';
                 
+                // Populate strategy dropdown
                 const modalStrategySelect = document.getElementById('modal-strategy');
                 modalStrategySelect.innerHTML = '';
                 strategies.forEach(strategy => {
@@ -759,6 +711,7 @@
                 const parametersContainer = document.getElementById('strategy-modal-parameters');
                 parametersContainer.innerHTML = '';
 
+                // Dynamically create form inputs for each parameter
                 if (strategy.parameters) {
                     for (const key in strategy.parameters) {
                         const param = strategy.parameters[key];
@@ -921,6 +874,7 @@
             }
         }
 
+
         window.deleteBot = async function(botId) {
             showLoading();
             try {
@@ -938,6 +892,7 @@
         window.addStrategy = async function(strategyData) {
             showLoading();
             try {
+                // Add default description and parameters for new strategies
                 const defaultParameters = {
                     min_odds: { value: 1.5, type: 'number' },
                     max_odds: { value: 3.0, type: 'number' },
@@ -1075,6 +1030,7 @@
                 const type = input.type;
                 let value = input.value;
 
+                // Convert to number if the original type was number
                 if (type === 'number') {
                     value = parseFloat(value);
                 }

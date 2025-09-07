@@ -34,43 +34,38 @@ def simulate_single_bet(bot_data):
     # Calculate the bet amount based on the bot's configured bet percentage
     bet_amount = bot_data['current_balance'] * (bot_data['bet_percentage'] / 100)
     
+    # Ensure there's enough balance to make the bet
+    if bet_amount > bot_data['current_balance']:
+        bet_amount = bot_data['current_balance']
+
     # Decide the outcome of the bet
     if random.random() < win_probability:
-        # Win scenario
+        # It's a win!
         payout = bet_amount * payout_multiplier
         outcome = 'W'
     else:
-        # Loss scenario
+        # It's a loss!
         payout = -bet_amount
         outcome = 'L'
-        
-    # Update the bot's current balance
+    
+    # Update the bot's balance
     bot_data['current_balance'] += payout
     
     # Create a receipt of the bet
-    bet_receipt = {
+    receipt = {
         'timestamp': datetime.datetime.now().isoformat(),
-        'outcome': outcome,
+        'teams': f"{team1} vs {team2}",
         'wager': bet_amount,
         'payout': payout,
-        'matchup': f"{team1} vs {team2}"
+        'outcome': outcome,
+        'new_balance': bot_data['current_balance']
     }
-
-    # Add the receipt to the bot's bet history
-    bot_data.setdefault('bet_history', []).append(bet_receipt)
     
-    return bet_receipt
+    return receipt
 
-def run_backtest(bot_data, num_bets):
+def simulate_real_world_bet(bot_data, num_bets=1000):
     """
-    Runs a full backtest simulation over a specified number of bets.
-
-    Args:
-        bot_data (dict): The dictionary containing a single bot's data.
-        num_bets (int): The number of bets to simulate.
-
-    Returns:
-        tuple: A tuple containing the final report and bankroll history.
+    Simulates a series of bets for a given bot and returns a full history.
     """
     initial_balance = bot_data['current_balance']
     bankroll_history = [{'bet_number': 0, 'balance': initial_balance}]
@@ -109,9 +104,10 @@ def run_backtest(bot_data, num_bets):
         'total_profit': total_profit,
         'total_wagered': total_wagered,
         'total_bets': num_bets,
-        'total_wins': total_wins,
-        'total_losses': total_losses,
-        'win_rate': win_rate
+        'win_rate': win_rate,
+        'win_count': total_wins,
+        'loss_count': total_losses,
+        'bankroll_history': bankroll_history
     }
     
-    return report, bankroll_history
+    return report
