@@ -3,7 +3,7 @@ import random
 import datetime
 import firebase_admin
 import requests
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth # Added 'auth' here
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 
@@ -58,7 +58,18 @@ strategies_collection = db.collection(f'artifacts/{app_id}/public/data/strategie
 @app.route('/')
 def home():
     """Renders the main dashboard page."""
-    return render_template('index.html')
+    auth_token = None
+    if firebase_admin._apps:
+        # Create a custom token for anonymous sign-in
+        # For a production app, you'd want to handle user authentication more securely
+        uid = f"anon-user-{random.randint(1000, 9999)}"
+        # The fix is here: using 'auth' directly
+        auth_token = auth.create_custom_token(uid)
+
+    # Pass the Firebase config and auth token to the template
+    return render_template('index.html',
+                           firebase_config=firebase_config,
+                           auth_token=auth_token.decode('utf-8'))
 
 @app.route('/api/firebase-config', methods=['GET'])
 def get_firebase_config():
@@ -260,31 +271,46 @@ def delete_strategy(strategy_id):
     except Exception as e:
         print(f"Failed to delete strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to delete strategy: {e}'}), 500
-
-@app.route('/api/available-investments', methods=['GET'])
+        
+@app.route('/api/investments', methods=["GET"])
 def get_available_investments():
-    """Fetches upcoming college football games and a list of bets placed on them by bots."""
+    """
+    Fetches and returns available sports games and odds.
+    """
     if not external_api_key:
-        return jsonify({'success': False, 'message': 'SPORTS_API_KEY is not set.'}), 500
-    
+        return jsonify({
+            'success': False,
+            'message': 'SPORTS_API_KEY not found in environment variables.'
+        }), 500
+
+    # These are the sports leagues we will be fetching data for
+    # NOTE: Your API plan may limit which sports are available.
+    sports = ['basketball_nba', 'americanfootball_nfl', 'baseball_mlb', 'americanfootball_ncaaf', 'basketball_ncaab']
+    all_games = []
+
     try:
-        # Fetch upcoming college football games using the external API
-        sports_api_url = f"https://api.the-odds-api.com/v4/sports/americanfootball_ncaaf/odds/?apiKey={external_api_key}&regions=us&markets=h2h"
-        response = requests.get(sports_api_url)
-        response.raise_for_status()
-        upcoming_games = response.json()
+        # Fetch data for each sport sequentially
+        for sport in sports:
+            odds_response = requests.get(
+                f'https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={external_api_key}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso'
+            )
+            odds_response.raise_for_status() # Raise an exception for bad status codes
+            games = odds_response.json()
+            all_games.extend(games)
+
+        # In a real app, you'd fetch the user's placed bets here to mark them
+        # For now, we'll simulate an empty list or fetch from Firestore
+        user_id = request.args.get('user_id') # You can pass user ID as a query param
+        placed_bets_doc_ref = db.collection(f'users/{user_id}/bets') if db and user_id else None
         
-        # Fetch all bots' bet history to check for existing bets
-        bots_snapshot = bots_collection.stream()
-        all_bet_history = []
-        for bot_doc in bots_snapshot:
-            all_bet_history.extend(bot_doc.to_dict().get('bet_history', []))
-        
-        # Combine game data with placed bets
+        placed_bets_snapshot = placed_bets_doc_ref.get() if placed_bets_doc_ref else []
+        placed_bets = [bet.to_dict() for bet in placed_bets_snapshot]
+
         investments = []
-        for game in upcoming_games:
+        for game in all_games:
+            # Check for placed bets on this game
             game_bets = [
-                bet for bet in all_bet_history
+                bet for bet in placed_bets
                 if bet.get('teams', '') == f"{game.get('away_team')} vs {game.get('home_team')}"
             ]
             

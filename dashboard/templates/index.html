@@ -175,15 +175,20 @@
         </div>
 
         <div id="investments-page" class="mt-8 bg-white rounded-lg shadow-lg p-6" style="display: none;">
-            <header class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold text-gray-800">Available Investments</h2>
-                <button onclick="fetchAndDisplayInvestments()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
-                    Refresh Games
-                </button>
+            <header class="flex flex-col sm:flex-row justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">Available Investments</h2>
+                <div class="flex items-center space-x-2">
+                    <button onclick="window.fetchAndDisplayInvestments()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
+                        Refresh Games
+                    </button>
+                </div>
             </header>
-            <div id="investments-list" class="space-y-6">
-                <p id="no-investments-message" class="text-gray-500 text-center">No upcoming games found. Check your API key or try again later.</p>
-        </div>
+            
+            <div id="sport-tabs-container" class="flex space-x-4 border-b border-gray-200 mb-6">
+                </div>
+            <div id="investments-container">
+                </div>
+            <p id="no-investments-message" class="text-gray-500 text-center hidden">No upcoming games found for this sport. Check your API key or try again later.</p>
         </div>
     </div>
     
