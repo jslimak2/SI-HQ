@@ -507,7 +507,6 @@ window.deleteStrategy = async function(strategyId) {
     }
 };
 
-// New investment page logic
 window.fetchAndDisplayInvestments = async function() {
     const investmentsContainer = document.getElementById('investments-container');
     const noInvestmentsMessage = document.getElementById('no-investments-message');
@@ -538,10 +537,12 @@ window.fetchAndDisplayInvestments = async function() {
                 const tabButton = document.createElement('button');
                 tabButton.textContent = sport;
                 tabButton.className = `tab-button ${firstSport ? 'active' : ''}`;
-                tabButton.onclick = () => showSportTab(sport);
+                // Set a data attribute for easy selection
+                tabButton.setAttribute('data-sport', sport);
+                tabButton.onclick = () => window.showSportTab(sport); // Call the new function
                 sportTabsContainer.appendChild(tabButton);
 
-                // Create Tab Content
+                // ... (rest of the function, unchanged)
                 const tabContent = document.createElement('div');
                 tabContent.id = `tab-content-${sport}`;
                 tabContent.className = `tab-content space-y-4 ${firstSport ? 'active' : ''}`;
@@ -606,9 +607,11 @@ window.fetchAndDisplayInvestments = async function() {
 };
 
 window.showSportTab = function(sport) {
+    // Correctly select the button using the data-sport attribute
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`.tab-button[onclick*='${sport}']`).classList.add('active');
+    document.querySelector(`.tab-button[data-sport='${sport}']`).classList.add('active');
 
+    // Show the corresponding tab content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(`tab-content-${sport}`).classList.add('active');
 };
