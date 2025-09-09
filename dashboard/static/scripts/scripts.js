@@ -1,10 +1,32 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, getDoc, query, where, orderBy, limit, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// --- FIREBASE IMPORTS - WITH FALLBACK FOR DEMO MODE ---
+// We'll try to dynamically import Firebase, but work without it if not available
+let firebaseAvailable = false;
+let initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged;
+let getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, getDoc, query, where, orderBy, limit, Timestamp, setLogLevel;
 
-// Enable debug logging for Firestore
-setLogLevel('Debug');
+// Initialize Firebase asynchronously
+async function initializeFirebaseModules() {
+    try {
+        const [appModule, authModule, firestoreModule] = await Promise.all([
+            import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js").catch(() => null),
+            import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js").catch(() => null),
+            import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js").catch(() => null)
+        ]);
+        
+        if (appModule && authModule && firestoreModule) {
+            ({ initializeApp } = appModule);
+            ({ getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = authModule);
+            ({ getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, setDoc, getDoc, query, where, orderBy, limit, Timestamp, setLogLevel } = firestoreModule);
+            firebaseAvailable = true;
+            console.log("Firebase modules loaded successfully");
+        } else {
+            throw new Error("One or more Firebase modules failed to load");
+        }
+    } catch (error) {
+        console.warn("Firebase modules not available, running in demo-only mode:", error.message);
+        firebaseAvailable = false;
+    }
+}
 
 // --- GLOBAL VARIABLES & INITIALIZATION ---
 const appId = typeof __app_id !== 'undefined' ? __app_id : '1:945213178297:web:40f6e200fd00148754b668';
@@ -276,6 +298,24 @@ window.showBotDetails = function(botId) {
             option.selected = true;
         }
         strategySelect.appendChild(option);
+    });
+
+    // Populate allowable platforms checkboxes
+    const allowablePlatforms = bot.allowable_platforms || ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']; // Default to all if not set
+    const platformCheckboxes = [
+        'modal-platform-draftkings',
+        'modal-platform-fanduel', 
+        'modal-platform-betmgm',
+        'modal-platform-caesars',
+        'modal-platform-pointsbet'
+    ];
+    const platformValues = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet'];
+    
+    platformCheckboxes.forEach((checkboxId, index) => {
+        const checkbox = document.getElementById(checkboxId);
+        if (checkbox) {
+            checkbox.checked = allowablePlatforms.includes(platformValues[index]);
+        }
     });
 
     // Show the modal
@@ -712,7 +752,7 @@ window.filterInvestments = function(sport, team) {
 
 function createInvestmentCard(investment) {
     const card = document.createElement('div');
-    card.className = 'investment-card flex flex-col md:flex-row justify-between items-start md:items-center';
+    card.className = 'investment-card bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm';
     
     // Format commence time
     const commenceTime = new Date(investment.commence_time);
@@ -721,41 +761,74 @@ function createInvestmentCard(investment) {
     // Generate placed bets HTML
     const placedBetsHtml = investment.placed_bets.length > 0
         ? `
-            <div class="mt-4 md:mt-0 md:ml-4 p-3 bg-green-50 rounded-lg text-green-800 font-semibold text-sm w-full md:w-auto">
+            <div class="mt-4 p-3 bg-green-50 rounded-lg text-green-800 font-semibold text-sm">
                 Placed Bets: ${investment.placed_bets.map(bet => `${bet.bet_type}`).join(', ')}
             </div>
         `
         : '';
     
-    // Generate odds HTML for Moneyline, Spread, and Total
-    const oddsHtml = investment.odds.map(outcome => {
-        if (outcome.name === 'Total') {
+    // Handle both old format (odds) and new format (bookmakers)
+    let bookmakers = investment.bookmakers || [];
+    
+    // If using old format, convert it to new format for backward compatibility
+    if (!bookmakers.length && investment.odds) {
+        bookmakers = [{
+            key: 'demo',
+            title: 'Demo Sportsbook',
+            markets: [{
+                key: 'h2h',
+                name: 'Demo Odds',
+                outcomes: investment.odds
+            }]
+        }];
+    }
+    
+    // Generate bookmakers HTML
+    const bookmakersHtml = bookmakers.map(bookmaker => {
+        const marketsHtml = bookmaker.markets.map(market => {
+            const outcomesHtml = market.outcomes.map(outcome => {
+                let displayText = outcome.name;
+                if (outcome.point !== undefined) {
+                    displayText += ` (${outcome.point > 0 ? '+' : ''}${outcome.point})`;
+                }
+                const priceText = outcome.price > 0 ? `+${outcome.price}` : outcome.price;
+                
+                return `
+                    <div class="text-center p-2 border border-gray-100 rounded">
+                        <div class="text-xs font-medium text-gray-600">${displayText}</div>
+                        <div class="text-sm font-bold text-gray-900">${priceText}</div>
+                    </div>
+                `;
+            }).join('');
+            
             return `
-                <div class="flex-1 text-center border-l border-gray-200 p-2">
-                    <p class="text-xs font-semibold uppercase text-gray-500">${outcome.name} (${outcome.point})</p>
-                    <p class="text-sm font-bold text-gray-900">${outcome.price}</p>
+                <div class="mb-3">
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase mb-2">${market.name}</h5>
+                    <div class="grid grid-cols-2 gap-1">
+                        ${outcomesHtml}
+                    </div>
                 </div>
             `;
-        }
+        }).join('');
+        
         return `
-            <div class="flex-1 text-center border-l border-gray-200 p-2">
-                <p class="text-xs font-semibold uppercase text-gray-500">${outcome.name}</p>
-                <p class="text-sm font-bold text-gray-900">${outcome.price}</p>
+            <div class="border border-gray-200 rounded-lg p-3 mb-2">
+                <h4 class="text-sm font-semibold text-blue-600 mb-3">${bookmaker.title}</h4>
+                ${marketsHtml}
             </div>
         `;
     }).join('');
 
     card.innerHTML = `
-        <div class="flex-1 mb-4 md:mb-0">
+        <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">${investment.teams}</h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
+            <p class="text-xs text-gray-500">${investment.sport}</p>
         </div>
-        <div class="flex items-center space-x-4 w-full md:w-auto overflow-x-auto">
-            <div class="flex-1 flex space-x-2">
-                ${oddsHtml}
-            </div>
-            ${placedBetsHtml}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            ${bookmakersHtml}
         </div>
+        ${placedBetsHtml}
     `;
     return card;
 }
@@ -851,7 +924,21 @@ async function checkAutoRefresh() {
 // --- AUTHENTICATION & INITIAL DATA LOAD ---
 
 async function initializeFirebase() {
+    // First, try to load Firebase modules
+    await initializeFirebaseModules();
+    
+    if (!firebaseAvailable) {
+        console.warn("Firebase modules not available, running in demo-only mode");
+        showMessage('App is running in demo mode. No database connection.', false);
+        return;
+    }
+
     try {
+        // Enable debug logging for Firestore if available
+        if (setLogLevel) {
+            setLogLevel('Debug');
+        }
+        
         // Fetch Firebase config from the backend
         const response = await fetch('/api/firebase-config');
         if (!response.ok) {
@@ -862,7 +949,7 @@ async function initializeFirebase() {
         // IMPORTANT: Check for a valid projectId before initializing Firebase
         if (!firebaseConfig.projectId || firebaseConfig.projectId === "None") {
             console.warn("Firebase initialization skipped: 'projectId' not provided in the configuration.");
-            showMessage('App is running in demo mode. No database connection.', 'error');
+            showMessage('App is running in demo mode. No database connection.', false);
             return; // Stop further Firebase-related code execution
         }
 
@@ -883,6 +970,18 @@ async function initializeFirebase() {
 }
 
 function startListeners() {
+    if (!firebaseAvailable || !auth || !onAuthStateChanged) {
+        // In demo mode without Firebase, just set up the UI
+        console.log("Running in demo mode, skipping Firebase auth listeners");
+        userId = 'demo-user';
+        document.getElementById('user-id').textContent = 'Demo Mode';
+        
+        // Load demo settings
+        loadUserSettings();
+        hideLoading();
+        return;
+    }
+
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             userId = user.uid;
@@ -926,12 +1025,21 @@ document.getElementById('add-bot-form').addEventListener('submit', async functio
 document.getElementById('edit-bot-form').addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
+    
+    // Collect selected allowable platforms
+    const allowablePlatforms = [];
+    const platformCheckboxes = form.querySelectorAll('input[name="allowable_platforms"]:checked');
+    platformCheckboxes.forEach(checkbox => {
+        allowablePlatforms.push(checkbox.value);
+    });
+    
     const botData = {
         id: form['modal-bot-id'].value,
         name: form['modal-name'].value,
         strategy_id: form['modal-strategy'].value,
         bet_percentage: parseFloat(form['modal-bet-percent'].value),
-        max_bets_per_week: parseInt(form['modal-max-bets'].value, 10)
+        max_bets_per_week: parseInt(form['modal-max-bets'].value, 10),
+        allowable_platforms: allowablePlatforms
     };
     await window.editBot(botData);
     window.closeModal('bot-details-modal');

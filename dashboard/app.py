@@ -383,23 +383,17 @@ def get_available_investments():
                 if bet.get('teams', '') == f"{game.get('away_team')} vs {game.get('home_team')}"
             ]
             
-            # Add defensive checks for bookmakers and markets
+            # Include ALL bookmakers and their markets, not just the first one
             bookmakers = game.get('bookmakers', [])
             if not bookmakers:
                 continue
-            
-            markets = bookmakers[0].get('markets', [])
-            if not markets:
-                continue
-            
-            odds = markets[0].get('outcomes', [])
 
             investments.append({
                 'id': game['id'],
                 'sport': game['sport_title'],
                 'teams': f"{game.get('away_team')} vs {game.get('home_team')}",
                 'commence_time': game['commence_time'],
-                'odds': odds,
+                'bookmakers': bookmakers,  # Include all bookmakers with all their markets
                 'placed_bets': game_bets
             })
         
@@ -441,21 +435,75 @@ def generate_demo_investments():
         {'sport': 'NFL', 'team1': 'Chiefs', 'team2': 'Bills'},
         {'sport': 'NFL', 'team1': 'Cowboys', 'team2': 'Eagles'},
         {'sport': 'MLB', 'team1': 'Yankees', 'team2': 'Red Sox'},
+        {'sport': 'NCAAF', 'team1': 'Alabama', 'team2': 'Georgia'},  # Test college football
+        {'sport': 'NCAAB', 'team1': 'Duke', 'team2': 'UNC'},        # Test college basketball
     ]
+    
+    # Demo sportsbooks
+    sportsbooks = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
     
     investments = []
     for i, game in enumerate(demo_games):
         commence_time = datetime.now() + timedelta(hours=random.randint(1, 72))
+        
+        # Generate multiple sportsbooks for each game
+        bookmakers = []
+        for sportsbook in sportsbooks:
+            # Generate realistic odds for each market type
+            
+            # Moneyline odds
+            team1_ml = random.randint(-200, 150)
+            team2_ml = -team1_ml + random.randint(-50, 50)  # Make it somewhat realistic
+            
+            # Spread odds  
+            spread_points = random.uniform(-10.5, 10.5)
+            team1_spread = random.randint(-120, 120)
+            team2_spread = random.randint(-120, 120)
+            
+            # Total odds
+            total_points = random.randint(200, 250) if game['sport'] in ['NBA', 'NCAAB'] else random.randint(40, 60)
+            over_odds = random.randint(-120, 120)
+            under_odds = random.randint(-120, 120)
+            
+            markets = [
+                {
+                    'key': 'h2h',
+                    'name': 'Moneyline',
+                    'outcomes': [
+                        {'name': game['team1'], 'price': team1_ml},
+                        {'name': game['team2'], 'price': team2_ml}
+                    ]
+                },
+                {
+                    'key': 'spreads', 
+                    'name': 'Spreads',
+                    'outcomes': [
+                        {'name': game['team1'], 'price': team1_spread, 'point': spread_points},
+                        {'name': game['team2'], 'price': team2_spread, 'point': -spread_points}
+                    ]
+                },
+                {
+                    'key': 'totals',
+                    'name': 'Totals', 
+                    'outcomes': [
+                        {'name': 'Over', 'price': over_odds, 'point': total_points},
+                        {'name': 'Under', 'price': under_odds, 'point': total_points}
+                    ]
+                }
+            ]
+            
+            bookmakers.append({
+                'key': sportsbook.lower().replace(' ', ''),
+                'title': sportsbook,
+                'markets': markets
+            })
+        
         investments.append({
             'id': f'demo_game_{i}',
             'sport': game['sport'],
             'teams': f"{game['team1']} vs {game['team2']}",
             'commence_time': commence_time.isoformat(),
-            'odds': [
-                {'name': game['team1'], 'price': random.randint(-150, 150)},
-                {'name': game['team2'], 'price': random.randint(-150, 150)},
-                {'name': 'Over', 'price': random.randint(-120, 120), 'point': random.randint(200, 250)},
-            ],
+            'bookmakers': bookmakers,  # New structure with all sportsbooks
             'placed_bets': []
         })
     
