@@ -46,6 +46,110 @@ const strategiesContainer = document.getElementById('strategies-container');
 const messageBox = document.getElementById('message-box');
 const loadingSpinner = document.getElementById('loading-spinner');
 
+// Market name mapping to handle undefined/missing titles - moved to global scope
+const marketNameMapping = {
+    'h2h': 'Moneyline',
+    'spreads': 'Spreads', 
+    'totals': 'Totals',
+    'outrights': 'Outrights'
+};
+
+// Demo data generation for fallback when API is not available
+function generateDemoInvestments() {
+    const teams = {
+        'NBA': [
+            ['Los Angeles Lakers', 'Boston Celtics'],
+            ['Golden State Warriors', 'Miami Heat'],
+            ['Milwaukee Bucks', 'Phoenix Suns'],
+            ['Denver Nuggets', 'Brooklyn Nets']
+        ],
+        'NFL': [
+            ['Kansas City Chiefs', 'Buffalo Bills'],
+            ['Philadelphia Eagles', 'San Francisco 49ers'],
+            ['Dallas Cowboys', 'Green Bay Packers'],
+            ['Baltimore Ravens', 'Cincinnati Bengals']
+        ],
+        'MLB': [
+            ['Los Angeles Dodgers', 'New York Yankees'],
+            ['Atlanta Braves', 'Houston Astros'],
+            ['Toronto Blue Jays', 'Tampa Bay Rays'],
+            ['Boston Red Sox', 'Seattle Mariners']
+        ],
+        'NCAAF': [
+            ['Georgia Bulldogs', 'Alabama Crimson Tide'],
+            ['Michigan Wolverines', 'Ohio State Buckeyes'],
+            ['Texas Longhorns', 'Oklahoma Sooners'],
+            ['Clemson Tigers', 'Florida State Seminoles']
+        ],
+        'NCAAB': [
+            ['Duke Blue Devils', 'North Carolina Tar Heels'],
+            ['Gonzaga Bulldogs', 'Kentucky Wildcats'],
+            ['Villanova Wildcats', 'Kansas Jayhawks'],
+            ['UCLA Bruins', 'Arizona Wildcats']
+        ]
+    };
+
+    const demoInvestments = [];
+    let gameId = 1;
+
+    Object.entries(teams).forEach(([sport, sportTeams]) => {
+        sportTeams.forEach(([team1, team2]) => {
+            const gameTime = new Date();
+            gameTime.setHours(gameTime.getHours() + Math.floor(Math.random() * 24) + 1);
+            
+            const investment = {
+                id: `demo_${gameId++}`,
+                sport_key: sport.toLowerCase(),
+                sport_title: sport,
+                commence_time: gameTime.toISOString(),
+                home_team: team2,
+                away_team: team1,
+                teams: `${team1} vs ${team2}`, // Add the teams property for compatibility
+                placed_bets: [], // Add empty placed_bets array
+                bookmakers: [
+                    {
+                        title: 'DraftKings',
+                        markets: [
+                            {
+                                key: 'h2h',
+                                name: 'Moneyline',
+                                outcomes: [
+                                    { name: team1, price: Math.floor(Math.random() * 200) + 100 },
+                                    { name: team2, price: Math.floor(Math.random() * 200) + 100 }
+                                ]
+                            },
+                            {
+                                key: 'spreads',
+                                name: 'Spreads',
+                                outcomes: [
+                                    { name: team1, price: -110, point: -Math.floor(Math.random() * 10) - 1 },
+                                    { name: team2, price: -110, point: Math.floor(Math.random() * 10) + 1 }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: 'FanDuel',
+                        markets: [
+                            {
+                                key: 'h2h',
+                                name: 'Moneyline',
+                                outcomes: [
+                                    { name: team1, price: Math.floor(Math.random() * 200) + 105 },
+                                    { name: team2, price: Math.floor(Math.random() * 200) + 105 }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+            demoInvestments.push(investment);
+        });
+    });
+
+    return demoInvestments;
+}
+
 // --- HELPER FUNCTIONS ---
 function showMessage(text, isError = false) {
     messageBox.textContent = text;
@@ -576,9 +680,24 @@ window.loadCachedInvestments = async function() {
         }
     } catch (e) {
         console.error("Error loading cached investments:", e);
-        showMessage("Failed to load investments.", true);
-        noInvestmentsMessage.classList.remove('hidden');
-        updateCacheStatus({ cached: false, has_cache: false });
+        
+        // Fallback to demo data when running without backend API
+        console.log("Loading demo investment data for testing...");
+        const demoInvestments = generateDemoInvestments();
+        if (demoInvestments.length > 0) {
+            displayInvestments(demoInvestments);
+            updateCacheStatus({ 
+                cached: true, 
+                has_cache: true, 
+                last_refresh: new Date().toISOString(),
+                demo_mode: true 
+            });
+            showMessage("Loaded demo investment data for testing.", false);
+        } else {
+            showMessage("Failed to load investments.", true);
+            noInvestmentsMessage.classList.remove('hidden');
+            updateCacheStatus({ cached: false, has_cache: false });
+        }
     } finally {
         hideLoading();
     }
@@ -617,9 +736,24 @@ window.refreshInvestments = async function() {
         }
     } catch (e) {
         console.error("Error refreshing investments:", e);
-        showMessage("Failed to refresh investments. Check API key and connection.", true);
-        noInvestmentsMessage.classList.remove('hidden');
-        updateCacheStatus({ cached: false, has_cache: false });
+        
+        // Fallback to demo data when running without backend API
+        console.log("Loading demo investment data for testing...");
+        const demoInvestments = generateDemoInvestments();
+        if (demoInvestments.length > 0) {
+            displayInvestments(demoInvestments);
+            updateCacheStatus({ 
+                cached: false, 
+                has_cache: true, 
+                last_refresh: new Date().toISOString(),
+                demo_mode: true 
+            });
+            showMessage(`Loaded ${demoInvestments.length} demo games for testing.`, false);
+        } else {
+            showMessage("Failed to refresh investments. Check API key and connection.", true);
+            noInvestmentsMessage.classList.remove('hidden');
+            updateCacheStatus({ cached: false, has_cache: false });
+        }
     } finally {
         hideLoading();
         
@@ -635,7 +769,7 @@ function displayInvestments(investments) {
     const sportTabsContainer = document.getElementById('sport-tabs-container');
     
     const groupedBySport = investments.reduce((acc, investment) => {
-        const sport = investment.sport;
+        const sport = investment.sport_title || investment.sport || 'Unknown Sport';
         if (!acc[sport]) {
             acc[sport] = [];
         }
@@ -816,11 +950,19 @@ function updateCacheStatus(data) {
 window.showSportTab = function(sport) {
     // Correctly select the button using the data-sport attribute
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`.tab-button[data-sport='${sport}']`).classList.add('active');
+    
+    const tabButton = document.querySelector(`.tab-button[data-sport='${sport}']`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    }
 
     // Show the corresponding tab content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    document.getElementById(`tab-content-${sport}`).classList.add('active');
+    
+    const tabContent = document.getElementById(`tab-content-${sport}`);
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
 };
 
 window.filterInvestments = function(sport) {
@@ -1197,14 +1339,6 @@ function createInvestmentCard(investment) {
         'WynnBET': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' }
     };
 
-    // Market name mapping to handle undefined/missing titles
-    const marketNameMapping = {
-        'h2h': 'Moneyline',
-        'spreads': 'Spreads', 
-        'totals': 'Totals',
-        'outrights': 'Outrights'
-    };
-
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
         const colors = sportsbookColors[bookmaker.title] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
@@ -1250,7 +1384,7 @@ function createInvestmentCard(investment) {
         <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">${investment.teams}</h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
-            <p class="text-xs text-gray-500">${investment.sport}</p>
+            <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
