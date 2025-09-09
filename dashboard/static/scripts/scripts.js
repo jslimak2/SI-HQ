@@ -15,6 +15,7 @@ let db, auth;
 let userId = 'anonymous';
 let bots = [];
 let strategies = [];
+let userSettings = {};
 
 // UI elements
 const activeBotsContainer = document.getElementById('active-bots-container');
@@ -508,6 +509,11 @@ window.deleteStrategy = async function(strategyId) {
 };
 
 window.fetchAndDisplayInvestments = async function() {
+    console.warn('fetchAndDisplayInvestments is deprecated. Use loadCachedInvestments or refreshInvestments instead.');
+    await window.loadCachedInvestments();
+};
+
+window.loadCachedInvestments = async function() {
     const investmentsContainer = document.getElementById('investments-container');
     const noInvestmentsMessage = document.getElementById('no-investments-message');
     const sportTabsContainer = document.getElementById('sport-tabs-container');
@@ -518,93 +524,165 @@ window.fetchAndDisplayInvestments = async function() {
     showLoading();
 
     try {
-        const response = await fetch('/api/investments');
+        const response = await fetch(`/api/investments?user_id=${userId}&refresh=false`);
         const data = await response.json();
 
         if (data.success && data.investments.length > 0) {
-            const groupedBySport = data.investments.reduce((acc, investment) => {
-                const sport = investment.sport;
-                if (!acc[sport]) {
-                    acc[sport] = [];
-                }
-                acc[sport].push(investment);
-                return acc;
-            }, {});
-
-            let firstSport = true;
-            for (const sport in groupedBySport) {
-                // Create Tab Button
-                const tabButton = document.createElement('button');
-                tabButton.textContent = sport;
-                tabButton.className = `tab-button ${firstSport ? 'active' : ''}`;
-                // Set a data attribute for easy selection
-                tabButton.setAttribute('data-sport', sport);
-                tabButton.onclick = () => window.showSportTab(sport); // Call the new function
-                sportTabsContainer.appendChild(tabButton);
-
-                // ... (rest of the function, unchanged)
-                const tabContent = document.createElement('div');
-                tabContent.id = `tab-content-${sport}`;
-                tabContent.className = `tab-content space-y-4 ${firstSport ? 'active' : ''}`;
-
-                const allTeams = new Set();
-                groupedBySport[sport].forEach(inv => {
-                    const teams = inv.teams.split(' vs ');
-                    allTeams.add(teams[0]);
-                    allTeams.add(teams[1]);
-                });
-                const sortedTeams = Array.from(allTeams).sort();
-
-                // Create Team Filter Dropdown
-                const filterDiv = document.createElement('div');
-                filterDiv.className = 'flex items-center space-x-2 my-4';
-                const filterLabel = document.createElement('label');
-                filterLabel.textContent = 'Filter by Team:';
-                filterLabel.className = 'font-semibold text-gray-700';
-                const filterSelect = document.createElement('select');
-                filterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
-                filterSelect.onchange = (e) => window.filterInvestments(sport, e.target.value);
-                
-                const allOption = document.createElement('option');
-                allOption.value = 'all';
-                allOption.textContent = 'All Teams';
-                filterSelect.appendChild(allOption);
-
-                sortedTeams.forEach(team => {
-                    const option = document.createElement('option');
-                    option.value = team;
-                    option.textContent = team;
-                    filterSelect.appendChild(option);
-                });
-
-                filterDiv.appendChild(filterLabel);
-                filterDiv.appendChild(filterSelect);
-                tabContent.appendChild(filterDiv);
-
-                // Create Investments List for the sport
-                const investmentsList = document.createElement('div');
-                investmentsList.className = 'space-y-4';
-                investmentsList.id = `investments-list-${sport}`;
-                
-                groupedBySport[sport].forEach(investment => {
-                    const investmentCard = createInvestmentCard(investment);
-                    investmentsList.appendChild(investmentCard);
-                });
-                tabContent.appendChild(investmentsList);
-                investmentsContainer.appendChild(tabContent);
-                firstSport = false;
-            }
+            displayInvestments(data.investments);
+            updateCacheStatus(data);
         } else {
             noInvestmentsMessage.classList.remove('hidden');
+            updateCacheStatus({ cached: false, has_cache: false });
         }
     } catch (e) {
-        console.error("Error fetching investments:", e);
+        console.error("Error loading cached investments:", e);
         showMessage("Failed to load investments.", true);
         noInvestmentsMessage.classList.remove('hidden');
+        updateCacheStatus({ cached: false, has_cache: false });
     } finally {
         hideLoading();
     }
 };
+
+window.refreshInvestments = async function() {
+    const refreshButton = document.getElementById('refresh-investments-btn');
+    const refreshIcon = document.getElementById('refresh-icon');
+    
+    // Disable button and show spinning animation
+    refreshButton.disabled = true;
+    refreshButton.classList.add('opacity-75', 'cursor-not-allowed');
+    refreshIcon.classList.add('animate-spin');
+
+    const investmentsContainer = document.getElementById('investments-container');
+    const noInvestmentsMessage = document.getElementById('no-investments-message');
+    const sportTabsContainer = document.getElementById('sport-tabs-container');
+
+    investmentsContainer.innerHTML = '';
+    sportTabsContainer.innerHTML = '';
+    noInvestmentsMessage.classList.add('hidden');
+    showLoading();
+
+    try {
+        const response = await fetch(`/api/investments?user_id=${userId}&refresh=true`);
+        const data = await response.json();
+
+        if (data.success && data.investments.length > 0) {
+            displayInvestments(data.investments);
+            updateCacheStatus(data);
+            showMessage(`Refreshed ${data.investments.length} games. Made ${data.api_calls_made} API calls.`);
+        } else {
+            noInvestmentsMessage.classList.remove('hidden');
+            updateCacheStatus({ cached: false, has_cache: false });
+            showMessage("No games found. API may be unavailable.", true);
+        }
+    } catch (e) {
+        console.error("Error refreshing investments:", e);
+        showMessage("Failed to refresh investments. Check API key and connection.", true);
+        noInvestmentsMessage.classList.remove('hidden');
+        updateCacheStatus({ cached: false, has_cache: false });
+    } finally {
+        hideLoading();
+        
+        // Re-enable button and stop spinning
+        refreshButton.disabled = false;
+        refreshButton.classList.remove('opacity-75', 'cursor-not-allowed');
+        refreshIcon.classList.remove('animate-spin');
+    }
+};
+
+function displayInvestments(investments) {
+    const investmentsContainer = document.getElementById('investments-container');
+    const sportTabsContainer = document.getElementById('sport-tabs-container');
+    
+    const groupedBySport = investments.reduce((acc, investment) => {
+        const sport = investment.sport;
+        if (!acc[sport]) {
+            acc[sport] = [];
+        }
+        acc[sport].push(investment);
+        return acc;
+    }, {});
+
+    let firstSport = true;
+    for (const sport in groupedBySport) {
+        // Create Tab Button
+        const tabButton = document.createElement('button');
+        tabButton.textContent = sport;
+        tabButton.className = `tab-button ${firstSport ? 'active' : ''}`;
+        tabButton.setAttribute('data-sport', sport);
+        tabButton.onclick = () => window.showSportTab(sport);
+        sportTabsContainer.appendChild(tabButton);
+
+        const tabContent = document.createElement('div');
+        tabContent.id = `tab-content-${sport}`;
+        tabContent.className = `tab-content space-y-4 ${firstSport ? 'active' : ''}`;
+
+        const allTeams = new Set();
+        groupedBySport[sport].forEach(inv => {
+            const teams = inv.teams.split(' vs ');
+            allTeams.add(teams[0]);
+            allTeams.add(teams[1]);
+        });
+        const sortedTeams = Array.from(allTeams).sort();
+
+        // Create Team Filter Dropdown
+        const filterDiv = document.createElement('div');
+        filterDiv.className = 'flex items-center space-x-2 my-4';
+        const filterLabel = document.createElement('label');
+        filterLabel.textContent = 'Filter by Team:';
+        filterLabel.className = 'font-semibold text-gray-700';
+        const filterSelect = document.createElement('select');
+        filterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
+        filterSelect.onchange = (e) => window.filterInvestments(sport, e.target.value);
+        
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'All Teams';
+        filterSelect.appendChild(allOption);
+
+        sortedTeams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team;
+            option.textContent = team;
+            filterSelect.appendChild(option);
+        });
+
+        filterDiv.appendChild(filterLabel);
+        filterDiv.appendChild(filterSelect);
+        tabContent.appendChild(filterDiv);
+
+        // Create Investments List for the sport
+        const investmentsList = document.createElement('div');
+        investmentsList.className = 'space-y-4';
+        investmentsList.id = `investments-list-${sport}`;
+        
+        groupedBySport[sport].forEach(investment => {
+            const investmentCard = createInvestmentCard(investment);
+            investmentsList.appendChild(investmentCard);
+        });
+        tabContent.appendChild(investmentsList);
+        investmentsContainer.appendChild(tabContent);
+        firstSport = false;
+    }
+}
+
+function updateCacheStatus(data) {
+    const cacheIndicator = document.getElementById('cache-indicator');
+    const cacheText = document.getElementById('cache-text');
+    
+    if (data.cached) {
+        cacheIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+        const refreshTime = new Date(data.last_refresh).toLocaleString();
+        cacheText.textContent = `Cached data from ${refreshTime}`;
+    } else if (data.last_refresh) {
+        cacheIndicator.className = 'w-3 h-3 rounded-full bg-blue-500';
+        const refreshTime = new Date(data.last_refresh).toLocaleString();
+        cacheText.textContent = `Fresh data from ${refreshTime}`;
+    } else {
+        cacheIndicator.className = 'w-3 h-3 rounded-full bg-gray-400';
+        cacheText.textContent = 'No data available';
+    }
+}
 
 window.showSportTab = function(sport) {
     // Correctly select the button using the data-sport attribute
@@ -682,6 +760,93 @@ function createInvestmentCard(investment) {
     return card;
 }
 
+// --- USER SETTINGS FUNCTIONALITY ---
+
+async function loadUserSettings() {
+    try {
+        const response = await fetch(`/api/user-settings?user_id=${userId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            userSettings = data.settings;
+            updateSettingsUI();
+        }
+    } catch (e) {
+        console.error("Error loading user settings:", e);
+        // Use default settings
+        userSettings = {
+            auto_refresh_on_login: true,
+            cache_expiry_minutes: 30
+        };
+    }
+}
+
+async function saveUserSettings(newSettings) {
+    try {
+        const response = await fetch('/api/user-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                settings: newSettings
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            userSettings = { ...userSettings, ...newSettings };
+            showMessage('Settings saved successfully!');
+            return true;
+        } else {
+            showMessage('Failed to save settings: ' + data.message, true);
+            return false;
+        }
+    } catch (e) {
+        console.error("Error saving user settings:", e);
+        showMessage('Failed to save settings.', true);
+        return false;
+    }
+}
+
+function updateSettingsUI() {
+    // Update settings form with current values
+    document.getElementById('auto-refresh-checkbox').checked = userSettings.auto_refresh_on_login || true;
+    document.getElementById('cache-expiry-select').value = userSettings.cache_expiry_minutes || 30;
+    
+    // Update cache statistics
+    updateSettingsStats();
+}
+
+async function updateSettingsStats() {
+    try {
+        const response = await fetch(`/api/investments/stats?user_id=${userId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('settings-last-refresh').textContent = 
+                data.last_refresh ? new Date(data.last_refresh).toLocaleString() : 'Never';
+            document.getElementById('settings-cached-games').textContent = data.total_games || 0;
+            document.getElementById('settings-api-saved').textContent = data.api_calls_saved || 0;
+        }
+    } catch (e) {
+        console.error("Error updating settings stats:", e);
+    }
+}
+
+// --- AUTHENTICATION & INITIAL DATA LOAD ---
+
+async function checkAutoRefresh() {
+    if (userSettings.auto_refresh_on_login) {
+        // Auto refresh is enabled, check if we're on investments page
+        const investmentsPage = document.getElementById('investments-page');
+        if (investmentsPage && investmentsPage.style.display === 'block') {
+            await window.refreshInvestments();
+        }
+    }
+}
+
 
 // --- AUTHENTICATION & INITIAL DATA LOAD ---
 
@@ -718,12 +883,20 @@ async function initializeFirebase() {
 }
 
 function startListeners() {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             userId = user.uid;
             document.getElementById('user-id').textContent = userId;
+            
+            // Load user settings first
+            await loadUserSettings();
+            
+            // Then load other data
             fetchBots();
             fetchStrategies();
+            
+            // Check auto-refresh after everything is loaded
+            setTimeout(checkAutoRefresh, 1000);
         } else {
             console.log("No user is signed in.");
             document.getElementById('user-id').textContent = 'Not signed in';
@@ -805,6 +978,22 @@ document.getElementById('edit-strategy-form').addEventListener('submit', async f
         parameters: newParameters
     });
     window.closeModal('strategy-details-modal');
+});
+
+// Settings form event listener
+document.getElementById('settings-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    
+    const newSettings = {
+        auto_refresh_on_login: form['auto_refresh_on_login'].checked,
+        cache_expiry_minutes: parseInt(form['cache_expiry_minutes'].value, 10)
+    };
+    
+    const saved = await saveUserSettings(newSettings);
+    if (saved) {
+        window.closeModal('settings-modal');
+    }
 });
 
 // Initial load
