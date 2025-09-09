@@ -278,20 +278,50 @@ function displayBots() {
                     const statusColor = bot.status === 'running' ? 'bg-blue-500' : 'bg-gray-500';
                     const statusText = bot.status.charAt(0).toUpperCase() + bot.status.slice(1);
                     return `
-                        <tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.toggleBotWagers('${bot.id}')">
                             <td class="px-6 py-4 whitespace-nowrap font-semibold">${bot.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${strategyName}</td>
                             <td class="px-6 py-4 whitespace-nowrap">$${bot.current_balance.toFixed(2)}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${bot.bet_percentage}%</td>
                             <td class="px-6 py-4 whitespace-nowrap ${profitLossClass}">$${profitLoss}</td>
                             <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor} text-white">${statusText}</span></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="window.showBotDetails('${bot.id}')" class="text-indigo-600 hover:text-indigo-900 mx-1">Edit</button>
-                                <button onclick="window.showBotHistory('${bot.id}')" class="text-blue-600 hover:text-blue-900 mx-1">History</button>
-                                <button onclick="window.showBotLog('${bot.id}')" class="text-gray-600 hover:text-gray-900 mx-1">Log</button>
-                                <button onclick="window.toggleBotStatus('${bot.id}', '${bot.status}')" class="text-green-600 hover:text-green-900 mx-1">${bot.status === 'running' ? 'Stop' : 'Start'}</button>
-                                <button onclick="window.deleteBot('${bot.id}')" class="text-red-600 hover:text-red-900 ml-1">Delete</button>
+                                <button onclick="event.stopPropagation(); window.showBotDetails('${bot.id}')" class="text-indigo-600 hover:text-indigo-900 mx-1">Edit</button>
+                                <button onclick="event.stopPropagation(); window.showBotHistory('${bot.id}')" class="text-blue-600 hover:text-blue-900 mx-1">History</button>
+                                <button onclick="event.stopPropagation(); window.showBotLog('${bot.id}')" class="text-gray-600 hover:text-gray-900 mx-1">Log</button>
+                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${bot.status}')" class="text-green-600 hover:text-green-900 mx-1">${bot.status === 'running' ? 'Stop' : 'Start'}</button>
+                                <button onclick="event.stopPropagation(); window.deleteBot('${bot.id}')" class="text-red-600 hover:text-red-900 ml-1">Delete</button>
+                            </td>
+                        </tr>
+                        <tr id="wagers-${bot.id}" class="hidden bg-gray-50">
+                            <td colspan="8" class="px-6 py-4">
+                                <div class="border-t border-gray-200 pt-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Open Wagers:</h4>
+                                    <div id="wagers-content-${bot.id}" class="text-sm text-gray-600">
+                                        ${bot.open_wagers && bot.open_wagers.length > 0 ? 
+                                            bot.open_wagers.map(wager => `
+                                                <div class="mb-2 p-2 bg-white rounded border">
+                                                    <strong>${wager.teams || 'N/A'}</strong> - ${wager.bet_type || 'N/A'}<br>
+                                                    Wager: $${wager.amount ? wager.amount.toFixed(2) : '0.00'} | 
+                                                    Odds: ${wager.odds || 'N/A'} | 
+                                                    Potential Payout: $${wager.potential_payout ? wager.potential_payout.toFixed(2) : '0.00'}
+                                                </div>
+                                            `).join('') 
+                                            : '<p class="text-gray-500">No open wagers</p>'
+                                        }
+                                    </div>
+                                    ${bot.strategy_id ? `
+                                        <div class="mt-4 pt-4 border-t border-gray-200">
+                                            <h4 class="font-semibold text-gray-800 mb-2">Strategy Picks:</h4>
+                                            <button onclick="event.stopPropagation(); window.getStrategyPicks('${bot.id}', '${bot.strategy_id}')" 
+                                                    class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">
+                                                Get Strategy Picks
+                                            </button>
+                                            <div id="picks-content-${bot.id}" class="mt-2"></div>
+                                        </div>
+                                    ` : ''}
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -589,6 +619,13 @@ window.deleteBot = async function(botId) {
     }
 };
 
+window.toggleBotWagers = function(botId) {
+    const wagersRow = document.getElementById(`wagers-${botId}`);
+    if (wagersRow) {
+        wagersRow.classList.toggle('hidden');
+    }
+};
+
 window.toggleBotStatus = async function(botId, currentStatus) {
     showLoading();
     const newStatus = currentStatus === 'running' ? 'stopped' : 'running';
@@ -651,6 +688,82 @@ window.deleteStrategy = async function(strategyId) {
         hideLoading();
     }
 };
+
+window.getStrategyPicks = async function(botId, strategyId) {
+    try {
+        showLoading();
+        const response = await fetch(`/api/strategy/${strategyId}/picks?bot_id=${botId}`);
+        const data = await response.json();
+        
+        const picksContent = document.getElementById(`picks-content-${botId}`);
+        
+        if (data.success && data.picks.length > 0) {
+            const picksHtml = data.picks.map(pick => `
+                <div class="mb-2 p-3 bg-purple-50 rounded border border-purple-200">
+                    <div class="font-semibold text-purple-800">${pick.teams} (${pick.sport})</div>
+                    <div class="text-sm text-purple-600">
+                        ${pick.bet_type} | Odds: ${pick.odds} | Confidence: ${pick.confidence}%
+                    </div>
+                    <div class="text-sm text-purple-700">
+                        Recommended: $${pick.recommended_amount} → Potential: $${pick.potential_payout}
+                    </div>
+                </div>
+            `).join('');
+            
+            picksContent.innerHTML = `
+                <div class="text-sm text-gray-600 mb-2">
+                    Strategy: ${data.strategy_name} | Remaining bets this week: ${data.remaining_bets}
+                </div>
+                ${picksHtml}
+            `;
+            
+            showMessage(`Generated ${data.picks.length} picks from strategy`, false);
+        } else {
+            picksContent.innerHTML = `
+                <div class="text-sm text-gray-500 p-2 bg-gray-100 rounded">
+                    ${data.message || 'No picks available from strategy'}
+                </div>
+            `;
+            showMessage(data.message || "No picks available", false);
+        }
+    } catch (error) {
+        console.error("Error getting strategy picks:", error);
+        showMessage("Failed to get strategy picks", true);
+    } finally {
+        hideLoading();
+    }
+};
+
+window.refreshApiStatus = async function() {
+    try {
+        showLoading();
+        const response = await fetch('/api/api-status');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('api-requests-remaining').textContent = data.remaining_requests;
+            document.getElementById('api-requests-used').textContent = data.used_requests;
+            
+            if (data.demo_mode) {
+                showMessage("API status refreshed (Demo Mode)", false);
+            } else {
+                showMessage("API status refreshed successfully", false);
+            }
+        } else {
+            showMessage(data.message || "Failed to refresh API status", true);
+        }
+    } catch (error) {
+        console.error("Error refreshing API status:", error);
+        showMessage("Failed to refresh API status", true);
+    } finally {
+        hideLoading();
+    }
+};
+
+// Load API status when account page is shown
+function loadApiStatus() {
+    window.refreshApiStatus();
+}
 
 window.fetchAndDisplayInvestments = async function() {
     console.warn('fetchAndDisplayInvestments is deprecated. Use loadCachedInvestments or refreshInvestments instead.');

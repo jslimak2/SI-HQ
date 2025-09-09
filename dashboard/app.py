@@ -151,14 +151,23 @@ def add_bot():
             'id': bot_id,
             'name': data.get('name', f'Bot-{random.randint(1000, 9999)}'),
             'current_balance': float(data.get('initial_balance', 1000.0)),
+            'starting_balance': float(data.get('initial_balance', 1000.0)),  # Frontend expects this field name
             'initial_balance': float(data.get('initial_balance', 1000.0)),
             'bet_percentage': float(data.get('bet_percentage', 2.0)),
+            'max_bets_per_week': int(data.get('max_bets_per_week', 5)),
+            'sport': data.get('sport', 'NBA'),  # Add sport field
+            'bet_type': data.get('bet_type', 'Moneyline'),  # Add bet type field
+            'status': 'stopped',  # Default status
+            'strategy_id': data.get('strategy_id', None),  # Use strategy_id instead of linked_strategy_id
             'linked_strategy_id': data.get('linked_strategy_id', None),
             'total_profit': 0.0,
             'total_bets': 0,
             'total_wins': 0,
             'total_losses': 0,
             'total_wagered': 0.0,
+            'open_wagers': [],  # List of current open wagers
+            'bets_this_week': 0,  # Counter for bets placed this week
+            'week_reset_date': datetime.datetime.now().isoformat(),  # Track when to reset weekly counter
             'created_at': datetime.datetime.now().isoformat(),
             'last_updated': datetime.datetime.now().isoformat(),
             'bet_history': []
@@ -295,6 +304,129 @@ def delete_strategy(strategy_id):
         print(f"Failed to delete strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to delete strategy: {e}'}), 500
         
+@app.route('/api/strategy/<strategy_id>/picks', methods=['GET'])
+def get_strategy_picks(strategy_id):
+    """Get betting picks from a strategy for a bot."""
+    if not db:
+        return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+    
+    bot_id = request.args.get('bot_id')
+    if not bot_id:
+        return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
+    
+    try:
+        # Get bot data
+        bot_ref = bots_collection.document(bot_id)
+        bot_doc = bot_ref.get()
+        if not bot_doc.exists:
+            return jsonify({'success': False, 'message': 'Bot not found.'}), 404
+        
+        bot_data = bot_doc.to_dict()
+        
+        # Get strategy data
+        strategy_ref = strategies_collection.document(strategy_id)
+        strategy_doc = strategy_ref.get()
+        if not strategy_doc.exists:
+            return jsonify({'success': False, 'message': 'Strategy not found.'}), 404
+        
+        strategy_data = strategy_doc.to_dict()
+        
+        # Check if bot has reached max bets for the week
+        max_bets = bot_data.get('max_bets_per_week', 5)
+        bets_this_week = bot_data.get('bets_this_week', 0)
+        
+        if bets_this_week >= max_bets:
+            return jsonify({
+                'success': True,
+                'picks': [],
+                'message': f'Bot has reached maximum bets for this week ({max_bets})',
+                'remaining_bets': 0
+            })
+        
+        # Generate picks based on strategy type
+        picks = generate_strategy_picks(strategy_data, bot_data, max_bets - bets_this_week)
+        
+        return jsonify({
+            'success': True,
+            'picks': picks,
+            'remaining_bets': max_bets - bets_this_week,
+            'strategy_name': strategy_data.get('name', 'Unknown Strategy')
+        })
+        
+    except Exception as e:
+        print(f"Failed to get strategy picks: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get picks: {e}'}), 500
+
+def generate_strategy_picks(strategy_data, bot_data, max_picks):
+    """Generate betting picks based on strategy type."""
+    strategy_type = strategy_data.get('type', 'basic')
+    
+    # Basic strategy: randomly select games with simple criteria
+    if strategy_type == 'basic' or strategy_type == 'normal':
+        return generate_basic_strategy_picks(bot_data, max_picks)
+    elif strategy_type == 'recovery':
+        return generate_recovery_strategy_picks(bot_data, max_picks)
+    else:
+        return generate_basic_strategy_picks(bot_data, max_picks)
+
+def generate_basic_strategy_picks(bot_data, max_picks):
+    """Generate basic strategy picks - simple random selection with some logic."""
+    picks = []
+    
+    # Use demo games for now since we're in demo mode
+    demo_games = [
+        {'teams': 'Lakers vs Warriors', 'sport': 'NBA', 'odds': 1.85, 'bet_type': 'Moneyline'},
+        {'teams': 'Celtics vs Heat', 'sport': 'NBA', 'odds': 2.10, 'bet_type': 'Moneyline'},
+        {'teams': 'Chiefs vs Bills', 'sport': 'NFL', 'odds': 1.90, 'bet_type': 'Spread'},
+        {'teams': 'Cowboys vs Eagles', 'sport': 'NFL', 'odds': 1.95, 'bet_type': 'Moneyline'},
+        {'teams': 'Yankees vs Red Sox', 'sport': 'MLB', 'odds': 1.75, 'bet_type': 'Moneyline'},
+    ]
+    
+    # Filter by bot's preferred sport if specified
+    bot_sport = bot_data.get('sport')
+    if bot_sport and bot_sport != 'All':
+        filtered_games = [g for g in demo_games if g['sport'] == bot_sport]
+        if filtered_games:
+            demo_games = filtered_games
+    
+    # Randomly select games up to max_picks
+    import random
+    selected_games = random.sample(demo_games, min(len(demo_games), max_picks))
+    
+    for game in selected_games:
+        bet_amount = bot_data['current_balance'] * (bot_data['bet_percentage'] / 100)
+        potential_payout = bet_amount * game['odds']
+        
+        pick = {
+            'teams': game['teams'],
+            'sport': game['sport'],
+            'bet_type': game['bet_type'],
+            'odds': game['odds'],
+            'recommended_amount': round(bet_amount, 2),
+            'potential_payout': round(potential_payout, 2),
+            'confidence': random.randint(60, 85)  # Basic confidence score
+        }
+        picks.append(pick)
+    
+    return picks
+
+def generate_recovery_strategy_picks(bot_data, max_picks):
+    """Generate recovery strategy picks - more aggressive to recover losses."""
+    basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
+    
+    # If bot is down, increase bet amounts and focus on higher odds
+    current_balance = bot_data.get('current_balance', 0)
+    starting_balance = bot_data.get('starting_balance', current_balance)
+    
+    if current_balance < starting_balance:
+        # Increase bet percentage for recovery
+        for pick in basic_picks:
+            pick['recommended_amount'] = pick['recommended_amount'] * 1.5  # 50% more aggressive
+            pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
+            pick['confidence'] = pick['confidence'] - 10  # Lower confidence due to higher risk
+    
+    return basic_picks
+
 @app.route('/api/investments', methods=["GET"])
 def get_available_investments():
     """
@@ -630,6 +762,43 @@ def get_investment_stats():
     except Exception as e:
         print(f"Error fetching investment stats: {e}")
         return jsonify({'success': False, 'message': f'Failed to fetch stats: {e}'}), 500
+
+@app.route('/api/api-status', methods=['GET'])
+def get_api_status():
+    """Get current API usage status from the sports API."""
+    if not external_api_key or 'demo' in external_api_key:
+        return jsonify({
+            'success': True,
+            'remaining_requests': 'N/A (Demo Mode)',
+            'used_requests': 'N/A (Demo Mode)',
+            'demo_mode': True,
+            'message': 'Demo mode active. Set SPORTS_API_KEY for real API usage tracking.'
+        }), 200
+    
+    try:
+        # Make a simple request to get header information
+        url = f'https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds?apiKey={external_api_key}&regions=us'
+        response = requests.get(url)
+        
+        # Extract API usage from headers
+        remaining_requests = response.headers.get('X-Requests-Remaining', 'Unknown')
+        used_requests = response.headers.get('X-Requests-Used', 'Unknown')
+        
+        return jsonify({
+            'success': True,
+            'remaining_requests': remaining_requests,
+            'used_requests': used_requests,
+            'demo_mode': False
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting API status: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get API status: {e}',
+            'remaining_requests': 'Error',
+            'used_requests': 'Error'
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
