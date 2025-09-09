@@ -665,30 +665,119 @@ function displayInvestments(investments) {
         });
         const sortedTeams = Array.from(allTeams).sort();
 
-        // Create Team Filter Dropdown
+        // Enhanced Filtering System
         const filterDiv = document.createElement('div');
-        filterDiv.className = 'flex items-center space-x-2 my-4';
-        const filterLabel = document.createElement('label');
-        filterLabel.textContent = 'Filter by Team:';
-        filterLabel.className = 'font-semibold text-gray-700';
-        const filterSelect = document.createElement('select');
-        filterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
-        filterSelect.onchange = (e) => window.filterInvestments(sport, e.target.value);
+        filterDiv.className = 'flex flex-wrap items-center gap-4 my-4 p-4 bg-gray-50 rounded-lg';
         
-        const allOption = document.createElement('option');
-        allOption.value = 'all';
-        allOption.textContent = 'All Teams';
-        filterSelect.appendChild(allOption);
+        // Team Filter
+        const teamFilterDiv = document.createElement('div');
+        teamFilterDiv.className = 'flex items-center space-x-2';
+        const teamFilterLabel = document.createElement('label');
+        teamFilterLabel.textContent = 'Team:';
+        teamFilterLabel.className = 'font-semibold text-gray-700 text-sm';
+        const teamFilterSelect = document.createElement('select');
+        teamFilterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm';
+        teamFilterSelect.id = `team-filter-${sport}`;
+        teamFilterSelect.onchange = (e) => window.filterInvestments(sport);
+        
+        const allTeamsOption = document.createElement('option');
+        allTeamsOption.value = 'all';
+        allTeamsOption.textContent = 'All Teams';
+        teamFilterSelect.appendChild(allTeamsOption);
 
         sortedTeams.forEach(team => {
             const option = document.createElement('option');
             option.value = team;
             option.textContent = team;
-            filterSelect.appendChild(option);
+            teamFilterSelect.appendChild(option);
         });
 
-        filterDiv.appendChild(filterLabel);
-        filterDiv.appendChild(filterSelect);
+        teamFilterDiv.appendChild(teamFilterLabel);
+        teamFilterDiv.appendChild(teamFilterSelect);
+        
+        // Sportsbook Filter
+        const sportsbookFilterDiv = document.createElement('div');
+        sportsbookFilterDiv.className = 'flex items-center space-x-2';
+        const sportsbookFilterLabel = document.createElement('label');
+        sportsbookFilterLabel.textContent = 'Sportsbook:';
+        sportsbookFilterLabel.className = 'font-semibold text-gray-700 text-sm';
+        const sportsbookFilterSelect = document.createElement('select');
+        sportsbookFilterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm';
+        sportsbookFilterSelect.id = `sportsbook-filter-${sport}`;
+        sportsbookFilterSelect.onchange = (e) => window.filterInvestments(sport);
+        
+        // Collect unique sportsbooks
+        const allSportsbooks = new Set();
+        groupedBySport[sport].forEach(inv => {
+            if (inv.bookmakers) {
+                inv.bookmakers.forEach(bookmaker => allSportsbooks.add(bookmaker.title));
+            }
+        });
+        
+        const allSportsbooksOption = document.createElement('option');
+        allSportsbooksOption.value = 'all';
+        allSportsbooksOption.textContent = 'All Sportsbooks';
+        sportsbookFilterSelect.appendChild(allSportsbooksOption);
+
+        Array.from(allSportsbooks).sort().forEach(sportsbook => {
+            const option = document.createElement('option');
+            option.value = sportsbook;
+            option.textContent = sportsbook;
+            sportsbookFilterSelect.appendChild(option);
+        });
+
+        sportsbookFilterDiv.appendChild(sportsbookFilterLabel);
+        sportsbookFilterDiv.appendChild(sportsbookFilterSelect);
+
+        // Market Type Filter
+        const marketFilterDiv = document.createElement('div');
+        marketFilterDiv.className = 'flex items-center space-x-2';
+        const marketFilterLabel = document.createElement('label');
+        marketFilterLabel.textContent = 'Market:';
+        marketFilterLabel.className = 'font-semibold text-gray-700 text-sm';
+        const marketFilterSelect = document.createElement('select');
+        marketFilterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm';
+        marketFilterSelect.id = `market-filter-${sport}`;
+        marketFilterSelect.onchange = (e) => window.filterInvestments(sport);
+        
+        // Collect unique market types
+        const allMarkets = new Set();
+        groupedBySport[sport].forEach(inv => {
+            if (inv.bookmakers) {
+                inv.bookmakers.forEach(bookmaker => {
+                    bookmaker.markets.forEach(market => {
+                        const marketName = market.name || marketNameMapping[market.key] || market.key;
+                        allMarkets.add(marketName);
+                    });
+                });
+            }
+        });
+        
+        const allMarketsOption = document.createElement('option');
+        allMarketsOption.value = 'all';
+        allMarketsOption.textContent = 'All Markets';
+        marketFilterSelect.appendChild(allMarketsOption);
+
+        Array.from(allMarkets).sort().forEach(market => {
+            const option = document.createElement('option');
+            option.value = market;
+            option.textContent = market;
+            marketFilterSelect.appendChild(option);
+        });
+
+        marketFilterDiv.appendChild(marketFilterLabel);
+        marketFilterDiv.appendChild(marketFilterSelect);
+
+        // Clear Filters Button
+        const clearFiltersBtn = document.createElement('button');
+        clearFiltersBtn.className = 'px-3 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition duration-200';
+        clearFiltersBtn.textContent = 'Clear Filters';
+        clearFiltersBtn.onclick = () => window.clearFilters(sport);
+
+        filterDiv.appendChild(teamFilterDiv);
+        filterDiv.appendChild(sportsbookFilterDiv);
+        filterDiv.appendChild(marketFilterDiv);
+        filterDiv.appendChild(clearFiltersBtn);
         tabContent.appendChild(filterDiv);
 
         // Create Investments List for the sport
@@ -734,21 +823,335 @@ window.showSportTab = function(sport) {
     document.getElementById(`tab-content-${sport}`).classList.add('active');
 };
 
-window.filterInvestments = function(sport, team) {
+window.filterInvestments = function(sport) {
     const listContainer = document.getElementById(`investments-list-${sport}`);
     const investmentCards = listContainer.querySelectorAll('.investment-card');
     
+    const teamFilter = document.getElementById(`team-filter-${sport}`).value;
+    const sportsbookFilter = document.getElementById(`sportsbook-filter-${sport}`).value;
+    const marketFilter = document.getElementById(`market-filter-${sport}`).value;
+    
     investmentCards.forEach(card => {
-        const teamsText = card.querySelector('.font-bold').textContent;
-        const [team1, team2] = teamsText.split(' vs ');
+        let showCard = true;
         
-        if (team === 'all' || team1 === team || team2 === team) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
+        // Team filtering
+        if (teamFilter !== 'all') {
+            const teamsText = card.querySelector('.font-bold').textContent;
+            const [team1, team2] = teamsText.split(' vs ');
+            if (team1 !== teamFilter && team2 !== teamFilter) {
+                showCard = false;
+            }
         }
+        
+        // Sportsbook filtering
+        if (showCard && sportsbookFilter !== 'all') {
+            const sportsbookHeaders = card.querySelectorAll('h4');
+            let hasMatchingSportsbook = false;
+            sportsbookHeaders.forEach(header => {
+                if (header.textContent.trim() === sportsbookFilter) {
+                    hasMatchingSportsbook = true;
+                }
+            });
+            if (!hasMatchingSportsbook) {
+                showCard = false;
+            }
+        }
+        
+        // Market filtering
+        if (showCard && marketFilter !== 'all') {
+            const marketHeaders = card.querySelectorAll('h5');
+            let hasMatchingMarket = false;
+            marketHeaders.forEach(header => {
+                if (header.textContent.trim().toLowerCase() === marketFilter.toLowerCase()) {
+                    hasMatchingMarket = true;
+                }
+            });
+            if (!hasMatchingMarket) {
+                showCard = false;
+            }
+        }
+        
+        // Show/hide investment cards based on sportsbook and market filters
+        if (showCard && (sportsbookFilter !== 'all' || marketFilter !== 'all')) {
+            // Show card but hide non-matching sportsbooks/markets
+            const sportsbookDivs = card.querySelectorAll('div[class*="border"]');
+            sportsbookDivs.forEach(div => {
+                const sportsbookHeader = div.querySelector('h4');
+                if (sportsbookHeader) {
+                    const shouldShowSportsbook = sportsbookFilter === 'all' || 
+                        sportsbookHeader.textContent.trim() === sportsbookFilter;
+                    
+                    if (shouldShowSportsbook && marketFilter !== 'all') {
+                        // Hide non-matching markets within this sportsbook
+                        const marketDivs = div.querySelectorAll('div.mb-3');
+                        marketDivs.forEach(marketDiv => {
+                            const marketHeader = marketDiv.querySelector('h5');
+                            if (marketHeader) {
+                                const shouldShowMarket = marketHeader.textContent.trim().toLowerCase() === marketFilter.toLowerCase();
+                                marketDiv.style.display = shouldShowMarket ? 'block' : 'none';
+                            }
+                        });
+                        div.style.display = 'block';
+                    } else if (shouldShowSportsbook) {
+                        // Show all markets for this sportsbook
+                        const marketDivs = div.querySelectorAll('div.mb-3');
+                        marketDivs.forEach(marketDiv => {
+                            marketDiv.style.display = 'block';
+                        });
+                        div.style.display = 'block';
+                    } else {
+                        div.style.display = 'none';
+                    }
+                }
+            });
+        } else if (showCard) {
+            // Show all sportsbooks and markets
+            const sportsbookDivs = card.querySelectorAll('div[class*="border"]');
+            sportsbookDivs.forEach(div => {
+                div.style.display = 'block';
+                const marketDivs = div.querySelectorAll('div.mb-3');
+                marketDivs.forEach(marketDiv => {
+                    marketDiv.style.display = 'block';
+                });
+            });
+        }
+        
+        card.style.display = showCard ? 'block' : 'none';
     });
 };
+
+window.clearFilters = function(sport) {
+    document.getElementById(`team-filter-${sport}`).value = 'all';
+    document.getElementById(`sportsbook-filter-${sport}`).value = 'all';
+    document.getElementById(`market-filter-${sport}`).value = 'all';
+    window.filterInvestments(sport);
+};
+
+// --- AUTHENTICATION FUNCTIONS ---
+
+let currentUser = null;
+let isAuthenticated = false;
+
+window.showAuthForm = function(formType) {
+    const signinForm = document.getElementById('signin-form');
+    const signupForm = document.getElementById('signup-form');
+    
+    if (formType === 'signin') {
+        signinForm.style.display = 'block';
+        signupForm.style.display = 'none';
+    } else if (formType === 'signup') {
+        signinForm.style.display = 'none';
+        signupForm.style.display = 'block';
+    }
+};
+
+function showAccountManagement() {
+    document.getElementById('auth-section').classList.add('hidden');
+    document.getElementById('account-management-section').classList.remove('hidden');
+    updateAccountUI();
+}
+
+function showAuthSection() {
+    document.getElementById('auth-section').classList.remove('hidden');
+    document.getElementById('account-management-section').classList.add('hidden');
+}
+
+function updateAccountUI() {
+    if (currentUser) {
+        document.getElementById('user-email-display').textContent = currentUser.email || 'Demo Mode';
+        document.getElementById('profile-email').value = currentUser.email || '';
+        document.getElementById('profile-display-name').value = currentUser.displayName || '';
+    }
+}
+
+async function signInUser(email, password) {
+    if (!firebaseAvailable) {
+        // Demo mode sign in
+        currentUser = { email: 'demo@example.com', displayName: 'Demo User' };
+        isAuthenticated = true;
+        showAccountManagement();
+        showMessage('Signed in successfully (Demo Mode)', false);
+        return;
+    }
+
+    try {
+        showLoading();
+        const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        currentUser = userCredential.user;
+        isAuthenticated = true;
+        showAccountManagement();
+        showMessage('Signed in successfully!', false);
+    } catch (error) {
+        console.error('Sign in error:', error);
+        showMessage(`Sign in failed: ${error.message}`, true);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function signUpUser(email, password, confirmPassword) {
+    if (password !== confirmPassword) {
+        showMessage('Passwords do not match', true);
+        return;
+    }
+
+    if (!firebaseAvailable) {
+        // Demo mode sign up
+        currentUser = { email: email, displayName: 'Demo User' };
+        isAuthenticated = true;
+        showAccountManagement();
+        showMessage('Account created successfully (Demo Mode)', false);
+        return;
+    }
+
+    try {
+        showLoading();
+        const { createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        currentUser = userCredential.user;
+        isAuthenticated = true;
+        showAccountManagement();
+        showMessage('Account created successfully!', false);
+    } catch (error) {
+        console.error('Sign up error:', error);
+        showMessage(`Sign up failed: ${error.message}`, true);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function signOutUser() {
+    if (!firebaseAvailable) {
+        // Demo mode sign out
+        currentUser = null;
+        isAuthenticated = false;
+        showAuthSection();
+        showMessage('Signed out successfully', false);
+        return;
+    }
+
+    try {
+        showLoading();
+        const { signOut } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        await signOut(auth);
+        currentUser = null;
+        isAuthenticated = false;
+        showAuthSection();
+        showMessage('Signed out successfully', false);
+    } catch (error) {
+        console.error('Sign out error:', error);
+        showMessage(`Sign out failed: ${error.message}`, true);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function updateUserProfile(profileData) {
+    if (!firebaseAvailable) {
+        // Demo mode update
+        if (currentUser) {
+            currentUser.email = profileData.email;
+            currentUser.displayName = profileData.displayName;
+            updateAccountUI();
+            showMessage('Profile updated successfully (Demo Mode)', false);
+        }
+        return;
+    }
+
+    try {
+        showLoading();
+        const { updateProfile, updateEmail } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        
+        if (profileData.displayName !== currentUser.displayName) {
+            await updateProfile(currentUser, { displayName: profileData.displayName });
+        }
+        
+        if (profileData.email !== currentUser.email) {
+            await updateEmail(currentUser, profileData.email);
+        }
+        
+        updateAccountUI();
+        showMessage('Profile updated successfully!', false);
+    } catch (error) {
+        console.error('Profile update error:', error);
+        showMessage(`Profile update failed: ${error.message}`, true);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function updateUserPassword(currentPassword, newPassword, confirmNewPassword) {
+    if (newPassword !== confirmNewPassword) {
+        showMessage('New passwords do not match', true);
+        return;
+    }
+
+    if (!firebaseAvailable) {
+        // Demo mode password change
+        showMessage('Password changed successfully (Demo Mode)', false);
+        return;
+    }
+
+    try {
+        showLoading();
+        const { updatePassword, reauthenticateWithCredential, EmailAuthProvider } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        
+        // Re-authenticate user before password change
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+        await reauthenticateWithCredential(currentUser, credential);
+        
+        // Update password
+        await updatePassword(currentUser, newPassword);
+        showMessage('Password updated successfully!', false);
+        
+        // Clear form
+        document.getElementById('password-form').reset();
+    } catch (error) {
+        console.error('Password update error:', error);
+        showMessage(`Password update failed: ${error.message}`, true);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteUserAccount() {
+    const confirmDelete = confirm('Are you sure you want to delete your account? This action cannot be undone and will remove all your data.');
+    
+    if (!confirmDelete) return;
+
+    if (!firebaseAvailable) {
+        // Demo mode account deletion
+        currentUser = null;
+        isAuthenticated = false;
+        showAuthSection();
+        showMessage('Account deleted successfully (Demo Mode)', false);
+        return;
+    }
+
+    try {
+        showLoading();
+        
+        // Delete user data from Firestore first
+        if (db && currentUser) {
+            const userDocRef = doc(db, 'users', currentUser.uid);
+            await deleteDoc(userDocRef);
+        }
+        
+        // Delete the user account
+        await currentUser.delete();
+        
+        currentUser = null;
+        isAuthenticated = false;
+        showAuthSection();
+        showMessage('Account deleted successfully', false);
+    } catch (error) {
+        console.error('Account deletion error:', error);
+        showMessage(`Account deletion failed: ${error.message}`, true);
+    } finally {
+        hideLoading();
+    }
+}
 
 function createInvestmentCard(investment) {
     const card = document.createElement('div');
@@ -783,9 +1186,33 @@ function createInvestmentCard(investment) {
         }];
     }
     
+    // Sportsbook brand colors mapping
+    const sportsbookColors = {
+        'DraftKings': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
+        'FanDuel': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+        'BetMGM': { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
+        'Caesars': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+        'PointsBet': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+        'Barstool': { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
+        'WynnBET': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' }
+    };
+
+    // Market name mapping to handle undefined/missing titles
+    const marketNameMapping = {
+        'h2h': 'Moneyline',
+        'spreads': 'Spreads', 
+        'totals': 'Totals',
+        'outrights': 'Outrights'
+    };
+
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
+        const colors = sportsbookColors[bookmaker.title] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
+        
         const marketsHtml = bookmaker.markets.map(market => {
+            // Fix UNDEFINED market names by using key as fallback
+            const marketName = market.name || marketNameMapping[market.key] || market.key || 'UNDEFINED';
+            
             const outcomesHtml = market.outcomes.map(outcome => {
                 let displayText = outcome.name;
                 if (outcome.point !== undefined) {
@@ -803,7 +1230,7 @@ function createInvestmentCard(investment) {
             
             return `
                 <div class="mb-3">
-                    <h5 class="text-xs font-semibold text-gray-500 uppercase mb-2">${market.name}</h5>
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase mb-2">${marketName}</h5>
                     <div class="grid grid-cols-2 gap-1">
                         ${outcomesHtml}
                     </div>
@@ -812,8 +1239,8 @@ function createInvestmentCard(investment) {
         }).join('');
         
         return `
-            <div class="border border-gray-200 rounded-lg p-3 mb-2">
-                <h4 class="text-sm font-semibold text-blue-600 mb-3">${bookmaker.title}</h4>
+            <div class="border ${colors.border} ${colors.bg} rounded-lg p-3 mb-2">
+                <h4 class="text-sm font-semibold ${colors.text} mb-3">${bookmaker.title}</h4>
                 ${marketsHtml}
             </div>
         `;
@@ -1104,7 +1531,85 @@ document.getElementById('settings-form').addEventListener('submit', async functi
     }
 });
 
+// Account page event listeners
+document.getElementById('signin-form-element').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    await signInUser(form.email.value, form.password.value);
+    form.reset();
+});
+
+document.getElementById('signup-form-element').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    await signUpUser(form.email.value, form.password.value, form.confirmPassword.value);
+    form.reset();
+});
+
+document.getElementById('demo-signin-btn').addEventListener('click', async function() {
+    currentUser = { email: 'demo@example.com', displayName: 'Demo User' };
+    isAuthenticated = true;
+    showAccountManagement();
+    showMessage('Signed in successfully (Demo Mode)', false);
+});
+
+document.getElementById('profile-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    await updateUserProfile({
+        email: form.email.value,
+        displayName: form.displayName.value
+    });
+});
+
+document.getElementById('password-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    await updateUserPassword(
+        form.currentPassword.value,
+        form.newPassword.value,
+        form.confirmNewPassword.value
+    );
+});
+
+document.getElementById('preferences-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    
+    const preferences = {
+        autoRefresh: form.autoRefresh.checked,
+        notifications: form.notifications.checked,
+        theme: form.theme.value
+    };
+    
+    // Save preferences (extend existing settings functionality)
+    const newSettings = {
+        ...userSettings,
+        ...preferences
+    };
+    
+    await saveUserSettings(newSettings);
+    showMessage('Preferences saved successfully!', false);
+});
+
+document.getElementById('logout-btn').addEventListener('click', signOutUser);
+
+document.getElementById('delete-account-btn').addEventListener('click', deleteUserAccount);
+
+// Initialize account page state
+function initializeAccountPage() {
+    // Check if user is already authenticated (e.g., from previous session)
+    if (firebaseAvailable && auth && auth.currentUser) {
+        currentUser = auth.currentUser;
+        isAuthenticated = true;
+        showAccountManagement();
+    } else {
+        showAuthSection();
+    }
+}
+
 // Initial load
 initializeFirebase().then(() => {
     startListeners();
+    initializeAccountPage();
 });
