@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Functionality Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bot-row { cursor: pointer; }
+        .bot-row:hover { background-color: #f9fafb; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold mb-6">New Bot Functionality Demo</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Active Bots (Click to expand)</h2>
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b">
+                        <th class="text-left p-2">Name</th>
+                        <th class="text-left p-2">Sport</th>
+                        <th class="text-left p-2">Balance</th>
+                        <th class="text-left p-2">Max Bets/Week</th>
+                        <th class="text-left p-2">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="bot-row border-b hover:bg-gray-50" onclick="toggleWagers('bot1')">
+                        <td class="p-2 font-semibold">NBA Strategy Bot</td>
+                        <td class="p-2">NBA</td>
+                        <td class="p-2">$1,250.00</td>
+                        <td class="p-2">5</td>
+                        <td class="p-2"><span class="bg-green-500 text-white px-2 py-1 rounded text-sm">Running</span></td>
+                    </tr>
+                    <tr id="wagers-bot1" class="hidden bg-gray-50">
+                        <td colspan="5" class="p-4">
+                            <div class="border-t border-gray-200 pt-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">Open Wagers:</h4>
+                                <div class="mb-2 p-2 bg-white rounded border">
+                                    <strong>Lakers vs Warriors</strong> - Moneyline<br>
+                                    Wager: $25.00 | Odds: -110 | Potential Payout: $47.73
+                                </div>
+                                <div class="mb-2 p-2 bg-white rounded border">
+                                    <strong>Celtics vs Heat</strong> - Spread<br>
+                                    Wager: $25.00 | Odds: +105 | Potential Payout: $51.25
+                                </div>
+                                
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Strategy Picks:</h4>
+                                    <button onclick="getStrategyPicks('bot1')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                                        Get Strategy Picks
+                                    </button>
+                                    <div id="picks-bot1" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr class="bot-row border-b hover:bg-gray-50" onclick="toggleWagers('bot2')">
+                        <td class="p-2 font-semibold">NFL Recovery Bot</td>
+                        <td class="p-2">NFL</td>
+                        <td class="p-2">$875.00</td>
+                        <td class="p-2">3</td>
+                        <td class="p-2"><span class="bg-blue-500 text-white px-2 py-1 rounded text-sm">Running</span></td>
+                    </tr>
+                    <tr id="wagers-bot2" class="hidden bg-gray-50">
+                        <td colspan="5" class="p-4">
+                            <div class="border-t border-gray-200 pt-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">Open Wagers:</h4>
+                                <p class="text-gray-500">No open wagers</p>
+                                
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Strategy Picks:</h4>
+                                    <button onclick="getStrategyPicks('bot2')" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                                        Get Strategy Picks (Recovery)
+                                    </button>
+                                    <div id="picks-bot2" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">API Usage Status</h2>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-blue-600 font-medium">Requests Remaining:</p>
+                    <p class="text-lg font-bold text-blue-800">487</p>
+                </div>
+                <div>
+                    <p class="text-blue-600 font-medium">Requests Used:</p>
+                    <p class="text-lg font-bold text-blue-800">13</p>
+                </div>
+            </div>
+            <button onclick="refreshApiStatus()" class="mt-4 w-full py-2 px-4 border border-blue-300 rounded text-blue-700 bg-blue-50 hover:bg-blue-100">
+                Refresh API Status
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function toggleWagers(botId) {
+            const wagersRow = document.getElementById(`wagers-${botId}`);
+            if (wagersRow) {
+                wagersRow.classList.toggle('hidden');
+            }
+        }
+
+        function getStrategyPicks(botId) {
+            const picksDiv = document.getElementById(`picks-${botId}`);
+            
+            // Simulate loading
+            picksDiv.innerHTML = '<p class="text-gray-500">Loading picks...</p>';
+            
+            // Simulate API response
+            setTimeout(() => {
+                const mockPicks = [
+                    {
+                        teams: "Bulls vs Knicks",
+                        sport: "NBA",
+                        bet_type: "Moneyline",
+                        odds: 1.85,
+                        recommended_amount: 25.00,
+                        potential_payout: 46.25,
+                        confidence: 75
+                    },
+                    {
+                        teams: "Cowboys vs Giants",
+                        sport: "NFL", 
+                        bet_type: "Spread",
+                        odds: 1.90,
+                        recommended_amount: 30.00,
+                        potential_payout: 57.00,
+                        confidence: 68
+                    }
+                ];
+
+                let picksHtml = '<div class="text-sm text-gray-600 mb-2">Strategy: Basic Strategy | Remaining bets this week: 3</div>';
+                
+                mockPicks.forEach(pick => {
+                    picksHtml += `
+                        <div class="mb-2 p-3 bg-purple-50 rounded border border-purple-200">
+                            <div class="font-semibold text-purple-800">${pick.teams} (${pick.sport})</div>
+                            <div class="text-sm text-purple-600">
+                                ${pick.bet_type} | Odds: ${pick.odds} | Confidence: ${pick.confidence}%
+                            </div>
+                            <div class="text-sm text-purple-700">
+                                Recommended: $${pick.recommended_amount.toFixed(2)} → Potential: $${pick.potential_payout.toFixed(2)}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                picksDiv.innerHTML = picksHtml;
+            }, 1000);
+        }
+
+        function refreshApiStatus() {
+            alert('API status refreshed! (This is a demo)');
+        }
+    </script>
+</body>
+</html>

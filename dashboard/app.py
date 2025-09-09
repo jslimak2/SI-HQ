@@ -74,6 +74,11 @@ def get_user_collections(user_id):
     }
 
 # --- API Endpoints ---
+@app.route('/demo')
+def demo():
+    """Renders a demo page showing the new bot functionality."""
+    return render_template('demo.html')
+
 @app.route('/')
 def home():
     """Renders the main dashboard page."""
