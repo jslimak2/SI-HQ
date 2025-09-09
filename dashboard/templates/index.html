@@ -8,9 +8,12 @@
     <link rel="stylesheet" href="../static/styles.css">
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page'];
+            const pages = ['dashboard-page', 'investments-page', 'account-page'];
             pages.forEach(id => {
-                document.getElementById(id).style.display = (id === pageId) ? 'block' : 'none';
+                const pageElement = document.getElementById(id);
+                if (pageElement) {
+                    pageElement.style.display = (id === pageId) ? 'block' : 'none';
+                }
             });
             if (pageId === 'investments-page') {
                 // Load cached investments instead of automatically refreshing
@@ -27,6 +30,7 @@
     <nav class="flex space-x-4 mb-6">
         <button onclick="showPage('dashboard-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Dashboard</button>
         <button onclick="showPage('investments-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Available Investments</button>
+        <button onclick="showPage('account-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Account</button>
     </nav>
     <div id="message-box" class="message-box"></div>
     <div id="loading-spinner" class="spinner hidden"></div>
@@ -210,6 +214,182 @@
             <div id="investments-container">
             </div>
             <p id="no-investments-message" class="text-gray-500 text-center hidden">No upcoming games found. Click "Refresh Data" to load fresh games from the API.</p>
+        </div>
+
+        <!-- Account Page -->
+        <div id="account-page" class="mt-8 bg-white rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="max-w-4xl mx-auto">
+                <!-- Sign In/Sign Up Section (shown when not authenticated) -->
+                <div id="auth-section" class="text-center">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Welcome to Sports Betting Dashboard</h2>
+                    
+                    <div class="flex justify-center space-x-4 mb-6">
+                        <button id="show-signin-btn" onclick="showAuthForm('signin')" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Sign In</button>
+                        <button id="show-signup-btn" onclick="showAuthForm('signup')" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Sign Up</button>
+                    </div>
+
+                    <!-- Sign In Form -->
+                    <div id="signin-form" class="max-w-md mx-auto bg-gray-50 p-6 rounded-lg shadow-sm" style="display: none;">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Sign In</h3>
+                        <form id="signin-form-element" class="space-y-4">
+                            <div>
+                                <label for="signin-email" class="block text-sm font-medium text-gray-700">Email</label>
+                                <input type="email" id="signin-email" name="email" required 
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="signin-password" class="block text-sm font-medium text-gray-700">Password</label>
+                                <input type="password" id="signin-password" name="password" required 
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Sign In
+                            </button>
+                        </form>
+                        <div class="mt-4">
+                            <button id="demo-signin-btn" class="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                Continue in Demo Mode
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sign Up Form -->
+                    <div id="signup-form" class="max-w-md mx-auto bg-gray-50 p-6 rounded-lg shadow-sm" style="display: none;">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Create Account</h3>
+                        <form id="signup-form-element" class="space-y-4">
+                            <div>
+                                <label for="signup-email" class="block text-sm font-medium text-gray-700">Email</label>
+                                <input type="email" id="signup-email" name="email" required 
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            <div>
+                                <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
+                                <input type="password" id="signup-password" name="password" required 
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            <div>
+                                <label for="signup-confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                                <input type="password" id="signup-confirm-password" name="confirmPassword" required 
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                Create Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Account Management Section (shown when authenticated) -->
+                <div id="account-management-section" class="hidden">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-3xl font-bold text-gray-800">Account Settings</h2>
+                        <div class="flex items-center space-x-2 text-sm text-gray-600">
+                            <div id="user-status-indicator" class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span id="user-email-display">Loading...</span>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <!-- Profile Settings -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Profile Information</h3>
+                            <form id="profile-form" class="space-y-4">
+                                <div>
+                                    <label for="profile-email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                    <input type="email" id="profile-email" name="email" 
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="profile-display-name" class="block text-sm font-medium text-gray-700">Display Name (Optional)</label>
+                                    <input type="text" id="profile-display-name" name="displayName" 
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                                    Update Profile
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Security Settings -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Security</h3>
+                            <form id="password-form" class="space-y-4">
+                                <div>
+                                    <label for="current-password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                                    <input type="password" id="current-password" name="currentPassword" 
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="new-password" class="block text-sm font-medium text-gray-700">New Password</label>
+                                    <input type="password" id="new-password" name="newPassword" 
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="confirm-new-password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                                    <input type="password" id="confirm-new-password" name="confirmNewPassword" 
+                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                                    Change Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Preferences -->
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Preferences</h3>
+                            <form id="preferences-form" class="space-y-4">
+                                <div>
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" id="pref-auto-refresh" name="autoRefresh" 
+                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-medium text-gray-700">Auto-refresh data on login</span>
+                                            <span class="text-xs text-gray-500">Automatically fetch fresh data when you sign in</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" id="pref-notifications" name="notifications" 
+                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-medium text-gray-700">Email notifications</span>
+                                            <span class="text-xs text-gray-500">Receive updates about your bots and strategies</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label for="pref-theme" class="block text-sm font-medium text-gray-700">Theme</label>
+                                    <select id="pref-theme" name="theme" 
+                                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                        <option value="auto">Auto (System)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                                    Save Preferences
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Account Actions -->
+                        <div class="bg-red-50 p-6 rounded-lg border border-red-200">
+                            <h3 class="text-xl font-semibold text-red-800 mb-4">Danger Zone</h3>
+                            <div class="space-y-4">
+                                <button id="logout-btn" class="w-full py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50">
+                                    Sign Out
+                                </button>
+                                <button id="delete-account-btn" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                                    Delete Account
+                                </button>
+                                <p class="text-xs text-red-600">Warning: Deleting your account will permanently remove all your data, including bots, strategies, and bet history.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
