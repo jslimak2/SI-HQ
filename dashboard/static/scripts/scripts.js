@@ -658,38 +658,111 @@ function displayInvestments(investments) {
         tabContent.className = `tab-content space-y-4 ${firstSport ? 'active' : ''}`;
 
         const allTeams = new Set();
+        const allSportsbooks = new Set();
         groupedBySport[sport].forEach(inv => {
             const teams = inv.teams.split(' vs ');
             allTeams.add(teams[0]);
             allTeams.add(teams[1]);
+            
+            // Collect all sportsbooks
+            inv.bookmakers.forEach(bookmaker => {
+                const bookmakerTitle = bookmaker.title || bookmaker.key || 'Unknown';
+                allSportsbooks.add(bookmakerTitle);
+            });
         });
         const sortedTeams = Array.from(allTeams).sort();
+        const sortedSportsbooks = Array.from(allSportsbooks).sort();
 
-        // Create Team Filter Dropdown
-        const filterDiv = document.createElement('div');
-        filterDiv.className = 'flex items-center space-x-2 my-4';
-        const filterLabel = document.createElement('label');
-        filterLabel.textContent = 'Filter by Team:';
-        filterLabel.className = 'font-semibold text-gray-700';
-        const filterSelect = document.createElement('select');
-        filterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
-        filterSelect.onchange = (e) => window.filterInvestments(sport, e.target.value);
+        // Create Filter Container
+        const filtersContainer = document.createElement('div');
+        filtersContainer.className = 'flex flex-wrap items-center gap-4 my-4 p-4 bg-gray-50 rounded-lg';
         
-        const allOption = document.createElement('option');
-        allOption.value = 'all';
-        allOption.textContent = 'All Teams';
-        filterSelect.appendChild(allOption);
+        // Team Filter
+        const teamFilterDiv = document.createElement('div');
+        teamFilterDiv.className = 'flex items-center space-x-2';
+        const teamFilterLabel = document.createElement('label');
+        teamFilterLabel.textContent = 'Team:';
+        teamFilterLabel.className = 'font-semibold text-gray-700 text-sm';
+        const teamFilterSelect = document.createElement('select');
+        teamFilterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm';
+        teamFilterSelect.id = `team-filter-${sport}`;
+        teamFilterSelect.onchange = () => window.applyFilters(sport);
+        
+        const teamAllOption = document.createElement('option');
+        teamAllOption.value = 'all';
+        teamAllOption.textContent = 'All Teams';
+        teamFilterSelect.appendChild(teamAllOption);
 
         sortedTeams.forEach(team => {
             const option = document.createElement('option');
             option.value = team;
             option.textContent = team;
-            filterSelect.appendChild(option);
+            teamFilterSelect.appendChild(option);
         });
 
-        filterDiv.appendChild(filterLabel);
-        filterDiv.appendChild(filterSelect);
-        tabContent.appendChild(filterDiv);
+        teamFilterDiv.appendChild(teamFilterLabel);
+        teamFilterDiv.appendChild(teamFilterSelect);
+
+        // Sportsbook Filter
+        const sportsbookFilterDiv = document.createElement('div');
+        sportsbookFilterDiv.className = 'flex items-center space-x-2';
+        const sportsbookFilterLabel = document.createElement('label');
+        sportsbookFilterLabel.textContent = 'Sportsbook:';
+        sportsbookFilterLabel.className = 'font-semibold text-gray-700 text-sm';
+        const sportsbookFilterSelect = document.createElement('select');
+        sportsbookFilterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm';
+        sportsbookFilterSelect.id = `sportsbook-filter-${sport}`;
+        sportsbookFilterSelect.onchange = () => window.applyFilters(sport);
+        
+        const sportsbookAllOption = document.createElement('option');
+        sportsbookAllOption.value = 'all';
+        sportsbookAllOption.textContent = 'All Sportsbooks';
+        sportsbookFilterSelect.appendChild(sportsbookAllOption);
+
+        sortedSportsbooks.forEach(sportsbook => {
+            const option = document.createElement('option');
+            option.value = sportsbook;
+            option.textContent = sportsbook;
+            sportsbookFilterSelect.appendChild(option);
+        });
+
+        sportsbookFilterDiv.appendChild(sportsbookFilterLabel);
+        sportsbookFilterDiv.appendChild(sportsbookFilterSelect);
+
+        // Market Filter
+        const marketFilterDiv = document.createElement('div');
+        marketFilterDiv.className = 'flex items-center space-x-2';
+        const marketFilterLabel = document.createElement('label');
+        marketFilterLabel.textContent = 'Market:';
+        marketFilterLabel.className = 'font-semibold text-gray-700 text-sm';
+        const marketFilterSelect = document.createElement('select');
+        marketFilterSelect.className = 'block p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm';
+        marketFilterSelect.id = `market-filter-${sport}`;
+        marketFilterSelect.onchange = () => window.applyFilters(sport);
+        
+        const marketOptions = [
+            { value: 'all', text: 'All Markets' },
+            { value: 'moneyline', text: 'Moneyline' },
+            { value: 'spreads', text: 'Spreads' },
+            { value: 'totals', text: 'Totals' }
+        ];
+
+        marketOptions.forEach(marketOpt => {
+            const option = document.createElement('option');
+            option.value = marketOpt.value;
+            option.textContent = marketOpt.text;
+            marketFilterSelect.appendChild(option);
+        });
+
+        marketFilterDiv.appendChild(marketFilterLabel);
+        marketFilterDiv.appendChild(marketFilterSelect);
+
+        // Add all filters to container
+        filtersContainer.appendChild(teamFilterDiv);
+        filtersContainer.appendChild(sportsbookFilterDiv);
+        filtersContainer.appendChild(marketFilterDiv);
+        
+        tabContent.appendChild(filtersContainer);
 
         // Create Investments List for the sport
         const investmentsList = document.createElement('div');
@@ -734,20 +807,99 @@ window.showSportTab = function(sport) {
     document.getElementById(`tab-content-${sport}`).classList.add('active');
 };
 
-window.filterInvestments = function(sport, team) {
+window.applyFilters = function(sport) {
+    const teamFilter = document.getElementById(`team-filter-${sport}`).value;
+    const sportsbookFilter = document.getElementById(`sportsbook-filter-${sport}`).value;
+    const marketFilter = document.getElementById(`market-filter-${sport}`).value;
+    
     const listContainer = document.getElementById(`investments-list-${sport}`);
     const investmentCards = listContainer.querySelectorAll('.investment-card');
     
     investmentCards.forEach(card => {
-        const teamsText = card.querySelector('.font-bold').textContent;
-        const [team1, team2] = teamsText.split(' vs ');
+        let showCard = true;
         
-        if (team === 'all' || team1 === team || team2 === team) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
+        // Check team filter
+        if (teamFilter !== 'all') {
+            const teamsText = card.querySelector('.font-bold').textContent;
+            const [team1, team2] = teamsText.split(' vs ');
+            if (team1 !== teamFilter && team2 !== teamFilter) {
+                showCard = false;
+            }
+        }
+        
+        // Check sportsbook filter
+        if (showCard && sportsbookFilter !== 'all') {
+            const sportsbookHeaders = card.querySelectorAll('h4');
+            let hasSportsbook = false;
+            sportsbookHeaders.forEach(header => {
+                if (header.textContent === sportsbookFilter) {
+                    hasSportsbook = true;
+                }
+            });
+            if (!hasSportsbook) {
+                showCard = false;
+            }
+        }
+        
+        // Apply visibility
+        card.style.display = showCard ? 'block' : 'none';
+        
+        // If showing card, apply market filter to individual market sections within sportsbooks
+        if (showCard && marketFilter !== 'all') {
+            const sportsbookSections = card.querySelectorAll('.border.border-gray-200.rounded-lg');
+            sportsbookSections.forEach(section => {
+                let showThisSportsbook = false;
+                
+                // Check if this sportsbook should be shown based on sportsbook filter
+                const sectionTitle = section.querySelector('h4').textContent;
+                const shouldShowSportsbook = sportsbookFilter === 'all' || sectionTitle === sportsbookFilter;
+                
+                if (shouldShowSportsbook) {
+                    // Within this sportsbook, show/hide individual market sections
+                    const marketSections = section.querySelectorAll('.mb-3');
+                    marketSections.forEach(marketSection => {
+                        const marketHeader = marketSection.querySelector('h5');
+                        if (marketHeader) {
+                            const marketText = marketHeader.textContent.toLowerCase();
+                            const shouldShowMarket = (marketFilter === 'moneyline' && marketText === 'moneyline') ||
+                                                    (marketFilter === 'spreads' && marketText === 'spreads') ||
+                                                    (marketFilter === 'totals' && marketText === 'totals');
+                            
+                            marketSection.style.display = shouldShowMarket ? 'block' : 'none';
+                            if (shouldShowMarket) showThisSportsbook = true;
+                        }
+                    });
+                    section.style.display = showThisSportsbook ? 'block' : 'none';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        } else if (showCard) {
+            // Reset all sections and markets to be visible if no filters
+            const sportsbookSections = card.querySelectorAll('.border.border-gray-200.rounded-lg');
+            sportsbookSections.forEach(section => {
+                const sectionTitle = section.querySelector('h4').textContent;
+                const shouldShowSportsbook = sportsbookFilter === 'all' || sectionTitle === sportsbookFilter;
+                
+                section.style.display = shouldShowSportsbook ? 'block' : 'none';
+                
+                // Reset all market sections within this sportsbook
+                if (shouldShowSportsbook) {
+                    const marketSections = section.querySelectorAll('.mb-3');
+                    marketSections.forEach(marketSection => {
+                        marketSection.style.display = 'block';
+                    });
+                }
+            });
         }
     });
+};
+
+// Keep the old function for backward compatibility
+window.filterInvestments = function(sport, team) {
+    // Set the team filter and apply all filters
+    document.getElementById(`team-filter-${sport}`).value = team;
+    window.applyFilters(sport);
 };
 
 function createInvestmentCard(investment) {
@@ -783,8 +935,37 @@ function createInvestmentCard(investment) {
         }];
     }
     
+    // Sportsbook brand colors
+    const sportsbookColors = {
+        'DraftKings': 'text-gray-800',      // Dark gray/black
+        'FanDuel': 'text-blue-600',         // Blue (keeping existing)
+        'BetMGM': 'text-yellow-600',        // Gold/yellow
+        'Caesars': 'text-yellow-500',       // Gold (Caesars gold)
+        'PointsBet': 'text-orange-500',     // Orange/yellow
+        'barstool': 'text-pink-600',        // Barstool pink
+        'williamhill_us': 'text-blue-700',  // William Hill blue
+        'betonlineag': 'text-green-600',    // BetOnline green
+        'bovada': 'text-red-600',           // Bovada red
+        'mybookieag': 'text-purple-600'     // MyBookie purple
+    };
+
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
+        // Handle undefined title by using key as fallback and formatting it
+        let bookmakerTitle = bookmaker.title || bookmaker.key || 'Unknown Sportsbook';
+        
+        // Format the title if it came from key (remove underscores, capitalize)
+        if (!bookmaker.title && bookmaker.key) {
+            bookmakerTitle = bookmaker.key
+                .replace(/_/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+        
+        // Get the brand color, fallback to blue
+        const colorClass = sportsbookColors[bookmakerTitle] || sportsbookColors[bookmaker.key] || 'text-blue-600';
+        
         const marketsHtml = bookmaker.markets.map(market => {
             const outcomesHtml = market.outcomes.map(outcome => {
                 let displayText = outcome.name;
@@ -801,9 +982,20 @@ function createInvestmentCard(investment) {
                 `;
             }).join('');
             
+            // Format market name (replace key with friendly name)
+            let marketName = market.name || market.key || 'Unknown Market';
+            if (market.key && !market.name) {
+                const marketNames = {
+                    'h2h': 'Moneyline',
+                    'spreads': 'Spreads', 
+                    'totals': 'Totals'
+                };
+                marketName = marketNames[market.key] || market.key;
+            }
+            
             return `
                 <div class="mb-3">
-                    <h5 class="text-xs font-semibold text-gray-500 uppercase mb-2">${market.name}</h5>
+                    <h5 class="text-xs font-semibold text-gray-500 uppercase mb-2">${marketName}</h5>
                     <div class="grid grid-cols-2 gap-1">
                         ${outcomesHtml}
                     </div>
@@ -813,7 +1005,7 @@ function createInvestmentCard(investment) {
         
         return `
             <div class="border border-gray-200 rounded-lg p-3 mb-2">
-                <h4 class="text-sm font-semibold text-blue-600 mb-3">${bookmaker.title}</h4>
+                <h4 class="text-sm font-semibold ${colorClass} mb-3">${bookmakerTitle}</h4>
                 ${marketsHtml}
             </div>
         `;
