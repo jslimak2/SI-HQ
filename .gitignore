@@ -1,0 +1,48 @@
+.gitignore
+Commonly ignored files and directories for various languages and tools.
+Build artifacts and temporary files
+/build/
+/dist/
+*.log
+*.tmp
+*.temp
+/temp/
+
+Operating System files
+.DS_Store # Mac OS
+Thumbs.db # Windows
+
+Node.js and npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+Python
+pycache/
+*.pyc
+.venv/
+/venv/
+.pytest_cache/
+.mypy_cache/
+
+VS Code
+.vscode/
+
+IDE-specific files
+.idea/ # IntelliJ
+.project # Eclipse
+.classpath # Eclipse
+*.swp # Vim swap files
+*.swo # Vim swap files
+*.swn # Vim swap files
+
+Environment files
+.env
+.env.local
+
+Other common patterns
+*.bak
+*.orig
+
+serviceAccountKey.json
