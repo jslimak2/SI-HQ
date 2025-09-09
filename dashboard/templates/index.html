@@ -13,10 +13,11 @@
                 document.getElementById(id).style.display = (id === pageId) ? 'block' : 'none';
             });
             if (pageId === 'investments-page') {
-                if (typeof window.fetchAndDisplayInvestments === 'function') {
-                    window.fetchAndDisplayInvestments();
+                // Load cached investments instead of automatically refreshing
+                if (typeof window.loadCachedInvestments === 'function') {
+                    window.loadCachedInvestments();
                 } else {
-                    console.error("fetchAndDisplayInvestments is not defined.");
+                    console.error("loadCachedInvestments is not defined.");
                 }
             }
         }
@@ -175,20 +176,40 @@
         </div>
 
         <div id="investments-page" class="mt-8 bg-white rounded-lg shadow-lg p-6" style="display: none;">
-            <header class="flex flex-col sm:flex-row justify-between items-center mb-4">
+            <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">Available Investments</h2>
-                <div class="flex items-center space-x-2">
-                    <button onclick="window.fetchAndDisplayInvestments()" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition">
-                        Refresh Games
-                    </button>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <!-- Cache Status Info -->
+                    <div id="cache-status" class="text-sm text-gray-600 flex items-center space-x-2">
+                        <div id="cache-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
+                        <span id="cache-text">Loading...</span>
+                    </div>
+                    <!-- Action Buttons -->
+                    <div class="flex items-center space-x-2">
+                        <button id="refresh-investments-btn" onclick="window.refreshInvestments()" 
+                                class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition flex items-center space-x-2">
+                            <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Refresh Data</span>
+                        </button>
+                        <button onclick="window.showModal('settings-modal')" 
+                                class="bg-gray-600 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-700 transition flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>Settings</span>
+                        </button>
+                    </div>
                 </div>
             </header>
             
             <div id="sport-tabs-container" class="flex space-x-4 border-b border-gray-200 mb-6">
-                </div>
+            </div>
             <div id="investments-container">
-                </div>
-            <p id="no-investments-message" class="text-gray-500 text-center hidden">No upcoming games found for this sport. Check your API key or try again later.</p>
+            </div>
+            <p id="no-investments-message" class="text-gray-500 text-center hidden">No upcoming games found. Click "Refresh Data" to load fresh games from the API.</p>
         </div>
     </div>
     
@@ -274,6 +295,49 @@
             <div class="overflow-y-auto max-h-96 bg-gray-100 p-4 rounded-md text-sm font-mono whitespace-pre-wrap">
                 <pre id="bot-log-content"></pre>
             </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="modal-close" onclick="window.closeModal('settings-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Investment Settings</h2>
+            <form id="settings-form" class="space-y-4">
+                <div>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" id="auto-refresh-checkbox" name="auto_refresh_on_login" 
+                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-medium text-gray-700">Auto-refresh on login</span>
+                            <span class="text-xs text-gray-500">Automatically fetch fresh data when you open the app</span>
+                        </div>
+                    </label>
+                </div>
+                <div>
+                    <label for="cache-expiry-select" class="block text-sm font-medium text-gray-700 mb-2">Cache expiry time</label>
+                    <select id="cache-expiry-select" name="cache_expiry_minutes" 
+                            class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 hour</option>
+                        <option value="120">2 hours</option>
+                        <option value="1440">24 hours</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">How long to keep cached data before considering it stale</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-md">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Cache Statistics</h4>
+                    <div class="space-y-1 text-xs text-gray-600">
+                        <div>Last refresh: <span id="settings-last-refresh">-</span></div>
+                        <div>Cached games: <span id="settings-cached-games">-</span></div>
+                        <div>API calls saved: <span id="settings-api-saved">-</span></div>
+                    </div>
+                </div>
+                <button type="submit" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">
+                    Save Settings
+                </button>
+            </form>
         </div>
     </div>
     

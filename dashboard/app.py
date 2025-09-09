@@ -15,17 +15,21 @@ load_dotenv()
 
 # --- Firebase Initialization ---
 # Load the path to the service account key from an environment variable
+demo_mode = False
 try:
     cred_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-    if not cred_path or not os.path.exists(cred_path):
-        raise FileNotFoundError("Service account key file not found. Please set GOOGLE_APPLICATION_CREDENTIALS in your .env.")
-    
-    cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-    print("Firestore client initialized successfully.")
+    if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
+        print("Running in demo mode - Firebase features will be limited")
+        demo_mode = True
+        db = None
+    else:
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("Firestore client initialized successfully.")
 except Exception as e:
-    print(f"Failed to initialize Firebase Admin SDK: {e}")
+    print(f"Firebase initialization failed, running in demo mode: {e}")
+    demo_mode = True
     db = None
 
 app = Flask(__name__)
@@ -51,25 +55,44 @@ if not external_api_key:
     print("Warning: SPORTS_API_KEY is not set in your .env file. The available investments feature will not work.")
 
 # Firestore Collection references
-bots_collection = db.collection(f'artifacts/{app_id}/public/data/bots')
-strategies_collection = db.collection(f'artifacts/{app_id}/public/data/strategies')
+if not demo_mode and db:
+    bots_collection = db.collection(f'artifacts/{app_id}/public/data/bots')
+    strategies_collection = db.collection(f'artifacts/{app_id}/public/data/strategies')
+else:
+    bots_collection = None
+    strategies_collection = None
+
+# User-specific collections for the new caching functionality
+def get_user_collections(user_id):
+    """Get user-specific collection references"""
+    if demo_mode or not db:
+        return None
+    return {
+        'cached_investments': db.collection(f'users/{user_id}/cached_investments'),
+        'user_settings': db.collection(f'users/{user_id}/settings'),
+        'bets': db.collection(f'users/{user_id}/bets')
+    }
 
 # --- API Endpoints ---
 @app.route('/')
 def home():
     """Renders the main dashboard page."""
     auth_token = None
-    if firebase_admin._apps:
+    
+    if not demo_mode and firebase_admin._apps:
         # Create a custom token for anonymous sign-in
         # For a production app, you'd want to handle user authentication more securely
         uid = f"anon-user-{random.randint(1000, 9999)}"
-        # The fix is here: using 'auth' directly
         auth_token = auth.create_custom_token(uid)
+        auth_token_str = auth_token.decode('utf-8') if auth_token else None
+    else:
+        # Demo mode - provide a dummy token
+        auth_token_str = "demo_auth_token"
 
     # Pass the Firebase config and auth token to the template
     return render_template('index.html',
                            firebase_config=firebase_config,
-                           auth_token=auth_token.decode('utf-8'))
+                           auth_token=auth_token_str)
 
 @app.route('/api/firebase-config', methods=['GET'])
 def get_firebase_config():
@@ -276,17 +299,62 @@ def delete_strategy(strategy_id):
 def get_available_investments():
     """
     Fetches and returns available sports games and odds.
+    Supports caching with 'refresh' parameter.
     """
-    if not external_api_key:
+    user_id = request.args.get('user_id', 'anonymous')
+    refresh = request.args.get('refresh', 'false').lower() == 'true'
+    
+    # Demo mode handling
+    if demo_mode or not db:
         return jsonify({
-            'success': False,
-            'message': 'SPORTS_API_KEY not found in environment variables.'
-        }), 500
+            'success': True,
+            'investments': generate_demo_investments(),
+            'cached': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'api_calls_made': 0,
+            'demo_mode': True
+        }), 200
+    
+    collections = get_user_collections(user_id)
+    if not collections:
+        return jsonify({'success': False, 'message': 'Database not available.'}), 500
+    
+    # If not refreshing, try to get cached data first
+    if not refresh:
+        try:
+            cached_doc_ref = collections['cached_investments'].document('latest')
+            cached_doc = cached_doc_ref.get()
+            
+            if cached_doc.exists:
+                cached_data = cached_doc.to_dict()
+                # Check if cache is not too old (optional: add expiration logic here)
+                return jsonify({
+                    'success': True,
+                    'investments': cached_data.get('investments', []),
+                    'cached': True,
+                    'last_refresh': cached_data.get('timestamp', ''),
+                    'api_calls_saved': len(cached_data.get('investments', []))
+                }), 200
+        except Exception as e:
+            print(f"Error fetching cached investments: {e}")
+            # Continue to fetch fresh data if cache fails
+    
+    # Fetch fresh data from API
+    if not external_api_key or 'demo' in external_api_key:
+        return jsonify({
+            'success': True,
+            'investments': generate_demo_investments(),
+            'cached': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'api_calls_made': 0,
+            'demo_mode': True,
+            'message': 'Demo mode: Using simulated data. Set SPORTS_API_KEY for real data.'
+        }), 200
 
     # These are the sports leagues we will be fetching data for
-    # NOTE: Your API plan may limit which sports are available.
     sports = ['basketball_nba', 'americanfootball_nfl', 'baseball_mlb', 'americanfootball_ncaaf', 'basketball_ncaab']
     all_games = []
+    api_calls_made = 0
 
     try:
         # Fetch data for each sport sequentially
@@ -294,17 +362,18 @@ def get_available_investments():
             odds_response = requests.get(
                 f'https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={external_api_key}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&dateFormat=iso'
             )
-            odds_response.raise_for_status() # Raise an exception for bad status codes
+            api_calls_made += 1
+            odds_response.raise_for_status()
             games = odds_response.json()
             all_games.extend(games)
 
-        # In a real app, you'd fetch the user's placed bets here to mark them
-        # For now, we'll simulate an empty list or fetch from Firestore
-        user_id = request.args.get('user_id') # You can pass user ID as a query param
-        placed_bets_doc_ref = db.collection(f'users/{user_id}/bets') if db and user_id else None
-        
-        placed_bets_snapshot = placed_bets_doc_ref.get() if placed_bets_doc_ref else []
-        placed_bets = [bet.to_dict() for bet in placed_bets_snapshot]
+        # Fetch user's placed bets
+        placed_bets = []
+        try:
+            placed_bets_snapshot = collections['bets'].get()
+            placed_bets = [bet.to_dict() for bet in placed_bets_snapshot]
+        except Exception as e:
+            print(f"Error fetching placed bets: {e}")
 
         investments = []
         for game in all_games:
@@ -317,11 +386,11 @@ def get_available_investments():
             # Add defensive checks for bookmakers and markets
             bookmakers = game.get('bookmakers', [])
             if not bookmakers:
-                continue # Skip to the next game if no bookmakers are found
+                continue
             
             markets = bookmakers[0].get('markets', [])
             if not markets:
-                continue # Skip to the next game if no markets are found
+                continue
             
             odds = markets[0].get('outcomes', [])
 
@@ -333,10 +402,25 @@ def get_available_investments():
                 'odds': odds,
                 'placed_bets': game_bets
             })
+        
+        # Cache the fresh data
+        try:
+            cache_data = {
+                'investments': investments,
+                'timestamp': datetime.datetime.now().isoformat(),
+                'api_calls_made': api_calls_made,
+                'total_games': len(investments)
+            }
+            collections['cached_investments'].document('latest').set(cache_data)
+        except Exception as e:
+            print(f"Error caching investments: {e}")
             
         return jsonify({
             'success': True,
-            'investments': investments
+            'investments': investments,
+            'cached': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'api_calls_made': api_calls_made
         }), 200
 
     except requests.exceptions.HTTPError as e:
@@ -345,6 +429,159 @@ def get_available_investments():
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return jsonify({'success': False, 'message': f'An unexpected error occurred: {e}'}), 500
+
+def generate_demo_investments():
+    """Generate demo investment data for testing"""
+    import random
+    from datetime import datetime, timedelta
+    
+    demo_games = [
+        {'sport': 'NBA', 'team1': 'Lakers', 'team2': 'Warriors'},
+        {'sport': 'NBA', 'team1': 'Celtics', 'team2': 'Heat'},
+        {'sport': 'NFL', 'team1': 'Chiefs', 'team2': 'Bills'},
+        {'sport': 'NFL', 'team1': 'Cowboys', 'team2': 'Eagles'},
+        {'sport': 'MLB', 'team1': 'Yankees', 'team2': 'Red Sox'},
+    ]
+    
+    investments = []
+    for i, game in enumerate(demo_games):
+        commence_time = datetime.now() + timedelta(hours=random.randint(1, 72))
+        investments.append({
+            'id': f'demo_game_{i}',
+            'sport': game['sport'],
+            'teams': f"{game['team1']} vs {game['team2']}",
+            'commence_time': commence_time.isoformat(),
+            'odds': [
+                {'name': game['team1'], 'price': random.randint(-150, 150)},
+                {'name': game['team2'], 'price': random.randint(-150, 150)},
+                {'name': 'Over', 'price': random.randint(-120, 120), 'point': random.randint(200, 250)},
+            ],
+            'placed_bets': []
+        })
+    
+    return investments
+
+@app.route('/api/user-settings', methods=['GET'])
+def get_user_settings():
+    """Get user settings for preferences like auto-refresh"""
+    user_id = request.args.get('user_id', 'anonymous')
+    
+    # Demo mode handling
+    if demo_mode or not db:
+        return jsonify({
+            'success': True,
+            'settings': {
+                'auto_refresh_on_login': True,
+                'cache_expiry_minutes': 30,
+                'demo_mode': True
+            }
+        }), 200
+    
+    collections = get_user_collections(user_id)
+    if not collections:
+        return jsonify({'success': False, 'message': 'Database not available.'}), 500
+    
+    try:
+        settings_doc = collections['user_settings'].document('preferences').get()
+        
+        if settings_doc.exists:
+            settings = settings_doc.to_dict()
+        else:
+            # Default settings
+            settings = {
+                'auto_refresh_on_login': True,
+                'cache_expiry_minutes': 30,
+                'created_at': datetime.datetime.now().isoformat()
+            }
+            # Save default settings
+            collections['user_settings'].document('preferences').set(settings)
+            
+        return jsonify({
+            'success': True,
+            'settings': settings
+        }), 200
+        
+    except Exception as e:
+        print(f"Error fetching user settings: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch settings: {e}'}), 500
+
+@app.route('/api/user-settings', methods=['POST'])
+def update_user_settings():
+    """Update user settings"""
+    user_id = request.json.get('user_id', 'anonymous')
+    settings_update = request.json.get('settings', {})
+    
+    # Demo mode handling
+    if demo_mode or not db:
+        return jsonify({
+            'success': True,
+            'message': 'Settings saved (demo mode - not persistent)'
+        }), 200
+    
+    collections = get_user_collections(user_id)
+    if not collections:
+        return jsonify({'success': False, 'message': 'Database not available.'}), 500
+    
+    try:
+        # Add update timestamp
+        settings_update['updated_at'] = datetime.datetime.now().isoformat()
+        
+        # Update settings document
+        collections['user_settings'].document('preferences').update(settings_update)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Settings updated successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"Error updating user settings: {e}")
+        return jsonify({'success': False, 'message': f'Failed to update settings: {e}'}), 500
+
+@app.route('/api/investments/stats', methods=['GET'])
+def get_investment_stats():
+    """Get statistics about cached investments"""
+    user_id = request.args.get('user_id', 'anonymous')
+    
+    # Demo mode handling
+    if demo_mode or not db:
+        return jsonify({
+            'success': True,
+            'has_cache': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'total_games': 5,
+            'api_calls_saved': 0,
+            'demo_mode': True
+        }), 200
+    
+    collections = get_user_collections(user_id)
+    if not collections:
+        return jsonify({'success': False, 'message': 'Database not available.'}), 500
+    
+    try:
+        cached_doc = collections['cached_investments'].document('latest').get()
+        
+        if cached_doc.exists:
+            cached_data = cached_doc.to_dict()
+            return jsonify({
+                'success': True,
+                'has_cache': True,
+                'last_refresh': cached_data.get('timestamp', ''),
+                'total_games': cached_data.get('total_games', 0),
+                'api_calls_saved': cached_data.get('api_calls_made', 0)
+            }), 200
+        else:
+            return jsonify({
+                'success': True,
+                'has_cache': False,
+                'last_refresh': None,
+                'total_games': 0,
+                'api_calls_saved': 0
+            }), 200
+            
+    except Exception as e:
+        print(f"Error fetching investment stats: {e}")
+        return jsonify({'success': False, 'message': f'Failed to fetch stats: {e}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
