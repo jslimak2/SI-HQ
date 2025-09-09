@@ -935,7 +935,8 @@ function createInvestmentCard(investment) {
         }];
     }
     
-    // Sportsbook brand colors
+    // Sportsbook brand colors - matches each brand's primary company colors
+    // Fixes the issue where all sportsbooks appeared in generic blue
     const sportsbookColors = {
         'DraftKings': 'text-gray-800',      // Dark gray/black
         'FanDuel': 'text-blue-600',         // Blue (keeping existing)
@@ -952,9 +953,11 @@ function createInvestmentCard(investment) {
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
         // Handle undefined title by using key as fallback and formatting it
+        // This fixes the "UNDEFINED" header issue when the API response doesn't include title field
         let bookmakerTitle = bookmaker.title || bookmaker.key || 'Unknown Sportsbook';
         
         // Format the title if it came from key (remove underscores, capitalize)
+        // Real API usually provides title, but some API versions or bookmakers might only have key
         if (!bookmaker.title && bookmaker.key) {
             bookmakerTitle = bookmaker.key
                 .replace(/_/g, ' ')
@@ -963,7 +966,7 @@ function createInvestmentCard(investment) {
                 .join(' ');
         }
         
-        // Get the brand color, fallback to blue
+        // Get the brand color, fallback to blue if no specific color defined
         const colorClass = sportsbookColors[bookmakerTitle] || sportsbookColors[bookmaker.key] || 'text-blue-600';
         
         const marketsHtml = bookmaker.markets.map(market => {
