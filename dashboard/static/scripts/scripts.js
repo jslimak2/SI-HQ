@@ -1460,11 +1460,11 @@ function createInvestmentCard(investment) {
     const commenceTime = new Date(investment.commence_time);
     const formattedTime = commenceTime.toLocaleString();
 
-    // Generate placed bets HTML
-    const placedBetsHtml = investment.placed_bets.length > 0
+    // Generate placed wagers HTML
+    const placedWagersHtml = investment.placed_bets.length > 0
         ? `
             <div class="mt-4 p-3 bg-green-50 rounded-lg text-green-800 font-semibold text-sm">
-                Placed Bets: ${investment.placed_bets.map(bet => `${bet.bet_type}`).join(', ')}
+                Placed Wagers: ${investment.placed_bets.map(wager => `${wager.bet_type}`).join(', ')}
             </div>
         `
         : '';
@@ -1502,67 +1502,34 @@ function createInvestmentCard(investment) {
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
         const colors = sportsbookColors[bookmaker.title] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
-        
         const marketsHtml = bookmaker.markets.map(market => {
-            // Fix UNDEFINED market names by using key as fallback
             const marketName = market.name || marketNameMapping[market.key] || market.key || 'UNDEFINED';
-            
             const outcomesHtml = market.outcomes.map(outcome => {
                 let displayText = outcome.name;
                 if (outcome.point !== undefined) {
                     displayText += ` (${outcome.point > 0 ? '+' : ''}${outcome.point})`;
                 }
                 const priceText = outcome.price > 0 ? `+${outcome.price}` : outcome.price;
-                
-                // Create unique bet ID for cart functionality
-                const betId = `${investment.id}_${bookmaker.key}_${market.key}_${outcome.name}`;
-                const betData = {
-                    id: betId,
-                    gameId: investment.id,
-                    teams: investment.teams,
-                    sport: investment.sport_title || investment.sport || 'Sport',
-                    commenceTime: investment.commence_time,
-                    sportsbook: bookmaker.title,
-                    sportsbookKey: bookmaker.key,
-                    marketType: marketName,
-                    marketKey: market.key,
-                    selection: displayText,
-                    selectionName: outcome.name,
-                    odds: outcome.price,
-                    point: outcome.point
-                };
-
-                // Find bot recommendations for this specific bet
-                const matchingRecommendations = gameRecommendations.filter(rec => 
-                    rec.sportsbook === bookmaker.title && 
-                    rec.market_key === market.key && 
-                    rec.selection === outcome.name
-                );
-
-                // Generate bot recommendation badges
-                const botBadgesHtml = matchingRecommendations.map(rec => `
-                    <div class="absolute -top-1 -right-1 flex flex-wrap gap-1 z-10">
-                        <div class="bot-recommendation-badge bg-white border-2 rounded-full px-2 py-1 text-xs font-bold shadow-md" 
-                             style="border-color: ${rec.bot_color}; color: ${rec.bot_color};"
-                             title="${rec.bot_name}: ${rec.confidence}% confidence, $${rec.recommended_amount} recommended">
-                            ${rec.bot_name.charAt(0)}${rec.confidence}%
-                        </div>
-                    </div>
-                `).join('');
-                
+                const defaultWager = 10;
+                const payout = calculatePayout(defaultWager, outcome.price) + defaultWager;
                 return `
-                    <div class="text-center p-2 border border-gray-100 rounded relative group">
+                    <div class="wager-outcome text-center p-2 border border-gray-100 rounded relative cursor-pointer" style="position:relative;">
                         <div class="text-xs font-medium text-gray-600">${displayText}</div>
                         <div class="text-sm font-bold text-gray-900">${priceText}</div>
-                        ${botBadgesHtml}
-                        <button onclick="addToCart(${JSON.stringify(betData).replace(/"/g, '&quot;')})" 
-                                class="absolute inset-0 bg-blue-500 bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow-lg">+ Cart</span>
-                        </button>
+                        <div class="text-xs text-gray-500">Wager: $${defaultWager} | Payout: $${payout.toFixed(2)}</div>
+                        <button class="post9-btn add-to-cart-btn" style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:8px; z-index:10;" onclick="window.addToCart({
+                            id: '${investment.id}_${bookmaker.title}_${market.key}_${outcome.name}',
+                            teams: '${investment.teams}',
+                            sport: '${investment.sport_title || investment.sport || ''}',
+                            sportsbook: '${bookmaker.title}',
+                            marketType: '${marketName}',
+                            selection: '${outcome.name}',
+                            odds: ${outcome.price},
+                            commenceTime: '${investment.commence_time}'
+                        })">Add to Cart</button>
                     </div>
                 `;
             }).join('');
-            
             return `
                 <div class="mb-3">
                     <h5 class="text-xs font-semibold text-gray-500 uppercase mb-2">${marketName}</h5>
@@ -1572,7 +1539,6 @@ function createInvestmentCard(investment) {
                 </div>
             `;
         }).join('');
-        
         return `
             <div class="border ${colors.border} ${colors.bg} rounded-lg p-3 mb-2">
                 <h4 class="text-sm font-semibold ${colors.text} mb-3">${bookmaker.title}</h4>
@@ -1607,16 +1573,19 @@ function createInvestmentCard(investment) {
     }
 
     card.innerHTML = `
+        <style>
+            .wager-outcome { position: relative; cursor: pointer; }
+            .wager-outcome:hover .add-to-cart-btn { display: block !important; }
+        </style>
         <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">${investment.teams}</h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
             <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
         </div>
-        ${botSummaryHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
         </div>
-        ${placedBetsHtml}
+        ${placedWagersHtml}
     `;
     return card;
 }
@@ -2039,27 +2008,23 @@ function showStatsBreakdownInline(statType, card) {
 
 // --- BET CART FUNCTIONALITY ---
 
-window.addToCart = function(betData) {
-    // Check if bet already exists in cart
-    const existingIndex = betCart.findIndex(item => item.id === betData.id);
-    
+window.addToCart = function(wagerData) {
+    // Check if wager already exists in cart
+    const existingIndex = betCart.findIndex(item => item.id === wagerData.id);
     if (existingIndex >= 0) {
-        showMessage('This bet is already in your cart!', true);
+        showMessage('This wager is already in your cart!', true);
         return;
     }
-    
-    // Add bet amount (default $10, can be customized later)
-    betData.betAmount = 10;
-    betData.potentialPayout = calculatePayout(betData.betAmount, betData.odds);
-    betData.addedAt = new Date().toISOString();
-    
-    betCart.push(betData);
-    updateCartUI();
-    showMessage(`Added ${betData.selection} to cart!`, false);
+    wagerData.wagerAmount = 10;
+    wagerData.payout = calculatePayout(wagerData.wagerAmount, wagerData.odds) + wagerData.wagerAmount;
+    wagerData.addedAt = new Date().toISOString();
+    betCart.push(wagerData);
+    setTimeout(updateCartUI, 0); // Ensure UI updates after adding
+    showMessage(`Added ${wagerData.selection} to cart!`, false);
 }
 
-window.removeFromCart = function(betId) {
-    betCart = betCart.filter(item => item.id !== betId);
+window.removeFromCart = function(itemId) {
+    betCart = betCart.filter(item => item.id !== itemId);
     updateCartUI();
     showMessage('Removed bet from cart', false);
 }
@@ -2118,10 +2083,12 @@ window.exportToExcel = function() {
 }
 
 function updateCartUI() {
+    const cartContainer = document.getElementById('cart-container');
+    if (!cartContainer) return;
     const cartCount = betCart.length;
     const cartBadge = document.getElementById('cart-count-badge');
     const cartItemsCount = document.getElementById('cart-items-count');
-    const cartContainer = document.getElementById('cart-items-container');
+    const cartContainerEl = document.getElementById('cart-items-container');
     const emptyMessage = document.getElementById('empty-cart-message');
     const placeBetsBtn = document.getElementById('place-bets-btn');
     const exportBtn = document.getElementById('export-excel-btn');
@@ -2140,8 +2107,8 @@ function updateCartUI() {
     // Show/hide empty message
     if (cartCount === 0) {
         emptyMessage.classList.remove('hidden');
-        cartContainer.innerHTML = '';
-        cartContainer.appendChild(emptyMessage);
+        cartContainerEl.innerHTML = '';
+        cartContainerEl.appendChild(emptyMessage);
     } else {
         emptyMessage.classList.add('hidden');
         renderCartItems();
@@ -2158,55 +2125,49 @@ function updateCartUI() {
 function renderCartItems() {
     const container = document.getElementById('cart-items-container');
     container.innerHTML = '';
-    
-    betCart.forEach(bet => {
+    betCart.forEach(wager => {
         const cartItem = document.createElement('div');
         cartItem.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3';
-        
-        const commenceTime = new Date(bet.commenceTime).toLocaleString();
-        
+        const commenceTime = new Date(wager.commenceTime).toLocaleString();
         cartItem.innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div class="flex-1">
-                    <div class="font-semibold text-sm text-gray-900">${bet.teams}</div>
-                    <div class="text-xs text-gray-600">${bet.sport} • ${commenceTime}</div>
+                    <div class="font-semibold text-sm text-gray-900">${wager.teams}</div>
+                    <div class="text-xs text-gray-600">${wager.sport} • ${commenceTime}</div>
                 </div>
-                <button onclick="removeFromCart('${bet.id}')" class="text-red-500 hover:text-red-700 ml-2">
+                <button onclick="removeFromCart('${wager.id}')" class="text-red-500 hover:text-red-700 ml-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
-            
             <div class="text-xs text-gray-700 mb-2">
-                <div><span class="font-medium">Book:</span> ${bet.sportsbook}</div>
-                <div><span class="font-medium">Market:</span> ${bet.marketType}</div>
-                <div><span class="font-medium">Selection:</span> ${bet.selection}</div>
-                <div><span class="font-medium">Odds:</span> ${bet.odds > 0 ? '+' : ''}${bet.odds}</div>
+                <div><span class="font-medium">Book:</span> ${wager.sportsbook}</div>
+                <div><span class="font-medium">Market:</span> ${wager.marketType}</div>
+                <div><span class="font-medium">Selection:</span> ${wager.selection}</div>
+                <div><span class="font-medium">Odds:</span> ${wager.odds > 0 ? '+' : ''}${wager.odds}</div>
             </div>
-            
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <span class="text-xs text-gray-600 mr-2">Bet:</span>
-                    <input type="number" value="${bet.betAmount}" min="1" step="0.01" 
-                           onchange="updateBetAmount('${bet.id}', this.value)"
+                    <span class="text-xs text-gray-600 mr-2">Wager:</span>
+                    <input type="number" value="${wager.wagerAmount}" min="1" step="0.01" 
+                           onchange="updateWagerAmount('${wager.id}', this.value)"
                            class="w-20 px-2 py-1 border border-gray-300 rounded text-xs">
                 </div>
                 <div class="text-xs">
-                    <div class="text-green-600 font-semibold">$${bet.potentialPayout.toFixed(2)}</div>
+                    <div class="text-green-600 font-semibold">$${wager.payout.toFixed(2)}</div>
                 </div>
             </div>
         `;
-        
         container.appendChild(cartItem);
     });
 }
 
-function updateBetAmount(betId, newAmount) {
-    const bet = betCart.find(item => item.id === betId);
-    if (bet) {
-        bet.betAmount = parseFloat(newAmount) || 0;
-        bet.potentialPayout = calculatePayout(bet.betAmount, bet.odds);
+function updateWagerAmount(wagerId, newAmount) {
+    const wager = betCart.find(item => item.id === wagerId);
+    if (wager) {
+        wager.wagerAmount = parseFloat(newAmount) || 0;
+        wager.payout = calculatePayout(wager.wagerAmount, wager.odds) + wager.wagerAmount;
         updateCartTotals();
     }
 }
@@ -2220,7 +2181,7 @@ function calculatePayout(betAmount, odds) {
 }
 
 function updateCartTotals() {
-    const totalPayout = betCart.reduce((sum, bet) => sum + bet.potentialPayout, 0);
+    const totalPayout = betCart.reduce((sum, wager) => sum + wager.payout, 0);
     document.getElementById('cart-total-payout').textContent = `$${totalPayout.toFixed(2)}`;
 }
 
@@ -2259,7 +2220,7 @@ function showBetConfirmation() {
 function populateConfirmationModal() {
     // Calculate totals
     const totalBets = betCart.length;
-    const totalAmount = betCart.reduce((sum, bet) => sum + bet.betAmount, 0);
+    const totalAmount = betCart.reduce((sum, bet) => sum + bet.wagerAmount, 0);
     const totalPayout = betCart.reduce((sum, bet) => sum + bet.potentialPayout, 0);
     const totalProfit = totalPayout - totalAmount;
     
@@ -2288,7 +2249,7 @@ function populateConfirmationModal() {
         const div = document.createElement('div');
         div.className = 'bg-gray-50 border rounded-lg p-4';
         
-        const sportsbookTotal = bets.reduce((sum, bet) => sum + bet.betAmount, 0);
+        const sportsbookTotal = bets.reduce((sum, bet) => sum + bet.wagerAmount, 0);
         const sportsbookPayout = bets.reduce((sum, bet) => sum + bet.potentialPayout, 0);
         
         div.innerHTML = `
@@ -2303,7 +2264,7 @@ function populateConfirmationModal() {
                     <div class="text-sm bg-white p-2 rounded border">
                         <div class="font-medium">${bet.teams}</div>
                         <div class="text-gray-600">${bet.marketType}: ${bet.selection} (${bet.odds > 0 ? '+' : ''}${bet.odds})</div>
-                        <div class="text-green-600">$${bet.betAmount} → $${bet.potentialPayout.toFixed(2)}</div>
+                        <div class="text-green-600">$${bet.wagerAmount} → $${bet.potentialPayout.toFixed(2)}</div>
                     </div>
                 `).join('')}
             </div>
@@ -2384,8 +2345,8 @@ async function exportToExcelInternal() {
             bet.marketType,
             bet.selection,
             bet.odds,
-            bet.betAmount,
-            bet.potentialPayout.toFixed(2),
+            bet.wagerAmount,
+            bet.payout.toFixed(2),
             new Date(bet.commenceTime).toLocaleString()
         ]);
         
