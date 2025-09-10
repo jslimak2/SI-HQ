@@ -251,8 +251,11 @@ def add_strategy():
             'type': data.get('type', 'basic'),
             'description': data.get('description', 'A custom betting strategy.'),
             'parameters': data.get('parameters', {}),
+            'flow_definition': data.get('flow_definition', {}),
             'linked_strategy_id': data.get('linked_strategy_id', None),
-            'created_at': datetime.datetime.now().isoformat()
+            'created_from_template': data.get('created_from_template', None),
+            'created_at': datetime.datetime.now().isoformat(),
+            'updated_at': datetime.datetime.now().isoformat()
         }
         new_strategy_ref.set(initial_strategy_data)
         return jsonify({'success': True, 'message': 'Strategy added successfully.', 'strategy_id': strategy_id}), 201
@@ -376,13 +379,205 @@ def generate_strategy_picks(strategy_data, bot_data, max_picks):
     """Generate betting picks based on strategy type."""
     strategy_type = strategy_data.get('type', 'basic')
     
-    # Basic strategy: randomly select games with simple criteria
-    if strategy_type == 'basic' or strategy_type == 'normal':
-        return generate_basic_strategy_picks(bot_data, max_picks)
+    # Expected Value strategy
+    if strategy_type == 'expected_value':
+        return generate_expected_value_picks(strategy_data, bot_data, max_picks)
+    elif strategy_type == 'conservative':
+        return generate_conservative_strategy_picks(strategy_data, bot_data, max_picks)
+    elif strategy_type == 'aggressive':
+        return generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks)
     elif strategy_type == 'recovery':
         return generate_recovery_strategy_picks(bot_data, max_picks)
+    elif strategy_type == 'value_hunting':
+        return generate_value_hunting_picks(strategy_data, bot_data, max_picks)
+    elif strategy_type == 'arbitrage':
+        return generate_arbitrage_picks(strategy_data, bot_data, max_picks)
     else:
         return generate_basic_strategy_picks(bot_data, max_picks)
+
+def generate_expected_value_picks(strategy_data, bot_data, max_picks):
+    """Generate +eV (Expected Value) strategy picks."""
+    picks = []
+    
+    # Get strategy parameters
+    params = strategy_data.get('parameters', {})
+    min_ev = params.get('min_expected_value', 5.0)
+    max_bet_pct = params.get('max_bet_percentage', 3.0)
+    min_confidence = params.get('confidence_threshold', 65)
+    max_odds = params.get('max_odds', 3.0)
+    kelly_fraction = params.get('kelly_fraction', 0.25)
+    
+    # Demo games with calculated expected values
+    demo_games = [
+        {
+            'teams': 'Lakers vs Warriors', 
+            'sport': 'NBA', 
+            'odds': 2.25, 
+            'bet_type': 'Moneyline',
+            'true_probability': 0.50,  # 50% estimated true probability
+            'expected_value': ((2.25 * 0.50) - 1) * 100  # Calculate EV percentage
+        },
+        {
+            'teams': 'Celtics vs Heat', 
+            'sport': 'NBA', 
+            'odds': 1.85, 
+            'bet_type': 'Moneyline',
+            'true_probability': 0.60,  # 60% estimated true probability  
+            'expected_value': ((1.85 * 0.60) - 1) * 100
+        },
+        {
+            'teams': 'Chiefs vs Bills', 
+            'sport': 'NFL', 
+            'odds': 2.75, 
+            'bet_type': 'Spread',
+            'true_probability': 0.42,  # 42% estimated true probability
+            'expected_value': ((2.75 * 0.42) - 1) * 100
+        },
+        {
+            'teams': 'Cowboys vs Eagles', 
+            'sport': 'NFL', 
+            'odds': 1.95, 
+            'bet_type': 'Moneyline',
+            'true_probability': 0.55,  # 55% estimated true probability
+            'expected_value': ((1.95 * 0.55) - 1) * 100
+        }
+    ]
+    
+    # Filter games based on +eV criteria
+    for game in demo_games:
+        ev = game['expected_value']
+        confidence = int(game['true_probability'] * 100)
+        
+        # Check if game meets +eV criteria
+        if (ev >= min_ev and 
+            confidence >= min_confidence and 
+            game['odds'] <= max_odds):
+            
+            # Calculate bet size using Kelly Criterion fraction
+            optimal_fraction = (game['true_probability'] * game['odds'] - 1) / (game['odds'] - 1)
+            bet_fraction = min(optimal_fraction * kelly_fraction, max_bet_pct / 100)
+            bet_amount = bot_data['current_balance'] * bet_fraction
+            
+            potential_payout = bet_amount * game['odds']
+            
+            pick = {
+                'teams': game['teams'],
+                'sport': game['sport'],
+                'bet_type': game['bet_type'],
+                'odds': game['odds'],
+                'recommended_amount': round(bet_amount, 2),
+                'potential_payout': round(potential_payout, 2),
+                'confidence': confidence,
+                'expected_value': round(ev, 2),
+                'strategy_reason': f"+eV: {ev:.1f}% (Kelly: {optimal_fraction:.2%}, Bet: {bet_fraction:.1%})"
+            }
+            picks.append(pick)
+            
+            if len(picks) >= max_picks:
+                break
+    
+    return picks
+
+def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
+    """Generate conservative strategy picks with enhanced logic."""
+    params = strategy_data.get('parameters', {})
+    min_confidence = params.get('min_confidence', 75)
+    max_bet_pct = params.get('max_bet_percentage', 2.0)
+    max_odds = params.get('max_odds', 2.0)
+    
+    basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
+    
+    # Filter and adjust for conservative parameters
+    conservative_picks = []
+    for pick in basic_picks:
+        if (pick['confidence'] >= min_confidence and 
+            pick['odds'] <= max_odds):
+            
+            # Reduce bet size for conservative approach
+            pick['recommended_amount'] = min(
+                pick['recommended_amount'], 
+                bot_data['current_balance'] * (max_bet_pct / 100)
+            )
+            pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
+            pick['strategy_reason'] = f"Conservative: {pick['confidence']}% confidence, Low odds"
+            conservative_picks.append(pick)
+    
+    return conservative_picks
+
+def generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks):
+    """Generate aggressive strategy picks with enhanced logic."""
+    params = strategy_data.get('parameters', {})
+    min_confidence = params.get('min_confidence', 60)
+    max_bet_pct = params.get('max_bet_percentage', 5.0)
+    
+    basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
+    
+    # Adjust for aggressive parameters
+    for pick in basic_picks:
+        if pick['confidence'] >= min_confidence:
+            # Increase bet size for aggressive approach
+            pick['recommended_amount'] = bot_data['current_balance'] * (max_bet_pct / 100)
+            pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
+            pick['strategy_reason'] = f"Aggressive: {pick['confidence']}% confidence, High stakes"
+    
+    return basic_picks
+
+def generate_value_hunting_picks(strategy_data, bot_data, max_picks):
+    """Generate value hunting strategy picks."""
+    params = strategy_data.get('parameters', {})
+    min_odds_edge = params.get('min_odds_edge', 5.0)
+    max_bet_pct = params.get('max_bet_percentage', 3.5)
+    
+    picks = generate_basic_strategy_picks(bot_data, max_picks)
+    
+    # Add value hunting logic - simulate finding better odds
+    for pick in picks:
+        # Simulate market comparison (in real implementation, compare across sportsbooks)
+        market_average = pick['odds'] * 0.95  # Assume we found 5% better odds
+        odds_edge = ((pick['odds'] - market_average) / market_average) * 100
+        
+        if odds_edge >= min_odds_edge:
+            pick['recommended_amount'] = bot_data['current_balance'] * (max_bet_pct / 100)
+            pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
+            pick['strategy_reason'] = f"Value: {odds_edge:.1f}% better than market average"
+    
+    return picks
+
+def generate_arbitrage_picks(strategy_data, bot_data, max_picks):
+    """Generate arbitrage strategy picks."""
+    params = strategy_data.get('parameters', {})
+    min_profit = params.get('min_arbitrage_profit', 1.0)
+    
+    # Simulate arbitrage opportunities (in real implementation, find across sportsbooks)
+    arbitrage_picks = []
+    
+    # Example arbitrage opportunity
+    arbitrage_opportunity = {
+        'teams': 'Lakers vs Warriors',
+        'sport': 'NBA',
+        'bet_type': 'Arbitrage',
+        'sportsbook_a_odds': 2.10,
+        'sportsbook_b_odds': 2.05,
+        'arbitrage_profit': 2.4  # 2.4% guaranteed profit
+    }
+    
+    if arbitrage_opportunity['arbitrage_profit'] >= min_profit:
+        # Calculate optimal bet distribution
+        total_investment = bot_data['current_balance'] * 0.10  # 10% for arbitrage
+        
+        pick = {
+            'teams': arbitrage_opportunity['teams'],
+            'sport': arbitrage_opportunity['sport'],
+            'bet_type': 'Arbitrage (Both Sides)',
+            'odds': arbitrage_opportunity['sportsbook_a_odds'],
+            'recommended_amount': round(total_investment, 2),
+            'potential_payout': round(total_investment * (1 + arbitrage_opportunity['arbitrage_profit']/100), 2),
+            'confidence': 100,  # Risk-free
+            'strategy_reason': f"Arbitrage: {arbitrage_opportunity['arbitrage_profit']:.1f}% guaranteed profit"
+        }
+        arbitrage_picks.append(pick)
+    
+    return arbitrage_picks
 
 def generate_basic_strategy_picks(bot_data, max_picks):
     """Generate basic strategy picks - simple random selection with some logic."""

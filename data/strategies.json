@@ -2,19 +2,52 @@
     {
         "id": 1,
         "name": "Conservative",
-        "type": "normal",
+        "type": "conservative",
+        "description": "Low risk approach with smaller bet sizes and higher confidence requirements",
+        "parameters": {
+            "min_confidence": 75,
+            "max_bet_percentage": 2.0,
+            "max_odds": 2.0
+        },
         "linked_strategy_id": null
     },
     {
         "id": 2,
         "name": "Aggressive",
-        "type": "normal",
+        "type": "aggressive", 
+        "description": "Higher risk, higher reward with larger bet sizes and more frequent betting",
+        "parameters": {
+            "min_confidence": 60,
+            "max_bet_percentage": 5.0,
+            "max_odds": 5.0
+        },
         "linked_strategy_id": null
     },
     {
         "id": 3,
         "name": "Loss Recovery",
         "type": "recovery",
+        "description": "Recover losses with calculated risk management and progressive betting",
+        "parameters": {
+            "loss_threshold": 10.0,
+            "max_bet_percentage": 7.0,
+            "recovery_multiplier": 1.5
+        },
+        "linked_strategy_id": null
+    },
+    {
+        "id": 4,
+        "name": "+eV Strategy",
+        "type": "expected_value",
+        "description": "Focus on bets with positive expected value. Calculates probability vs odds to find profitable opportunities",
+        "parameters": {
+            "min_expected_value": 5.0,
+            "max_bet_percentage": 3.0,
+            "confidence_threshold": 65,
+            "max_odds": 3.0,
+            "kelly_fraction": 0.25
+        },
+        "created_from_template": "positive_ev",
         "linked_strategy_id": null
     }
 ]
