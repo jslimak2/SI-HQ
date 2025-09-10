@@ -202,6 +202,56 @@ document.addEventListener('keydown', function(event) {
 async function fetchStrategies() {
     showLoading();
     try {
+        if (!firebaseAvailable) {
+            // Demo mode - load sample strategies
+            strategies = [
+                {
+                    id: 'demo-1',
+                    name: '+EV Model Strategy',
+                    type: 'positive_ev',
+                    description: 'Bets only when model predicts positive expected value above 5% threshold',
+                    parameters: {
+                        risk_level: 6,
+                        bet_percentage: 3.0,
+                        max_bets_per_week: 8,
+                        min_confidence: 60,
+                        min_expected_value: 5
+                    },
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-2', 
+                    name: 'Conservative NFL',
+                    type: 'conservative',
+                    description: 'Low-risk strategy focused on NFL games with high confidence predictions',
+                    parameters: {
+                        risk_level: 2,
+                        bet_percentage: 1.5,
+                        max_bets_per_week: 3,
+                        min_confidence: 75
+                    },
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 'demo-3',
+                    name: 'Weather Impact Totals',
+                    type: 'weather_based', 
+                    description: 'Leverages weather data to find edges in outdoor game totals',
+                    parameters: {
+                        risk_level: 4,
+                        bet_percentage: 2.2,
+                        max_bets_per_week: 6,
+                        wind_threshold: 15
+                    },
+                    created_at: new Date().toISOString()
+                }
+            ];
+            displayStrategies();
+            updateStrategySelects();
+            hideLoading();
+            return;
+        }
+        
         const q = collection(db, `users/${userId}/strategies`);
         onSnapshot(q, (querySnapshot) => {
             strategies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -224,6 +274,16 @@ async function fetchStrategies() {
 async function fetchBots() {
     showLoading();
     try {
+        if (!firebaseAvailable) {
+            // Demo mode - empty bots for cleaner demo
+            bots = [];
+            displayBots();
+            updateOverallStats();
+            setupStatsCardClicks();
+            hideLoading();
+            return;
+        }
+        
         const q = collection(db, `users/${userId}/bots`);
         onSnapshot(q, (querySnapshot) => {
             bots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
