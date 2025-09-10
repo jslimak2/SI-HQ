@@ -128,7 +128,7 @@
     </style>
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page', 'account-page'];
+            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'analytics-page', 'account-page'];
             pages.forEach(id => {
                 const pageElement = document.getElementById(id);
                 if (pageElement) {
@@ -152,9 +152,12 @@
     </script>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-8">
-    <nav class="flex space-x-4 mb-6">
+    <nav class="flex space-x-4 mb-6 flex-wrap">
         <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
         <button onclick="showPage('investments-page')" class="nav-btn">Available Investments</button>
+        <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button>
+        <button onclick="showPage('model-gallery-page')" class="nav-btn">Model Gallery</button>
+        <button onclick="showPage('analytics-page')" class="nav-btn">Advanced Analytics</button>
         <button onclick="showPage('account-page')" class="nav-btn">Account</button>
     </nav>
     <div id="message-box" class="message-box"></div>
@@ -382,6 +385,288 @@
                 </form>
                 <button id="logout-btn" class="post9-btn p-3 mb-2">Sign Out</button>
                 <button id="delete-account-btn" class="post9-btn p-3 bg-red-600 text-white">Delete Account</button>
+            </div>
+        </div>
+
+        <!-- Strategy Builder Page -->
+        <div id="strategy-builder-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Visual Strategy Builder</h2>
+                <div class="flex gap-3">
+                    <button onclick="showModal('strategy-templates-modal')" class="post9-btn px-4 py-2">Templates</button>
+                    <button onclick="saveCurrentStrategy()" class="post9-btn px-4 py-2">Save Strategy</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-96">
+                <!-- Component Palette -->
+                <div class="bg-gray-100 rounded-lg p-4 overflow-y-auto">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Components</h3>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-700 mb-2">Logic Blocks</h4>
+                        <div class="space-y-2">
+                            <div class="draggable-component bg-blue-100 border border-blue-300 p-2 rounded cursor-pointer" data-type="if-condition">
+                                📋 IF/THEN
+                            </div>
+                            <div class="draggable-component bg-blue-100 border border-blue-300 p-2 rounded cursor-pointer" data-type="and-or">
+                                🔗 AND/OR
+                            </div>
+                            <div class="draggable-component bg-blue-100 border border-blue-300 p-2 rounded cursor-pointer" data-type="comparison">
+                                ⚖️ Compare
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-700 mb-2">Data Sources</h4>
+                        <div class="space-y-2">
+                            <div class="draggable-component bg-green-100 border border-green-300 p-2 rounded cursor-pointer" data-type="weather">
+                                🌤️ Weather
+                            </div>
+                            <div class="draggable-component bg-green-100 border border-green-300 p-2 rounded cursor-pointer" data-type="team-stats">
+                                📊 Team Stats
+                            </div>
+                            <div class="draggable-component bg-green-100 border border-green-300 p-2 rounded cursor-pointer" data-type="model-prediction">
+                                🤖 ML Model
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-700 mb-2">Actions</h4>
+                        <div class="space-y-2">
+                            <div class="draggable-component bg-yellow-100 border border-yellow-300 p-2 rounded cursor-pointer" data-type="place-bet">
+                                💰 Place Bet
+                            </div>
+                            <div class="draggable-component bg-yellow-100 border border-yellow-300 p-2 rounded cursor-pointer" data-type="skip-bet">
+                                ⏭️ Skip Bet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Visual Flow Canvas -->
+                <div class="lg:col-span-2 bg-white rounded-lg p-4 border-2 border-dashed border-gray-300 relative">
+                    <div id="strategy-canvas" class="w-full h-full min-h-96">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-500">
+                            <div class="text-center">
+                                <div class="text-4xl mb-2">🎯</div>
+                                <p>Drag components here to build your strategy</p>
+                                <p class="text-sm mt-1">Start with an IF/THEN block</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parameters Panel -->
+                <div class="bg-gray-100 rounded-lg p-4 overflow-y-auto">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Parameters</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                            <input type="range" id="risk-level" min="1" max="10" value="5" class="w-full">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>Conservative</span>
+                                <span id="risk-level-value">5</span>
+                                <span>Aggressive</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bet Size %</label>
+                            <input type="range" id="bet-size-percent" min="0.5" max="10" step="0.1" value="2.5" class="w-full">
+                            <div class="text-center text-sm text-gray-700">
+                                <span id="bet-size-value">2.5</span>% of balance
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Max Bets/Week</label>
+                            <input type="number" id="max-bets-week" min="1" max="50" value="5" class="w-full p-2 border border-gray-300 rounded">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Recovery Strategy</label>
+                            <select id="recovery-strategy" class="w-full p-2 border border-gray-300 rounded">
+                                <option value="none">None</option>
+                                <option value="martingale">Martingale</option>
+                                <option value="fibonacci">Fibonacci</option>
+                                <option value="kelly">Kelly Criterion</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button onclick="testStrategy()" class="w-full post9-btn mb-2">🧪 Test Strategy</button>
+                        <button onclick="simulateStrategy()" class="w-full post9-btn">📈 Backtest</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Strategy Output Preview -->
+            <div class="mt-6 bg-gray-800 text-green-400 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold mb-2">Strategy Logic (Plain English)</h4>
+                <div id="strategy-description" class="font-mono text-sm">
+                    Build your strategy above to see the logic description here...
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Gallery Page -->
+        <div id="model-gallery-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Model Gallery</h2>
+                <div class="flex gap-3">
+                    <button onclick="showModal('train-custom-model-modal')" class="post9-btn px-4 py-2">Train Custom Model</button>
+                    <button onclick="showModal('model-comparison-modal')" class="post9-btn px-4 py-2">Compare Models</button>
+                </div>
+            </div>
+            
+            <!-- Model Filters -->
+            <div class="bg-gray-100 p-4 rounded-lg mb-6">
+                <div class="flex flex-wrap gap-4 items-center">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+                        <select id="model-filter-sport" class="p-2 border border-gray-300 rounded">
+                            <option value="all">All Sports</option>
+                            <option value="nfl">NFL</option>
+                            <option value="nba">NBA</option>
+                            <option value="mlb">MLB</option>
+                            <option value="ncaaf">NCAAF</option>
+                            <option value="ncaab">NCAAB</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Model Type</label>
+                        <select id="model-filter-type" class="p-2 border border-gray-300 rounded">
+                            <option value="all">All Types</option>
+                            <option value="lstm">LSTM</option>
+                            <option value="transformer">Transformer</option>
+                            <option value="random_forest">Random Forest</option>
+                            <option value="xgboost">XGBoost</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Performance</label>
+                        <select id="model-filter-performance" class="p-2 border border-gray-300 rounded">
+                            <option value="all">All Performance</option>
+                            <option value="high">High (>70%)</option>
+                            <option value="medium">Medium (60-70%)</option>
+                            <option value="low">Low (<60%)</option>
+                        </select>
+                    </div>
+                    <button onclick="filterModels()" class="post9-btn px-4 py-2 mt-6">Apply Filters</button>
+                </div>
+            </div>
+            
+            <!-- Model Grid -->
+            <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Models will be populated here -->
+            </div>
+        </div>
+
+        <!-- Advanced Analytics Page -->
+        <div id="analytics-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Advanced Analytics</h2>
+                <div class="flex gap-3">
+                    <button onclick="exportAnalytics()" class="post9-btn px-4 py-2">📊 Export Report</button>
+                    <button onclick="showModal('analytics-settings-modal')" class="post9-btn px-4 py-2">⚙️ Settings</button>
+                </div>
+            </div>
+            
+            <!-- Summary Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-green-100 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-green-800" id="analytics-total-profit">+$1,247</div>
+                    <div class="text-sm text-green-600">Total Profit (30d)</div>
+                    <div class="text-xs text-green-500">▲ +5.2% vs last month</div>
+                </div>
+                <div class="bg-blue-100 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-800" id="analytics-win-rate">68.4%</div>
+                    <div class="text-sm text-blue-600">Win Rate</div>
+                    <div class="text-xs text-blue-500">▲ +2.1% vs last month</div>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-800" id="analytics-roi">+12.3%</div>
+                    <div class="text-sm text-purple-600">ROI</div>
+                    <div class="text-xs text-purple-500">▲ +1.8% vs last month</div>
+                </div>
+                <div class="bg-orange-100 p-4 rounded-lg">
+                    <div class="text-2xl font-bold text-orange-800" id="analytics-bets-count">89</div>
+                    <div class="text-sm text-orange-600">Total Bets</div>
+                    <div class="text-xs text-orange-500">▲ +12 vs last month</div>
+                </div>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Profit Over Time Chart -->
+                <div class="bg-white p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Profit Over Time</h3>
+                    <div id="profit-over-time-chart" class="h-64 flex items-center justify-center text-gray-500">
+                        Chart will be rendered here
+                    </div>
+                </div>
+                
+                <!-- Strategy Performance Chart -->
+                <div class="bg-white p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Strategy Performance</h3>
+                    <div id="strategy-performance-chart" class="h-64 flex items-center justify-center text-gray-500">
+                        Chart will be rendered here
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Heatmap and Alerts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Performance Heatmap -->
+                <div class="bg-white p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Performance Heatmap</h3>
+                    <div id="performance-heatmap" class="h-64">
+                        <div class="text-sm text-gray-600 mb-2">Profit by Day & Time</div>
+                        <div class="grid grid-cols-7 gap-1 text-xs">
+                            <!-- Heatmap grid will be rendered here -->
+                            <div class="text-center font-medium">Mon</div>
+                            <div class="text-center font-medium">Tue</div>
+                            <div class="text-center font-medium">Wed</div>
+                            <div class="text-center font-medium">Thu</div>
+                            <div class="text-center font-medium">Fri</div>
+                            <div class="text-center font-medium">Sat</div>
+                            <div class="text-center font-medium">Sun</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Alerts -->
+                <div class="bg-white p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Recent Alerts</h3>
+                    <div id="recent-alerts" class="space-y-3">
+                        <div class="flex items-center p-2 bg-yellow-50 border border-yellow-200 rounded">
+                            <span class="text-yellow-600 mr-2">🟡</span>
+                            <div>
+                                <div class="font-medium text-yellow-800">NFL Model Performance Drop</div>
+                                <div class="text-xs text-yellow-600">2 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-2 bg-red-50 border border-red-200 rounded">
+                            <span class="text-red-600 mr-2">🔴</span>
+                            <div>
+                                <div class="font-medium text-red-800">Losing Streak Detected (5 bets)</div>
+                                <div class="text-xs text-red-600">4 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-2 bg-green-50 border border-green-200 rounded">
+                            <span class="text-green-600 mr-2">🟢</span>
+                            <div>
+                                <div class="font-medium text-green-800">High Value Bet Found</div>
+                                <div class="text-xs text-green-600">Lakers vs Warriors - 12 mins ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

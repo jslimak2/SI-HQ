@@ -1019,5 +1019,213 @@ def get_api_status():
             'used_requests': 'Error'
         }), 500
 
+# --- NEW STRATEGY BUILDER AND MODEL GALLERY ENDPOINTS ---
+
+@app.route('/api/strategies/visual', methods=['POST'])
+def create_visual_strategy():
+    """Create a new visual flow-based strategy"""
+    if not db:
+        return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+    
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+            
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        new_strategy_ref = strategies_collection_user.document()
+        strategy_id = new_strategy_ref.id
+        
+        strategy_data = {
+            'id': strategy_id,
+            'name': data.get('name', 'Visual Strategy'),
+            'type': 'visual_flow',
+            'description': data.get('description', ''),
+            'flow_definition': data.get('flow_definition', {}),
+            'parameters': data.get('parameters', {}),
+            'performance': {
+                'total_bets': 0,
+                'won_bets': 0,
+                'win_rate': 0.0,
+                'total_profit': 0.0,
+                'roi': 0.0
+            },
+            'created_at': datetime.datetime.now().isoformat(),
+            'updated_at': datetime.datetime.now().isoformat()
+        }
+        
+        new_strategy_ref.set(strategy_data)
+        return jsonify({'success': True, 'message': 'Visual strategy created successfully.', 'strategy_id': strategy_id}), 201
+        
+    except Exception as e:
+        print(f"Failed to create visual strategy: {e}")
+        return jsonify({'success': False, 'message': f'Failed to create strategy: {e}'}), 500
+
+@app.route('/api/models', methods=['GET'])
+def list_models():
+    """List available ML models with filtering"""
+    try:
+        sport_filter = request.args.get('sport', 'all')
+        model_type_filter = request.args.get('type', 'all') 
+        performance_filter = request.args.get('performance', 'all')
+        
+        # Demo models data (in production this would come from model registry)
+        demo_models = [
+            {
+                'id': 'nfl_totals_lstm',
+                'name': 'NFL Total Points Predictor',
+                'description': 'LSTM model predicting NFL game total points using weather, team stats, and historical data',
+                'model_type': 'lstm',
+                'sport': 'nfl',
+                'market_type': 'totals',
+                'version': '1.2.3',
+                'framework': 'tensorflow',
+                'performance': {
+                    'accuracy': 68.2,
+                    'precision': 67.1,
+                    'recall': 69.4,
+                    'f1_score': 68.2,
+                    'profit_over_time': [120, 340, 567, 823, 1045],
+                    'last_30_day_roi': 12.4
+                },
+                'status': 'active',
+                'created_at': '2024-01-01T00:00:00Z'
+            },
+            {
+                'id': 'nba_moneyline_transformer',
+                'name': 'NBA Moneyline Predictor',
+                'description': 'Advanced transformer model for NBA moneyline predictions',
+                'model_type': 'transformer',
+                'sport': 'nba',
+                'market_type': 'moneyline',
+                'version': '2.1.0',
+                'framework': 'pytorch',
+                'performance': {
+                    'accuracy': 71.5,
+                    'precision': 70.8,
+                    'recall': 72.2,
+                    'f1_score': 71.5,
+                    'profit_over_time': [89, 234, 445, 612, 789],
+                    'last_30_day_roi': 8.9
+                },
+                'status': 'active',
+                'created_at': '2024-01-15T00:00:00Z'
+            },
+            {
+                'id': 'mlb_runline_rf',
+                'name': 'MLB Run Line Model',
+                'description': 'Random forest model specializing in MLB run line betting',
+                'model_type': 'random_forest',
+                'sport': 'mlb',
+                'market_type': 'runline',
+                'version': '1.5.2',
+                'framework': 'scikit-learn',
+                'performance': {
+                    'accuracy': 66.8,
+                    'precision': 65.4,
+                    'recall': 68.2,
+                    'f1_score': 66.8,
+                    'profit_over_time': [156, 387, 612, 834, 1152],
+                    'last_30_day_roi': 15.2
+                },
+                'status': 'active',
+                'created_at': '2024-01-10T00:00:00Z'
+            }
+        ]
+        
+        # Apply filters
+        filtered_models = demo_models
+        
+        if sport_filter != 'all':
+            filtered_models = [m for m in filtered_models if m['sport'] == sport_filter]
+            
+        if model_type_filter != 'all':
+            filtered_models = [m for m in filtered_models if m['model_type'] == model_type_filter]
+            
+        if performance_filter != 'all':
+            if performance_filter == 'high':
+                filtered_models = [m for m in filtered_models if m['performance']['accuracy'] > 70]
+            elif performance_filter == 'medium':
+                filtered_models = [m for m in filtered_models if 60 <= m['performance']['accuracy'] <= 70]
+            elif performance_filter == 'low':
+                filtered_models = [m for m in filtered_models if m['performance']['accuracy'] < 60]
+        
+        return jsonify({
+            'success': True,
+            'models': filtered_models,
+            'total_count': len(filtered_models)
+        }), 200
+        
+    except Exception as e:
+        print(f"Error listing models: {e}")
+        return jsonify({'success': False, 'message': f'Failed to list models: {e}'}), 500
+
+@app.route('/api/analytics/performance', methods=['GET'])
+def get_performance_analytics():
+    """Get detailed performance analytics"""
+    try:
+        user_id = request.args.get('user_id', 'anonymous')
+        time_period = request.args.get('period', '30d')  # 7d, 30d, 90d, 1y
+        
+        # Generate demo analytics data
+        analytics_data = {
+            'summary_metrics': {
+                'total_profit': 1247.50,
+                'total_bets': 89,
+                'win_rate': 68.4,
+                'roi': 12.3,
+                'sharpe_ratio': 1.45,
+                'max_drawdown': -234.80,
+                'avg_bet_size': 45.60
+            },
+            'strategy_breakdown': {
+                'nfl_over_under': {'profit': 487.20, 'bets': 23, 'win_rate': 69.6},
+                'nba_moneyline': {'profit': 312.40, 'bets': 18, 'win_rate': 66.7},
+                'arbitrage': {'profit': 223.80, 'bets': 12, 'win_rate': 100.0},
+                'recovery': {'profit': -73.50, 'bets': 8, 'win_rate': 37.5}
+            },
+            'cohort_analysis': {
+                'by_day_of_week': {
+                    'monday': {'profit': 156.7, 'win_rate': 72.0},
+                    'tuesday': {'profit': 89.3, 'win_rate': 65.0},
+                    'wednesday': {'profit': 234.5, 'win_rate': 78.0},
+                    'thursday': {'profit': 198.2, 'win_rate': 71.0},
+                    'friday': {'profit': 167.8, 'win_rate': 69.0},
+                    'saturday': {'profit': 289.1, 'win_rate': 75.0},
+                    'sunday': {'profit': 111.9, 'win_rate': 63.0}
+                }
+            },
+            'alerts': [
+                {
+                    'id': 'alert_1',
+                    'type': 'warning',
+                    'title': 'NFL Model Performance Drop',
+                    'message': 'NFL model accuracy dropped below 65% in last 10 predictions',
+                    'timestamp': '2024-01-20T14:30:00Z',
+                    'severity': 'medium'
+                },
+                {
+                    'id': 'alert_2', 
+                    'type': 'danger',
+                    'title': 'Losing Streak Detected',
+                    'message': 'Current losing streak of 5 consecutive bets',
+                    'timestamp': '2024-01-20T10:15:00Z',
+                    'severity': 'high'
+                }
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'analytics': analytics_data,
+            'period': time_period,
+            'generated_at': datetime.datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting performance analytics: {e}")
+        return jsonify({'success': False, 'message': f'Analytics failed: {e}'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

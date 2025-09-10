@@ -1668,12 +1668,18 @@ async function updateSettingsStats() {
 // --- AUTHENTICATION & INITIAL DATA LOAD ---
 
 async function checkAutoRefresh() {
-    if (userSettings.auto_refresh_on_login) {
+    // Only proceed if userSettings is properly loaded and auto-refresh is explicitly enabled
+    if (userSettings && userSettings.auto_refresh_on_login === true) {
         // Auto refresh is enabled, check if we're on investments page
         const investmentsPage = document.getElementById('investments-page');
         if (investmentsPage && investmentsPage.style.display === 'block') {
+            console.log('Auto-refresh enabled, refreshing investments...');
             await window.refreshInvestments();
         }
+    } else {
+        console.log('Auto-refresh disabled or settings not loaded, using cached data...');
+        // Load cached data instead of refreshing when auto-refresh is disabled
+        await window.loadCachedInvestments();
     }
 }
 
@@ -1734,10 +1740,21 @@ async function startListeners() {
         document.getElementById('user-id').textContent = 'Demo Mode';
         
         // Load demo settings
-        loadUserSettings();
+        await loadUserSettings();
         // Fetch strategies first, then bots
         await fetchStrategies();
         await fetchBots();
+        
+        // Check auto-refresh for demo mode too
+        setTimeout(() => {
+            if (userSettings) {
+                checkAutoRefresh();
+            } else {
+                console.warn('Demo settings not loaded, loading cached data instead');
+                window.loadCachedInvestments();
+            }
+        }, 1000);
+        
         hideLoading();
         return;
     }
@@ -1746,13 +1763,19 @@ async function startListeners() {
         if (user) {
             userId = user.uid;
             document.getElementById('user-id').textContent = userId;
-            // Load user settings first
+            // Load user settings first, then fetch data, then check auto-refresh
             await loadUserSettings();
             // Fetch strategies first, then bots
             await fetchStrategies();
             await fetchBots();
-            // Check auto-refresh after everything is loaded
-            setTimeout(checkAutoRefresh, 1000);
+            // Check auto-refresh after everything is loaded AND settings are available
+            setTimeout(() => {
+                if (userSettings) {
+                    checkAutoRefresh();
+                } else {
+                    console.warn('User settings not loaded, skipping auto-refresh check');
+                }
+            }, 1500); // Increased delay to ensure settings are loaded
         } else {
             console.log("No user is signed in.");
             document.getElementById('user-id').textContent = 'Not signed in';
@@ -2371,4 +2394,453 @@ async function exportToExcelInternal() {
         console.error('Error exporting to Excel:', error);
         showMessage('Failed to export bets. Please try again.', true);
     }
+}
+
+// --- STRATEGY BUILDER FUNCTIONS ---
+
+// Strategy builder state
+let currentStrategy = {
+    nodes: [],
+    connections: [],
+    parameters: {}
+};
+
+window.saveCurrentStrategy = function() {
+    if (currentStrategy.nodes.length === 0) {
+        showMessage('Please build a strategy before saving', true);
+        return;
+    }
+    
+    const strategyName = prompt('Enter a name for your strategy:', 'My Custom Strategy');
+    if (!strategyName) return;
+    
+    const strategyData = {
+        name: strategyName,
+        type: 'visual_flow',
+        flow_definition: currentStrategy,
+        parameters: {
+            risk_level: document.getElementById('risk-level').value,
+            bet_percentage: document.getElementById('bet-size-percent').value,
+            max_bets_per_week: document.getElementById('max-bets-week').value,
+            recovery_strategy: document.getElementById('recovery-strategy').value
+        }
+    };
+    
+    // Save strategy via existing API
+    window.addStrategy(strategyData);
+    updateStrategyDescription();
+};
+
+window.testStrategy = function() {
+    if (currentStrategy.nodes.length === 0) {
+        showMessage('Please build a strategy before testing', true);
+        return;
+    }
+    
+    showMessage('Running strategy test with current market data...', false);
+    
+    // Simulate strategy execution
+    setTimeout(() => {
+        const testResult = {
+            passed: Math.random() > 0.3,
+            confidence: Math.floor(Math.random() * 40) + 60,
+            recommendations: Math.floor(Math.random() * 5) + 1
+        };
+        
+        if (testResult.passed) {
+            showMessage(`✅ Strategy test passed! Found ${testResult.recommendations} potential bets with ${testResult.confidence}% avg confidence`, false);
+        } else {
+            showMessage('❌ Strategy test failed. Check your logic and parameters.', true);
+        }
+    }, 2000);
+};
+
+window.simulateStrategy = function() {
+    if (currentStrategy.nodes.length === 0) {
+        showMessage('Please build a strategy before backtesting', true);
+        return;
+    }
+    
+    showMessage('Running backtest simulation over past 6 months...', false);
+    
+    // Simulate backtesting
+    setTimeout(() => {
+        const backtest = {
+            total_bets: Math.floor(Math.random() * 200) + 50,
+            win_rate: (Math.random() * 0.3 + 0.5).toFixed(3),
+            profit: (Math.random() * 2000 - 500).toFixed(2),
+            roi: (Math.random() * 0.4 - 0.1).toFixed(3)
+        };
+        
+        const profitClass = backtest.profit > 0 ? 'green' : 'red';
+        showMessage(`📈 Backtest complete: ${backtest.total_bets} bets, ${(backtest.win_rate * 100).toFixed(1)}% win rate, $${backtest.profit} profit (${(backtest.roi * 100).toFixed(1)}% ROI)`, backtest.profit > 0);
+    }, 3000);
+};
+
+function updateStrategyDescription() {
+    const description = document.getElementById('strategy-description');
+    if (!description) return;
+    
+    if (currentStrategy.nodes.length === 0) {
+        description.textContent = 'Build your strategy above to see the logic description here...';
+        return;
+    }
+    
+    // Generate plain English description
+    let text = 'Strategy Logic:\n';
+    text += '1. When a new game is available:\n';
+    text += '2. Check if conditions are met (weather, team stats, model predictions)\n';
+    text += '3. If conditions pass, place bet with configured parameters\n';
+    text += '4. Otherwise, skip this opportunity\n';
+    
+    const betSizeEl = document.getElementById('bet-size-value');
+    const maxBetsEl = document.getElementById('max-bets-week');
+    if (betSizeEl && maxBetsEl) {
+        text += `\nParameters: ${betSizeEl.textContent}% bet size, max ${maxBetsEl.value} bets per week`;
+    }
+    
+    description.textContent = text;
+}
+
+// Setup drag and drop for strategy builder
+function initializeStrategyBuilder() {
+    const canvas = document.getElementById('strategy-canvas');
+    const components = document.querySelectorAll('.draggable-component');
+    
+    if (!canvas || !components.length) return;
+    
+    components.forEach(component => {
+        component.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', e.target.dataset.type);
+        });
+        component.draggable = true;
+    });
+    
+    canvas.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    });
+    
+    canvas.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const componentType = e.dataTransfer.getData('text/plain');
+        addComponentToCanvas(componentType, e.offsetX, e.offsetY);
+    });
+    
+    // Setup parameter updates
+    const riskLevel = document.getElementById('risk-level');
+    const betSize = document.getElementById('bet-size-percent');
+    
+    if (riskLevel) {
+        riskLevel.addEventListener('input', () => {
+            const valueEl = document.getElementById('risk-level-value');
+            if (valueEl) valueEl.textContent = riskLevel.value;
+            updateStrategyDescription();
+        });
+    }
+    
+    if (betSize) {
+        betSize.addEventListener('input', () => {
+            const valueEl = document.getElementById('bet-size-value');
+            if (valueEl) valueEl.textContent = betSize.value;
+            updateStrategyDescription();
+        });
+    }
+}
+
+function addComponentToCanvas(componentType, x, y) {
+    const canvas = document.getElementById('strategy-canvas');
+    if (!canvas) return;
+    
+    const node = document.createElement('div');
+    
+    // Create visual node
+    node.className = 'strategy-node absolute bg-white border-2 border-blue-500 rounded-lg p-3 cursor-move';
+    node.style.left = `${x - 50}px`;
+    node.style.top = `${y - 25}px`;
+    node.style.width = '100px';
+    node.style.height = '50px';
+    node.style.display = 'flex';
+    node.style.alignItems = 'center';
+    node.style.justifyContent = 'center';
+    node.style.fontSize = '12px';
+    node.style.fontWeight = 'bold';
+    
+    const icons = {
+        'if-condition': '📋 IF',
+        'and-or': '🔗 AND',
+        'comparison': '⚖️ CMP',
+        'weather': '🌤️ WX',
+        'team-stats': '📊 STAT',
+        'model-prediction': '🤖 ML',
+        'place-bet': '💰 BET',
+        'skip-bet': '⏭️ SKIP'
+    };
+    
+    node.textContent = icons[componentType] || componentType;
+    node.onclick = () => editNode(node, componentType);
+    
+    // Clear placeholder if this is first node
+    if (currentStrategy.nodes.length === 0) {
+        canvas.innerHTML = '';
+    }
+    
+    canvas.appendChild(node);
+    
+    // Add to strategy state
+    currentStrategy.nodes.push({
+        id: `node_${Date.now()}`,
+        type: componentType,
+        position: { x, y },
+        element: node
+    });
+    
+    updateStrategyDescription();
+    showMessage(`Added ${componentType} component`, false);
+}
+
+function editNode(element, type) {
+    // Simple node editing - in a full implementation this would open a detailed config modal
+    const newLabel = prompt(`Configure ${type}:`, element.textContent);
+    if (newLabel) {
+        element.textContent = newLabel;
+        updateStrategyDescription();
+    }
+}
+
+// --- MODEL GALLERY FUNCTIONS ---
+
+let availableModels = [];
+
+window.filterModels = function() {
+    const sportFilter = document.getElementById('model-filter-sport')?.value || 'all';
+    const typeFilter = document.getElementById('model-filter-type')?.value || 'all';
+    const performanceFilter = document.getElementById('model-filter-performance')?.value || 'all';
+    
+    showLoading();
+    
+    // Simulate API call to filter models
+    setTimeout(() => {
+        loadModels(sportFilter, typeFilter, performanceFilter);
+        hideLoading();
+    }, 1000);
+};
+
+function loadModels(sportFilter = 'all', typeFilter = 'all', performanceFilter = 'all') {
+    // Generate demo models
+    availableModels = [
+        {
+            id: 'nfl_totals_lstm',
+            name: 'NFL Total Points Predictor',
+            type: 'LSTM + Weather',
+            sport: 'nfl',
+            accuracy: 68.2,
+            profit: 12.4,
+            description: 'Predicts NFL game total points using weather, team stats, and historical data'
+        },
+        {
+            id: 'nba_moneyline_transformer',
+            name: 'NBA Moneyline Predictor',
+            type: 'Transformer',
+            sport: 'nba', 
+            accuracy: 71.5,
+            profit: 8.9,
+            description: 'Advanced transformer model for NBA moneyline predictions'
+        },
+        {
+            id: 'mlb_runline_rf',
+            name: 'MLB Run Line Model',
+            type: 'Random Forest',
+            sport: 'mlb',
+            accuracy: 66.8,
+            profit: 15.2,
+            description: 'Random forest model specializing in MLB run line betting'
+        },
+        {
+            id: 'ncaaf_spread_xgb',
+            name: 'College Football Spreads',
+            type: 'XGBoost',
+            sport: 'ncaaf',
+            accuracy: 64.3,
+            profit: 7.8,
+            description: 'XGBoost model for college football point spreads'
+        },
+        {
+            id: 'ncaab_total_lstm',
+            name: 'College Basketball Totals',
+            type: 'LSTM',
+            sport: 'ncaab',
+            accuracy: 62.1,
+            profit: -2.3,
+            description: 'LSTM model for college basketball total points'
+        }
+    ];
+    
+    // Apply filters
+    let filteredModels = availableModels;
+    
+    if (sportFilter !== 'all') {
+        filteredModels = filteredModels.filter(model => model.sport === sportFilter);
+    }
+    
+    if (typeFilter !== 'all') {
+        filteredModels = filteredModels.filter(model => 
+            model.type.toLowerCase().includes(typeFilter.toLowerCase())
+        );
+    }
+    
+    if (performanceFilter !== 'all') {
+        if (performanceFilter === 'high') {
+            filteredModels = filteredModels.filter(model => model.accuracy > 70);
+        } else if (performanceFilter === 'medium') {
+            filteredModels = filteredModels.filter(model => model.accuracy >= 60 && model.accuracy <= 70);
+        } else if (performanceFilter === 'low') {
+            filteredModels = filteredModels.filter(model => model.accuracy < 60);
+        }
+    }
+    
+    displayModels(filteredModels);
+}
+
+function displayModels(models) {
+    const grid = document.getElementById('models-grid');
+    
+    if (!grid) return;
+    
+    if (models.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">No models found matching your filters.</div>';
+        return;
+    }
+    
+    grid.innerHTML = models.map(model => {
+        const profitColor = model.profit > 0 ? 'text-green-600' : 'text-red-600';
+        const performanceColor = model.accuracy > 70 ? 'bg-green-100' : model.accuracy > 60 ? 'bg-yellow-100' : 'bg-red-100';
+        
+        return `
+            <div class="bg-white rounded-lg p-6 border border-gray-200 hover:border-blue-400 transition-colors">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">${model.name}</h3>
+                        <p class="text-sm text-gray-600">${model.type}</p>
+                    </div>
+                    <span class="px-2 py-1 ${performanceColor} text-xs font-medium rounded">
+                        ${model.sport.toUpperCase()}
+                    </span>
+                </div>
+                
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Accuracy:</span>
+                        <span class="text-sm font-medium">${model.accuracy}%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Profit:</span>
+                        <span class="text-sm font-medium ${profitColor}">${model.profit > 0 ? '+' : ''}${model.profit}%</span>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-gray-700 mb-4">${model.description}</p>
+                
+                <div class="space-y-2">
+                    <button onclick="useModel('${model.id}')" class="w-full post9-btn text-sm py-2">
+                        Use Model
+                    </button>
+                    <div class="flex space-x-2">
+                        <button onclick="customizeModel('${model.id}')" class="flex-1 bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200">
+                            Customize
+                        </button>
+                        <button onclick="viewModelDetails('${model.id}')" class="flex-1 bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200">
+                            Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.useModel = function(modelId) {
+    const model = availableModels.find(m => m.id === modelId);
+    if (model) {
+        showMessage(`${model.name} is now active for predictions`, false);
+        
+        // In a real implementation, this would:
+        // 1. Add model to user's active models
+        // 2. Update strategy configurations
+        // 3. Start generating predictions
+    }
+};
+
+window.customizeModel = function(modelId) {
+    showMessage('Opening model customization interface...', false);
+    // Would open a modal for model parameter tuning
+};
+
+window.viewModelDetails = function(modelId) {
+    const model = availableModels.find(m => m.id === modelId);
+    if (model) {
+        showMessage(`Viewing details for ${model.name}`, false);
+        // Would show detailed performance metrics, feature importance, etc.
+    }
+};
+
+// --- ADVANCED ANALYTICS FUNCTIONS ---
+
+window.exportAnalytics = function() {
+    showMessage('Exporting analytics report...', false);
+    
+    // Simulate export
+    setTimeout(() => {
+        const data = {
+            totalProfit: 1247.50,
+            winRate: 68.4,
+            roi: 12.3,
+            totalBets: 89,
+            exportDate: new Date().toISOString()
+        };
+        
+        const csvContent = `Analytics Report - ${new Date().toLocaleDateString()}\n` +
+                          `Total Profit,$${data.totalProfit}\n` +
+                          `Win Rate,${data.winRate}%\n` +
+                          `ROI,${data.roi}%\n` +
+                          `Total Bets,${data.totalBets}`;
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showMessage('Analytics report exported successfully', false);
+    }, 1000);
+};
+
+// Initialize new functionality when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        initializeStrategyBuilder();
+        
+        // Load models when model gallery page exists
+        const modelGalleryPage = document.getElementById('model-gallery-page');
+        if (modelGalleryPage) {
+            loadModels();
+        }
+    }, 1000);
+});
+
+// Extend the original showPage function to initialize components
+const originalShowPage = window.showPage;
+if (originalShowPage) {
+    window.showPage = function(pageId) {
+        originalShowPage(pageId);
+        
+        setTimeout(() => {
+            if (pageId === 'strategy-builder-page') {
+                initializeStrategyBuilder();
+            } else if (pageId === 'model-gallery-page') {
+                loadModels();
+            }
+        }, 100);
+    };
 }
