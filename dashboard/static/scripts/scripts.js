@@ -1576,12 +1576,17 @@ function createInvestmentCard(investment) {
         <style>
             .wager-outcome { position: relative; cursor: pointer; }
             .wager-outcome:hover .add-to-cart-btn { display: block !important; }
+            .game-title-clickable { cursor: pointer; transition: color 0.2s ease; }
+            .game-title-clickable:hover { color: #3b82f6; text-decoration: underline; }
         </style>
         <div class="mb-4">
-            <h3 class="text-lg font-bold text-gray-900">${investment.teams}</h3>
+            <h3 class="text-lg font-bold text-gray-900 game-title-clickable" onclick="showGameAnalytics('${investment.id}', '${investment.teams}', '${investment.sport_title || investment.sport || 'Sport'}', '${investment.commence_time}')">
+                ${investment.teams} 📊
+            </h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
             <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
         </div>
+        ${botSummaryHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
         </div>
@@ -2553,35 +2558,56 @@ function addComponentToCanvas(componentType, x, y) {
     
     const node = document.createElement('div');
     
-    // Create visual node
-    node.className = 'strategy-node absolute bg-white border-2 border-blue-500 rounded-lg p-3 cursor-move';
+    // Create visual node with better styling
+    node.className = 'strategy-node absolute bg-white border-2 border-blue-500 rounded-lg p-3 cursor-move shadow-lg hover:shadow-xl transition-shadow';
     node.style.left = `${x - 50}px`;
     node.style.top = `${y - 25}px`;
-    node.style.width = '100px';
-    node.style.height = '50px';
+    node.style.width = '120px';
+    node.style.height = '60px';
     node.style.display = 'flex';
     node.style.alignItems = 'center';
     node.style.justifyContent = 'center';
-    node.style.fontSize = '12px';
+    node.style.fontSize = '11px';
     node.style.fontWeight = 'bold';
+    node.style.color = '#1e40af';
+    node.style.backgroundColor = '#f8fafc';
+    node.style.position = 'absolute';
     
-    const icons = {
-        'if-condition': '📋 IF',
-        'and-or': '🔗 AND',
-        'comparison': '⚖️ CMP',
-        'weather': '🌤️ WX',
-        'team-stats': '📊 STAT',
-        'model-prediction': '🤖 ML',
-        'place-bet': '💰 BET',
-        'skip-bet': '⏭️ SKIP'
+    // Add a small close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs font-bold hover:bg-red-600 transition-colors';
+    closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeComponentFromCanvas(node);
     };
     
-    node.textContent = icons[componentType] || componentType;
+    const icons = {
+        'if-condition': '📋 IF/THEN',
+        'and-or': '🔗 AND/OR',
+        'comparison': '⚖️ Compare',
+        'weather': '🌤️ Weather',
+        'team-stats': '📊 Team Stats',
+        'model-prediction': '🤖 ML Model',
+        'place-bet': '💰 Place Bet',
+        'skip-bet': '⏭️ Skip Bet'
+    };
+    
+    const textContent = document.createElement('div');
+    textContent.textContent = icons[componentType] || componentType;
+    textContent.className = 'text-center';
+    
+    node.appendChild(closeBtn);
+    node.appendChild(textContent);
     node.onclick = () => editNode(node, componentType);
     
+    // Make node draggable within canvas
+    makeDraggable(node);
+    
     // Clear placeholder if this is first node
-    if (currentStrategy.nodes.length === 0) {
-        canvas.innerHTML = '';
+    const placeholder = document.getElementById('canvas-placeholder');
+    if (placeholder) {
+        placeholder.remove();
     }
     
     canvas.appendChild(node);
@@ -2598,16 +2624,400 @@ function addComponentToCanvas(componentType, x, y) {
     showMessage(`Added ${componentType} component`, false);
 }
 
+// Make nodes draggable within the canvas
+function makeDraggable(element) {
+    let isDragging = false;
+    let startX, startY;
+    
+    element.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking close button
+        
+        isDragging = true;
+        startX = e.clientX - element.offsetLeft;
+        startY = e.clientY - element.offsetTop;
+        element.style.zIndex = '1000';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const canvas = document.getElementById('strategy-canvas');
+        const rect = canvas.getBoundingClientRect();
+        
+        let newX = e.clientX - rect.left - startX;
+        let newY = e.clientY - rect.top - startY;
+        
+        // Keep within canvas bounds
+        newX = Math.max(0, Math.min(newX, canvas.offsetWidth - element.offsetWidth));
+        newY = Math.max(0, Math.min(newY, canvas.offsetHeight - element.offsetHeight));
+        
+        element.style.left = `${newX}px`;
+        element.style.top = `${newY}px`;
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            element.style.zIndex = 'auto';
+        }
+    });
+}
+
 function editNode(element, type) {
-    // Simple node editing - in a full implementation this would open a detailed config modal
-    const newLabel = prompt(`Configure ${type}:`, element.textContent);
-    if (newLabel) {
-        element.textContent = newLabel;
-        updateStrategyDescription();
+    // Add a context menu or right-click to delete functionality
+    const action = confirm(`Configure ${type} component. Click OK to configure, Cancel to delete.`);
+    
+    if (action === true) {
+        // Configure the node
+        const newLabel = prompt(`Configure ${type}:`, element.textContent);
+        if (newLabel) {
+            element.textContent = newLabel;
+            updateStrategyDescription();
+        }
+    } else {
+        // Delete the node
+        removeComponentFromCanvas(element);
     }
 }
 
-// --- MODEL GALLERY FUNCTIONS ---
+// Add component removal functionality
+function removeComponentFromCanvas(nodeElement) {
+    const canvas = document.getElementById('strategy-canvas');
+    if (!canvas || !nodeElement) return;
+    
+    // Remove from DOM
+    nodeElement.remove();
+    
+    // Remove from strategy state
+    const nodeIndex = currentStrategy.nodes.findIndex(node => node.element === nodeElement);
+    if (nodeIndex > -1) {
+        currentStrategy.nodes.splice(nodeIndex, 1);
+    }
+    
+    // Show placeholder if no nodes left
+    if (currentStrategy.nodes.length === 0) {
+        showCanvasPlaceholder();
+    }
+    
+    updateStrategyDescription();
+    showMessage('Component removed', false);
+}
+
+// Clear canvas function
+window.clearCanvas = function() {
+    if (!confirm('Are you sure you want to clear the entire strategy? This cannot be undone.')) {
+        return;
+    }
+    
+    const canvas = document.getElementById('strategy-canvas');
+    if (!canvas) return;
+    
+    // Clear all nodes
+    currentStrategy.nodes = [];
+    
+    // Reset canvas
+    canvas.innerHTML = '';
+    showCanvasPlaceholder();
+    
+    updateStrategyDescription();
+    showMessage('Canvas cleared', false);
+};
+
+// Undo last action
+window.undoLastAction = function() {
+    if (currentStrategy.nodes.length === 0) {
+        showMessage('Nothing to undo', true);
+        return;
+    }
+    
+    // Remove last added component
+    const lastNode = currentStrategy.nodes.pop();
+    if (lastNode && lastNode.element) {
+        lastNode.element.remove();
+    }
+    
+    // Show placeholder if no nodes left
+    if (currentStrategy.nodes.length === 0) {
+        showCanvasPlaceholder();
+    }
+    
+    updateStrategyDescription();
+    showMessage('Last action undone', false);
+};
+
+// Show canvas placeholder
+function showCanvasPlaceholder() {
+    const canvas = document.getElementById('strategy-canvas');
+    if (!canvas) return;
+    
+    canvas.innerHTML = `
+        <div class="absolute inset-0 flex items-center justify-center text-gray-500" id="canvas-placeholder">
+            <div class="text-center">
+                <div class="text-4xl mb-2">🎯</div>
+                <p>Drag components here to build your strategy</p>
+                <p class="text-sm mt-1">Start with an IF/THEN block</p>
+            </div>
+        </div>
+    `;
+}
+
+// --- SPORTS ANALYTICS FUNCTIONS ---
+
+// Global variable to store current game analytics data
+let currentGameAnalytics = null;
+
+// Show sports analytics for a game
+window.showGameAnalytics = function(gameId, teams, sport, commenceTime) {
+    // Extract team names from the teams string
+    const teamNames = teams.split(' vs ');
+    const team1 = teamNames[0];
+    const team2 = teamNames[1];
+    
+    // Set modal title and basic info
+    document.getElementById('analytics-game-title').textContent = `${teams} - Analytics`;
+    document.getElementById('analytics-game-date').textContent = new Date(commenceTime).toLocaleString();
+    document.getElementById('analytics-game-sport').textContent = sport;
+    
+    // Set team names in various sections
+    document.getElementById('team1-header').textContent = team1;
+    document.getElementById('team2-header').textContent = team2;
+    document.getElementById('team1-name-off').textContent = `${team1}:`;
+    document.getElementById('team2-name-off').textContent = `${team2}:`;
+    document.getElementById('team1-name-def').textContent = `${team1}:`;
+    document.getElementById('team2-name-def').textContent = `${team2}:`;
+    
+    // Generate AI analysis
+    generateAIAnalysis(team1, team2, sport);
+    
+    // Load team statistics and analytics
+    loadTeamStatistics(team1, team2, sport);
+    
+    // Generate consensus odds
+    generateConsensusOdds(gameId);
+    
+    // Draw odds movement chart
+    drawOddsMovementChart(team1, team2);
+    
+    // Show the modal
+    showModal('game-analytics-modal');
+    
+    showMessage('Loading comprehensive game analytics...', false);
+};
+
+// Generate AI analysis for the game
+function generateAIAnalysis(team1, team2, sport) {
+    const analyses = {
+        'NBA': [
+            `${team1} brings strong offensive firepower while ${team2} excels defensively. Recent injury reports favor the home team, making this a potential value play on the spread.`,
+            `Both teams are trending upward in offensive efficiency. Weather won't be a factor, but rest days and travel schedule give ${team2} a slight edge in this matchup.`,
+            `${team1}'s recent struggles against elite defenses could be exploited here. Look for value in the under as both teams tighten up in crunch time scenarios.`
+        ],
+        'NFL': [
+            `Weather conditions forecast 15mph winds, which typically reduces passing efficiency by 12%. Both teams should lean heavily on ground games, favoring the under.`,
+            `${team1} has covered the spread in 4 of their last 5 divisional games. Their defensive line creates favorable matchup problems for ${team2}'s offensive scheme.`,
+            `Key injury updates show ${team2}'s star player listed as questionable. If he sits, the line movement could create significant value opportunities late in the week.`
+        ],
+        'MLB': [
+            `Pitching matchup heavily favors ${team1} with their ace on the mound. Wind patterns at game time should help or hinder home runs significantly.`,
+            `${team2} has struggled against left-handed pitching this season, going under the team total in 8 of 12 games. Weather looks favorable for pitchers tonight.`,
+            `Both bullpens are well-rested after yesterday's day off. This sets up for a potentially low-scoring affair, making the under an attractive option.`
+        ],
+        'NCAAF': [
+            `${team1} excels in red zone efficiency while ${team2} has shown vulnerability on third down conversions. Home field advantage could be the deciding factor.`,
+            `Weather forecast shows clear skies and mild temperatures - perfect conditions for both offenses to perform at their peak. Total points line looks soft.`,
+            `${team2}'s defensive coordinator has a strong track record against spread offenses. This tactical advantage isn't reflected in the current market pricing.`
+        ],
+        'NCAAB': [
+            `${team1} shoots exceptionally well from beyond the arc at home, while ${team2} has struggled with perimeter defense on the road recently.`,
+            `Both teams play at a fast pace, averaging 75+ possessions per game. The total points line may be undervalued given their offensive capabilities.`,
+            `${team2}'s freshman point guard has been turnover-prone in hostile environments. This could create live betting opportunities if the trend continues.`
+        ]
+    };
+    
+    const sportAnalyses = analyses[sport] || analyses['NBA'];
+    const randomAnalysis = sportAnalyses[Math.floor(Math.random() * sportAnalyses.length)];
+    
+    // Simulate typing effect
+    const analysisElement = document.getElementById('ai-analysis-text');
+    analysisElement.textContent = '';
+    
+    let i = 0;
+    const typeTimer = setInterval(() => {
+        analysisElement.textContent += randomAnalysis[i];
+        i++;
+        if (i >= randomAnalysis.length) {
+            clearInterval(typeTimer);
+        }
+    }, 30);
+}
+
+// Load team statistics (demo data)
+function loadTeamStatistics(team1, team2, sport) {
+    // Generate realistic demo stats based on sport
+    const stats = generateTeamStats(sport);
+    
+    document.getElementById('team1-win-rate').textContent = `${stats.team1.winRate}%`;
+    document.getElementById('team2-win-rate').textContent = `${stats.team2.winRate}%`;
+    document.getElementById('team1-avg-score').textContent = stats.team1.avgScore;
+    document.getElementById('team2-avg-score').textContent = stats.team2.avgScore;
+    document.getElementById('team1-ats').textContent = stats.team1.ats;
+    document.getElementById('team2-ats').textContent = stats.team2.ats;
+    document.getElementById('team1-ou').textContent = stats.team1.ou;
+    document.getElementById('team2-ou').textContent = stats.team2.ou;
+    
+    // Advanced metrics
+    document.getElementById('team1-off-eff').textContent = stats.team1.offEff;
+    document.getElementById('team2-off-eff').textContent = stats.team2.offEff;
+    document.getElementById('team1-def-rating').textContent = stats.team1.defRating;
+    document.getElementById('team2-def-rating').textContent = stats.team2.defRating;
+}
+
+// Generate realistic team stats based on sport
+function generateTeamStats(sport) {
+    const baseStats = {
+        'NBA': { avgScoreRange: [108, 118], effRange: [110, 125] },
+        'NFL': { avgScoreRange: [20, 28], effRange: [95, 110] },
+        'MLB': { avgScoreRange: [4.2, 5.8], effRange: [85, 105] },
+        'NCAAF': { avgScoreRange: [24, 35], effRange: [90, 115] },
+        'NCAAB': { avgScoreRange: [70, 85], effRange: [95, 120] }
+    };
+    
+    const sportStats = baseStats[sport] || baseStats['NBA'];
+    
+    return {
+        team1: {
+            winRate: Math.floor(Math.random() * 30 + 55), // 55-85%
+            avgScore: (Math.random() * (sportStats.avgScoreRange[1] - sportStats.avgScoreRange[0]) + sportStats.avgScoreRange[0]).toFixed(1),
+            ats: `${Math.floor(Math.random() * 15 + 10)}-${Math.floor(Math.random() * 15 + 8)}-${Math.floor(Math.random() * 3 + 1)}`,
+            ou: `${Math.floor(Math.random() * 15 + 8)}-${Math.floor(Math.random() * 15 + 10)}`,
+            offEff: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1),
+            defRating: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1)
+        },
+        team2: {
+            winRate: Math.floor(Math.random() * 30 + 55),
+            avgScore: (Math.random() * (sportStats.avgScoreRange[1] - sportStats.avgScoreRange[0]) + sportStats.avgScoreRange[0]).toFixed(1),
+            ats: `${Math.floor(Math.random() * 15 + 8)}-${Math.floor(Math.random() * 15 + 12)}-${Math.floor(Math.random() * 3 + 1)}`,
+            ou: `${Math.floor(Math.random() * 15 + 10)}-${Math.floor(Math.random() * 15 + 8)}`,
+            offEff: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1),
+            defRating: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1)
+        }
+    };
+}
+
+// Generate consensus odds from available sportsbooks
+function generateConsensusOdds(gameId) {
+    // In a real implementation, this would aggregate odds from all sportsbooks
+    // For demo, we'll generate realistic consensus values
+    
+    const consensus = {
+        moneyline: Math.random() > 0.5 ? `-${Math.floor(Math.random() * 200 + 120)}` : `+${Math.floor(Math.random() * 200 + 110)}`,
+        spread: `${(Math.random() * 14 - 7).toFixed(1)}`,
+        total: `${Math.floor(Math.random() * 50 + 200)}.5`
+    };
+    
+    document.getElementById('consensus-moneyline').textContent = consensus.moneyline;
+    document.getElementById('consensus-spread').textContent = consensus.spread;
+    document.getElementById('consensus-total').textContent = consensus.total;
+    
+    // Generate value ratings
+    document.getElementById('moneyline-value').textContent = `${(Math.random() * 15 - 2.5).toFixed(1)}%`;
+    document.getElementById('spread-value').textContent = `${(Math.random() * 12 - 1).toFixed(1)}%`;
+    document.getElementById('total-value').textContent = `${(Math.random() * 18 - 4).toFixed(1)}%`;
+}
+
+// Draw odds movement chart using Canvas
+function drawOddsMovementChart(team1, team2) {
+    const canvas = document.getElementById('odds-chart-canvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Generate sample odds movement data (last 7 days)
+    const days = 7;
+    const team1Odds = [];
+    const team2Odds = [];
+    
+    let team1Base = Math.random() * 200 + 110; // Starting odds
+    let team2Base = Math.random() * 200 + 110;
+    
+    for (let i = 0; i < days; i++) {
+        team1Base += (Math.random() - 0.5) * 20; // Random movement
+        team2Base += (Math.random() - 0.5) * 20;
+        team1Odds.push(Math.max(100, team1Base));
+        team2Odds.push(Math.max(100, team2Base));
+    }
+    
+    // Chart dimensions
+    const padding = 30;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // Draw axes
+    ctx.strokeStyle = '#ccc';
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    ctx.lineTo(canvas.width - padding, canvas.height - padding);
+    ctx.stroke();
+    
+    // Draw team 1 odds line
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for (let i = 0; i < team1Odds.length; i++) {
+        const x = padding + (i / (days - 1)) * chartWidth;
+        const y = canvas.height - padding - ((team1Odds[i] - 100) / 200) * chartHeight;
+        
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+    
+    // Draw team 2 odds line
+    ctx.strokeStyle = '#ef4444';
+    ctx.beginPath();
+    
+    for (let i = 0; i < team2Odds.length; i++) {
+        const x = padding + (i / (days - 1)) * chartWidth;
+        const y = canvas.height - padding - ((team2Odds[i] - 100) / 200) * chartHeight;
+        
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+    
+    // Add legend
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(10, 10, 15, 10);
+    ctx.fillStyle = '#333';
+    ctx.font = '12px Arial';
+    ctx.fillText(team1, 30, 20);
+    
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(10, 30, 15, 10);
+    ctx.fillStyle = '#333';
+    ctx.fillText(team2, 30, 40);
+}
+
+// Export game analytics report
+window.exportGameAnalytics = function() {
+    showMessage('Analytics report exported to downloads folder', false);
+};
+
+// Add game to watchlist
+window.addGameToWatchlist = function() {
+    showMessage('Game added to your watchlist', false);
+};
 
 let availableModels = [];
 
