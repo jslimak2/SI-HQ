@@ -234,12 +234,16 @@ def simulate_bot_bet():
 
 @app.route('/api/strategies', methods=['POST'])
 def add_strategy():
-    """Adds a new strategy to the Firestore database."""
+    """Adds a new strategy to the Firestore database (user-specific)."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
     try:
         data = request.json
-        new_strategy_ref = strategies_collection.document()
+        user_id = data.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        new_strategy_ref = strategies_collection_user.document()
         strategy_id = new_strategy_ref.id
         initial_strategy_data = {
             'id': strategy_id,
@@ -250,7 +254,6 @@ def add_strategy():
             'linked_strategy_id': data.get('linked_strategy_id', None),
             'created_at': datetime.datetime.now().isoformat()
         }
-        
         new_strategy_ref.set(initial_strategy_data)
         return jsonify({'success': True, 'message': 'Strategy added successfully.', 'strategy_id': strategy_id}), 201
     except Exception as e:
@@ -259,11 +262,15 @@ def add_strategy():
 
 @app.route('/api/strategies', methods=['GET'])
 def get_strategies():
-    """Retrieves all strategies from the Firestore database."""
+    """Retrieves all strategies from the Firestore database (user-specific)."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
     try:
-        strategies_ref = strategies_collection.stream()
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        strategies_ref = strategies_collection_user.stream()
         strategies = [doc.to_dict() for doc in strategies_ref]
         return jsonify({'success': True, 'strategies': strategies}), 200
     except Exception as e:
@@ -272,19 +279,26 @@ def get_strategies():
 
 @app.route('/api/strategy/<strategy_id>', methods=['PUT'])
 def update_strategy(strategy_id):
-    """Updates an existing strategy."""
+    """Updates an existing strategy (user-specific)."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+    data = request.json
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
     try:
-        data = request.json
-        strategy_ref = strategies_collection.document(strategy_id)
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        strategy_ref = strategies_collection_user.document(strategy_id)
         updates = {}
         if 'name' in data:
             updates['name'] = data['name']
         if 'rules' in data:
             updates['rules'] = data['rules']
+        if 'description' in data:
+            updates['description'] = data['description']
+        if 'parameters' in data:
+            updates['parameters'] = data['parameters']
         updates['updated_at'] = datetime.datetime.now().isoformat()
-
         strategy_ref.update(updates)
         return jsonify({'success': True, 'message': 'Strategy updated successfully.'}), 200
     except Exception as e:
@@ -293,15 +307,17 @@ def update_strategy(strategy_id):
 
 @app.route('/api/strategy/<strategy_id>', methods=['DELETE'])
 def delete_strategy(strategy_id):
-    """Deletes a recovery strategy."""
+    """Deletes a recovery strategy (user-specific)."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
-    strategy_ref = strategies_collection.document(strategy_id)
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+    strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+    strategy_ref = strategies_collection_user.document(strategy_id)
     strategy_doc = strategy_ref.get()
-
     if not strategy_doc.exists:
         return jsonify({'success': False, 'message': 'Strategy not found.'}), 404
-
     try:
         strategy_ref.delete()
         return jsonify({'success': True, 'message': 'Strategy deleted successfully.'}), 200
@@ -311,35 +327,33 @@ def delete_strategy(strategy_id):
         
 @app.route('/api/strategy/<strategy_id>/picks', methods=['GET'])
 def get_strategy_picks(strategy_id):
-    """Get betting picks from a strategy for a bot."""
+    """Get recommended investments from a strategy for a bot (user-specific)."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
     
+    user_id = request.args.get('user_id')
     bot_id = request.args.get('bot_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
     if not bot_id:
         return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
     
     try:
-        # Get bot data
-        bot_ref = bots_collection.document(bot_id)
+        # Get user-specific bot data
+        bot_ref = db.collection(f'users/{user_id}/bots').document(bot_id)
         bot_doc = bot_ref.get()
         if not bot_doc.exists:
             return jsonify({'success': False, 'message': 'Bot not found.'}), 404
-        
         bot_data = bot_doc.to_dict()
-        
-        # Get strategy data
-        strategy_ref = strategies_collection.document(strategy_id)
+        # Fetch strategy from user-specific collection
+        strategy_ref = db.collection(f'users/{user_id}/strategies').document(strategy_id)
         strategy_doc = strategy_ref.get()
         if not strategy_doc.exists:
             return jsonify({'success': False, 'message': 'Strategy not found.'}), 404
-        
         strategy_data = strategy_doc.to_dict()
-        
         # Check if bot has reached max bets for the week
         max_bets = bot_data.get('max_bets_per_week', 5)
         bets_this_week = bot_data.get('bets_this_week', 0)
-        
         if bets_this_week >= max_bets:
             return jsonify({
                 'success': True,
@@ -347,17 +361,13 @@ def get_strategy_picks(strategy_id):
                 'message': f'Bot has reached maximum bets for this week ({max_bets})',
                 'remaining_bets': 0
             })
-        
-        # Generate picks based on strategy type
         picks = generate_strategy_picks(strategy_data, bot_data, max_bets - bets_this_week)
-        
         return jsonify({
             'success': True,
             'picks': picks,
             'remaining_bets': max_bets - bets_this_week,
             'strategy_name': strategy_data.get('name', 'Unknown Strategy')
         })
-        
     except Exception as e:
         print(f"Failed to get strategy picks: {e}")
         return jsonify({'success': False, 'message': f'Failed to get picks: {e}'}), 500

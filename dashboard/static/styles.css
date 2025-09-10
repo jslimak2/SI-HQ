@@ -19,9 +19,9 @@
 }
 
 body {
-    font-family: var(--inter-font);
-    background-color: var(--bg-color);
-    color: var(--text-color);
+    font-family: 'Segoe UI', 'Inter', 'Roboto', 'Arial', sans-serif;
+    background: linear-gradient(120deg, #0a1a2f 0%, #1e3350 100%);
+    color: #e2e8f0;
     line-height: 1.6;
     padding: 2rem;
 }
@@ -37,11 +37,12 @@ body {
     margin-bottom: 2.5rem;
 }
 
-.dashboard-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--heading-color);
-    margin-bottom: 0.5rem;
+.dashboard-header h1, .post9-title {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 8px #0a1a2f;
 }
 
 .dashboard-header p {
@@ -50,11 +51,14 @@ body {
 }
 
 /* Card and metric styles */
+.card, .metric-card, .table-container, .modal-content {
+    background: rgba(255,255,255,0.95);
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(10,26,47,0.12);
+    color: #1e3350;
+}
+
 .card {
-    background-color: var(--card-bg-color);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
@@ -278,4 +282,123 @@ body {
     .dashboard-header h1 {
         font-size: 2rem;
     }
+}
+
+.nav-btn {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    background: none;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 2rem;
+    transition: background 0.2s, color 0.2s;
+}
+.nav-btn:hover {
+    background: #ff9900;
+    color: #0a1a2f;
+}
+
+.post9-btn {
+    background: linear-gradient(90deg, #ff9900 0%, #ffb84d 100%);
+    color: #0a1a2f;
+    font-weight: 700;
+    border-radius: 2rem;
+    box-shadow: 0 2px 8px #ff9900a0;
+    transition: transform 0.1s;
+}
+.post9-btn:hover {
+    transform: scale(1.05);
+    background: linear-gradient(90deg, #ffb84d 0%, #ff9900 100%);
+}
+
+.post9-card, .metric-card, .table-container, table.post9-card, thead.post9-card, tbody.post9-card, tr.post9-card, td.post9-card {
+    background: linear-gradient(120deg, #16243a 0%, #223a5e 100%) !important;
+    color: #e2e8f0 !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 4px 24px rgba(10,26,47,0.12);
+}
+
+th, td {
+    background: transparent !important;
+}
+
+/* Remove unwanted highlight from orange if needed */
+tr.post9-card:hover {
+    background: #223a5e !important;
+}
+
+.post9-accent {
+    color: #ff9900;
+    font-weight: 900;
+}
+
+.post9-tagline {
+    font-size: 1.25rem;
+    color: #ff9900;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 0.5rem;
+    letter-spacing: 1px;
+}
+
+input, select, textarea {
+    background: #223a5e !important;
+    color: #e2e8f0 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 0.5rem !important;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #ff9900 !important;
+    outline: none;
+}
+
+/* Professional overall stats card grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+.stats-card {
+    background: linear-gradient(120deg, #16243a 0%, #223a5e 100%) !important;
+    color: #e2e8f0 !important;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(10,26,47,0.12);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+    min-height: 140px;
+}
+.stats-icon {
+    font-size: 2.5rem;
+    color: #ff9900;
+    margin-bottom: 0.5rem;
+}
+.stats-label {
+    font-size: 1rem;
+    color: #b6c2d6;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+.stats-value {
+    font-size: 2.25rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+.stats-trend {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #22c55e;
+    margin-top: 0.5rem;
+}
+.stats-trend.negative {
+    color: #ef4444;
 }

@@ -1,0 +1,46 @@
+Betting patterns
+    cyclical / batch (i.e. football)
+    trigger based (if a baseball game has odds greater than x)
+    continuous / guaranteed
+    ??
+
+
+Parameters to tune:
+    Maximum number of bets (if any) per batch (if football)
+    % of balance per bet
+    strategy
+
+
+
+Each investor/bot has:
+    a balance
+    a sport
+    a market (hth, total, spread)
+    a maximum number or weekly bets (optional)
+    an activation threshhold / trigger for a recovery strategy
+        think if balance dips below $xx or if 5 games are lost in a row
+    a strategy
+        i.e. place a wager on the first 5 bets that meet x criteria
+        i.e. after a loss, double the wager. repeat this up to 5 total times, after which point reset to base.
+    a model
+        a model that has access to historical data and statistics and even relevant news and information (injury reports, etc.) and predicts game outcomes
+    a history log
+    a list of open wagers
+    a forecast (super cool, basically when trained on a similar odds & context game in the past, how accurate was this bot)
+
+Each strategy has:
+    a description
+    more things... to fill out still
+
+
+the app needs:
+     - backend connection to a machine learning model that uses sports statistics, record information, and historical data alongside current contexts (weather, roster, injuries, home/away, etc) to predict the score and odds on games.
+     - api connections to pull relevant news and sports updates to refresh the models
+     - a models
+     - a basic model
+     - a basic strategy (randomly picks?)
+     - a performance dashboard that has a heat matrix showing profitability, with the various axises represnting things like model & strategy parameter combinations
+    this is such that, as I run various combinations through backtest simulations on historical data, I can both refine the models and figure out the optimum operation for maxmimum profitability
+     - a simulation back testing lab, where there's control to modify various model parameters, train ML models, and change bot parameters
+
+ 

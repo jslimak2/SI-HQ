@@ -3,9 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Sports Dashboard</title>
+    <title>Post9 Sports Investing Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../static/styles.css">
+    <style>
+        body {
+            background: linear-gradient(120deg, #0a1a2f 0%, #1e3350 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+        }
+        .post9-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .post9-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px #0a1a2f;
+        }
+        .post9-accent {
+            color: #ff9900;
+            font-weight: 900;
+        }
+        .post9-tagline {
+            font-size: 1.25rem;
+            color: #ff9900;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 0.5rem;
+            letter-spacing: 1px;
+        }
+        .metric-card, .table-container, .modal-content {
+            background: rgba(255,255,255,0.95);
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(10,26,47,0.12);
+        }
+        .nav-btn {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            background: none;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-btn:hover {
+            background: #ff9900;
+            color: #0a1a2f;
+        }
+        .post9-btn {
+            background: linear-gradient(90deg, #ff9900 0%, #ffb84d 100%);
+            color: #0a1a2f;
+            font-weight: 700;
+            border-radius: 2rem;
+            box-shadow: 0 2px 8px #ff9900a0;
+            transition: transform 0.1s;
+        }
+        .post9-btn:hover {
+            transform: scale(1.05);
+            background: linear-gradient(90deg, #ffb84d 0%, #ff9900 100%);
+        }
+        .post9-card {
+            border: 2px solid #ff9900;
+            box-shadow: 0 2px 12px #ff990080;
+        }
+        /* Stats Grid Layout */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid transparent;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            border-color: #ff9900;
+        }
+        .stats-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .stats-label {
+            font-size: 0.875rem;
+            color: #a0aec0;
+            margin-bottom: 0.25rem;
+        }
+        .stats-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        .stats-trend {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            color: #fff;
+        }
+        .stats-trend.positive {
+            background: rgba(76, 175, 80, 0.2);
+        }
+        .stats-trend.negative {
+            background: rgba(244, 67, 54, 0.2);
+        }
+    </style>
     <script>
         function showPage(pageId) {
             const pages = ['dashboard-page', 'investments-page', 'account-page'];
@@ -31,391 +151,181 @@
         }
     </script>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-start min-h-screen p-8">
+<body class="flex flex-col items-center justify-start min-h-screen p-8">
     <nav class="flex space-x-4 mb-6">
-        <button onclick="showPage('dashboard-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Dashboard</button>
-        <button onclick="showPage('investments-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Available Investments</button>
-        <button onclick="showPage('account-page')" class="text-xl font-bold text-gray-800 hover:text-indigo-600">Account</button>
+        <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
+        <button onclick="showPage('investments-page')" class="nav-btn">Available Investments</button>
+        <button onclick="showPage('account-page')" class="nav-btn">Account</button>
     </nav>
     <div id="message-box" class="message-box"></div>
     <div id="loading-spinner" class="spinner hidden"></div>
-
     <div class="container mx-auto">
         <header class="text-center mb-8">
-            <h1 class="text-5xl font-extrabold text-gray-800">Sports Betting Dashboard</h1>
-            <p class="text-xl text-gray-500 mt-2">Professional Analytics & Bot Management</p>
+            <div class="post9-logo mb-2">
+                <img src="/static/post9-logo.png" alt="Post9 Logo" style="height:64px;">
+                <span class="post9-title"><em>Post</em><span class="post9-accent">9</span></span>
+            </div>
+            <div class="post9-tagline">Stop Betting. Start Investing.</div>
+            <p class="text-xl text-gray-300 mt-2">Professional Analytics & Bot Management</p>
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
         <div id="dashboard-page">
             <section id="overall-stats-section" class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Overall Stats</h2>
-                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="metric-card">
-                        <div class="flex items-center space-x-4">
-                            <span class="p-3 rounded-full bg-blue-100 text-blue-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v4m-4 0h8a2 2 0 002-2v-4a2 2 0 00-2-2h-8a2 2 0 00-2 2v4a2 2 0 002 2z" />
-                                </svg>
-                            </span>
-                            <div>
-                                <p class="text-sm font-medium text-gray-500">Total Profit/Loss</p>
-                                <p id="total-profit" class="text-3xl font-bold text-gray-900">-</p>
-                            </div>
-                        </div>
+                <h2 class="text-2xl font-bold mb-6 text-white">Overall Stats</h2>
+                <div id="stats-container" class="stats-grid">
+                    <div class="stats-card">
+                        <span class="stats-icon">💰</span>
+                        <span class="stats-label">Total Profit</span>
+                        <span id="total-profit" class="stats-value">$0.00</span>
+                        <span class="stats-trend" id="profit-trend"></span>
                     </div>
-                    <div class="metric-card">
-                        <div class="flex items-center space-x-4">
-                            <span class="p-3 rounded-full bg-green-100 text-green-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13c0 1.105-.895 2-2 2h-4a2 2 0 01-2-2z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </span>
-                            <div>
-                                <p class="text-sm font-medium text-gray-500">Total Wagers</p>
-                                <p id="total-wagers" class="text-3xl font-bold text-gray-900">-</p>
-                            </div>
-                        </div>
+                    <div class="stats-card">
+                        <span class="stats-icon">🎲</span>
+                        <span class="stats-label">Total Wagers</span>
+                        <span id="total-wagers" class="stats-value">0</span>
                     </div>
-                    <div class="metric-card">
-                        <div class="flex items-center space-x-4">
-                            <span class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                </svg>
-                            </span>
-                            <div>
-                                <p class="text-sm font-medium text-gray-500">Win Rate</p>
-                                <p id="win-rate" class="text-3xl font-bold text-gray-900">-</p>
-                            </div>
-                        </div>
+                    <div class="stats-card">
+                        <span class="stats-icon">🏆</span>
+                        <span class="stats-label">Win Rate</span>
+                        <span id="win-rate" class="stats-value">0.00%</span>
                     </div>
-                    <div class="metric-card">
-                        <div class="flex items-center space-x-4">
-                            <span class="p-3 rounded-full bg-purple-100 text-purple-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.484 9.231 5.02 7.828 5.467 6.425 5.914 5.345 6.953 4.933 8.322c-.412 1.37-.23 2.825.43 4.143l1.832 3.663a9.08 9.08 0 005.65 2.768m0-13c1.168 0 2.167.464 2.828 1.125.66.66 1.125 1.66 1.125 2.828v2.75l-1.832 3.663c-.66 1.318-.842 2.773-.43 4.143l.43 1.442M12 6.253v13" />
-                                </svg>
-                            </span>
-                            <div>
-                                <p class="text-sm font-medium text-gray-500">Best Bot</p>
-                                <p id="best-bot-name" class="text-lg font-bold text-gray-900">-</p>
-                                <p id="best-bot-profit" class="text-sm font-medium text-gray-600">-</p>
-                            </div>
-                        </div>
+                    <div class="stats-card">
+                        <span class="stats-icon">🚀</span>
+                        <span class="stats-label">Best Bot</span>
+                        <span id="best-bot-name" class="stats-value">-</span>
+                        <span id="best-bot-profit" class="stats-trend"></span>
                     </div>
-                    <div class="metric-card">
-                        <div class="flex items-center space-x-4">
-                            <span class="p-3 rounded-full bg-red-100 text-red-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                </svg>
-                            </span>
-                            <div>
-                                <p class="text-sm font-medium text-gray-500">Worst Bot</p>
-                                <p id="worst-bot-name" class="text-lg font-bold text-gray-900">-</p>
-                                <p id="worst-bot-profit" class="text-sm font-medium text-gray-600">-</p>
-                            </div>
-                        </div>
+                    <div class="stats-card">
+                        <span class="stats-icon">⚠️</span>
+                        <span class="stats-label">Worst Bot</span>
+                        <span id="worst-bot-name" class="stats-value">-</span>
+                        <span id="worst-bot-profit" class="stats-trend negative"></span>
                     </div>
                 </div>
+                <div id="stats-breakdown-inline"></div>
             </section>
-            
-            <section class="table-container mb-12">
-                <h2 class="text-2xl font-bold mb-4">Active Bots</h2>
-                <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
+            <section class="table-container mb-12 post9-card">
+                <h2 class="text-2xl font-bold mb-4 text-white">Active Bots</h2>
+                <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
                     <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
                 </div>
             </section>
-
-            <section class="table-container mb-12">
-                <h2 class="text-2xl font-bold mb-4">Bot Manager</h2>
-                
-                <form id="add-bot-form" class="flex flex-col md:flex-row gap-4 mb-6">
-                    <input type="text" name="name" placeholder="Bot Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="number" name="starting_balance" placeholder="Starting Balance" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="number" name="bet_percentage" placeholder="Bet %" step="0.01" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <input type="number" name="max_bets_per_week" placeholder="Max Bets / Week" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    <select id="strategy-select" name="strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Select Strategy</option>
-                    </select>
-                    <select name="sport" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Select Sport</option>
+            <section class="table-container mb-12 post9-card">
+                <h2 class="text-2xl font-bold mb-4 text-white">Bot Manager</h2>
+                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Bot</button>
+                <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
+                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
+                </div>
+            </section>
+            <section class="table-container post9-card">
+                <h2 class="text-2xl font-bold mb-4 text-white">Strategy Editor</h2>
+                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-strategy-modal')">Add Strategy</button>
+                <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
+                    <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
+                </div>
+            </section>
+        </div>
+        <!-- Add Bot Modal -->
+        <div id="add-bot-modal" class="modal">
+            <div class="modal-content post9-card">
+                <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
+                <h3 class="text-xl font-bold mb-4 text-white">Add Bot</h3>
+                <form id="add-bot-form" class="flex flex-col gap-4">
+                    <input type="text" name="name" placeholder="Bot Name" required>
+                    <input type="number" name="starting_balance" placeholder="Starting Balance" required>
+                    <input type="number" name="bet_percentage" placeholder="Bet %" required>
+                    <input type="number" name="max_bets_per_week" placeholder="Max Bets/Week" required>
+                    <select name="strategy_id" id="strategy-select" required></select>
+                    <select name="sport" required>
                         <option value="NBA">NBA</option>
                         <option value="NFL">NFL</option>
                         <option value="MLB">MLB</option>
                         <option value="NCAAF">NCAAF</option>
                         <option value="NCAAB">NCAAB</option>
                     </select>
-                    <select name="bet_type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Select Bet Type</option>
+                    <select name="bet_type" required>
                         <option value="Moneyline">Moneyline</option>
                         <option value="Spread">Spread</option>
-                        <option value="Total">Total</option>
+                        <option value="Totals">Totals</option>
                     </select>
-                    <button type="submit" class="p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Add Bot</button>
+                    <button type="submit" class="post9-btn p-3 mt-2">Add Bot</button>
                 </form>
-
-                <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm">
-                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
-                </div>
-            </section>
-
-            <section class="table-container">
-                <h2 class="text-2xl font-bold mb-4">Strategy Editor</h2>
-                
-                <form id="add-strategy-form" class="flex flex-col md:flex-row gap-4 mb-6">
-                    <input type="text" name="name" placeholder="Strategy Name" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                    <select name="type" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                        <option value="">Select Type</option>
-                        <option value="normal">Normal</option>
+            </div>
+        </div>
+        <!-- Add Strategy Modal -->
+        <div id="add-strategy-modal" class="modal">
+            <div class="modal-content post9-card">
+                <span class="modal-close" onclick="closeModal('add-strategy-modal')">&times;</span>
+                <h3 class="text-xl font-bold mb-4 text-white">Add Strategy</h3>
+                <form id="add-strategy-form" class="flex flex-col gap-4">
+                    <input type="text" name="name" placeholder="Strategy Name" required>
+                    <select name="type" required>
+                        <option value="basic">Basic</option>
                         <option value="recovery">Recovery</option>
                     </select>
-                    <select id="linked-strategy-select" name="linked_strategy_id" class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <select name="linked_strategy_id" id="linked-strategy-select">
                         <option value="">Link Recovery Strategy (Optional)</option>
                     </select>
-                    <button type="submit" class="p-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition duration-300">Add Strategy</button>
+                    <input type="text" name="description" placeholder="Description">
+                    <button type="submit" class="post9-btn p-3 mt-2">Add Strategy</button>
                 </form>
-                
-                <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm">
-                    <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
-                </div>
-            </section>
-        </div>
-
-        <div id="investments-page" class="mt-8 bg-white rounded-lg shadow-lg p-6" style="display: none;">
-            <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4 sm:mb-0">Available Investments</h2>
-                <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <!-- Cache Status Info -->
-                    <div id="cache-status" class="text-sm text-gray-600 flex items-center space-x-2">
-                        <div id="cache-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
-                        <span id="cache-text">Loading...</span>
-                    </div>
-                    <!-- Action Buttons -->
-                    <div class="flex items-center space-x-2">
-                        <button id="refresh-investments-btn" onclick="window.refreshInvestments()" 
-                                class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition flex items-center space-x-2">
-                            <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Refresh Data</span>
-                        </button>
-                        <button onclick="window.showModal('settings-modal')" 
-                                class="bg-gray-600 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-700 transition flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span>Settings</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
-            
-            <div id="sport-tabs-container" class="flex space-x-4 border-b border-gray-200 mb-6">
             </div>
-            <div id="investments-container">
-            </div>
-            <p id="no-investments-message" class="text-gray-500 text-center hidden">No upcoming games found. Click "Refresh Data" to load fresh games from the API.</p>
         </div>
-
-        <!-- Account Page -->
-        <div id="account-page" class="mt-8 bg-white rounded-lg shadow-lg p-6" style="display: none;">
-            <div class="max-w-4xl mx-auto">
-                <!-- Sign In/Sign Up Section (shown when not authenticated) -->
-                <div id="auth-section" class="text-center">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Welcome to Sports Betting Dashboard</h2>
-                    
-                    <div class="flex justify-center space-x-4 mb-6">
-                        <button id="show-signin-btn" onclick="showAuthForm('signin')" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Sign In</button>
-                        <button id="show-signup-btn" onclick="showAuthForm('signup')" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Sign Up</button>
+        <div id="investments-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-white">Available Investments</h2>
+            <div id="sport-tabs-container" class="mb-6"></div>
+            <div id="cache-indicator" class="w-3 h-3 rounded-full bg-blue-500 inline-block mr-2"></div>
+            <span id="cache-text" class="text-sm text-gray-300"></span>
+            <div id="investments-container" class="mt-6"></div>
+            <div id="no-investments-message" class="text-center text-gray-400 mt-8 hidden">No investments available.</div>
+            <button id="refresh-investments-btn" class="post9-btn px-4 py-2 mt-6"><span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments</button>
+        </div>
+        <div id="account-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <h2 class="text-2xl font-bold mb-6 text-white">Account</h2>
+            <div id="api-status-section" class="mb-6 post9-card p-4">
+                <h3 class="text-lg font-bold text-white mb-2">API Usage</h3>
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="stats-label">Requests Remaining:</span>
+                        <span id="api-requests-remaining" class="stats-value">-</span>
                     </div>
-
-                    <!-- Sign In Form -->
-                    <div id="signin-form" class="max-w-md mx-auto bg-gray-50 p-6 rounded-lg shadow-sm" style="display: none;">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Sign In</h3>
-                        <form id="signin-form-element" class="space-y-4">
-                            <div>
-                                <label for="signin-email" class="block text-sm font-medium text-gray-700">Email</label>
-                                <input type="email" id="signin-email" name="email" required 
-                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label for="signin-password" class="block text-sm font-medium text-gray-700">Password</label>
-                                <input type="password" id="signin-password" name="password" required 
-                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                Sign In
-                            </button>
-                        </form>
-                        <div class="mt-4">
-                            <button id="demo-signin-btn" class="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                                Continue in Demo Mode
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Sign Up Form -->
-                    <div id="signup-form" class="max-w-md mx-auto bg-gray-50 p-6 rounded-lg shadow-sm" style="display: none;">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Create Account</h3>
-                        <form id="signup-form-element" class="space-y-4">
-                            <div>
-                                <label for="signup-email" class="block text-sm font-medium text-gray-700">Email</label>
-                                <input type="email" id="signup-email" name="email" required 
-                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                            </div>
-                            <div>
-                                <label for="signup-password" class="block text-sm font-medium text-gray-700">Password</label>
-                                <input type="password" id="signup-password" name="password" required 
-                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                            </div>
-                            <div>
-                                <label for="signup-confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-                                <input type="password" id="signup-confirm-password" name="confirmPassword" required 
-                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                            </div>
-                            <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                Create Account
-                            </button>
-                        </form>
+                    <div class="flex items-center gap-2">
+                        <span class="stats-label">Requests Used:</span>
+                        <span id="api-requests-used" class="stats-value">-</span>
                     </div>
                 </div>
-
-                <!-- Account Management Section (shown when authenticated) -->
-                <div id="account-management-section" class="hidden">
-                    <div class="flex justify-between items-center mb-8">
-                        <h2 class="text-3xl font-bold text-gray-800">Account Settings</h2>
-                        <div class="flex items-center space-x-2 text-sm text-gray-600">
-                            <div id="user-status-indicator" class="w-3 h-3 rounded-full bg-green-500"></div>
-                            <span id="user-email-display">Loading...</span>
-                        </div>
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <!-- Profile Settings -->
-                        <div class="bg-gray-50 p-6 rounded-lg">
-                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Profile Information</h3>
-                            <form id="profile-form" class="space-y-4">
-                                <div>
-                                    <label for="profile-email" class="block text-sm font-medium text-gray-700">Email Address</label>
-                                    <input type="email" id="profile-email" name="email" 
-                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                                <div>
-                                    <label for="profile-display-name" class="block text-sm font-medium text-gray-700">Display Name (Optional)</label>
-                                    <input type="text" id="profile-display-name" name="displayName" 
-                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                                    Update Profile
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- Security Settings -->
-                        <div class="bg-gray-50 p-6 rounded-lg">
-                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Security</h3>
-                            <form id="password-form" class="space-y-4">
-                                <div>
-                                    <label for="current-password" class="block text-sm font-medium text-gray-700">Current Password</label>
-                                    <input type="password" id="current-password" name="currentPassword" 
-                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                                <div>
-                                    <label for="new-password" class="block text-sm font-medium text-gray-700">New Password</label>
-                                    <input type="password" id="new-password" name="newPassword" 
-                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                                <div>
-                                    <label for="confirm-new-password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
-                                    <input type="password" id="confirm-new-password" name="confirmNewPassword" 
-                                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                </div>
-                                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                                    Change Password
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- Preferences -->
-                        <div class="bg-gray-50 p-6 rounded-lg">
-                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Preferences</h3>
-                            <form id="preferences-form" class="space-y-4">
-                                <div>
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" id="pref-auto-refresh" name="autoRefresh" 
-                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                                        <div class="flex flex-col">
-                                            <span class="text-sm font-medium text-gray-700">Auto-refresh data on login</span>
-                                            <span class="text-xs text-gray-500">Automatically fetch fresh data when you sign in</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" id="pref-notifications" name="notifications" 
-                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                                        <div class="flex flex-col">
-                                            <span class="text-sm font-medium text-gray-700">Email notifications</span>
-                                            <span class="text-xs text-gray-500">Receive updates about your bots and strategies</span>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label for="pref-theme" class="block text-sm font-medium text-gray-700">Theme</label>
-                                    <select id="pref-theme" name="theme" 
-                                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="light">Light</option>
-                                        <option value="dark">Dark</option>
-                                        <option value="auto">Auto (System)</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                                    Save Preferences
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- API Usage Information -->
-                        <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                            <h3 class="text-xl font-semibold text-blue-800 mb-4">API Usage</h3>
-                            <div class="space-y-4">
-                                <div class="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <p class="text-blue-600 font-medium">Requests Remaining:</p>
-                                        <p id="api-requests-remaining" class="text-lg font-bold text-blue-800">Loading...</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-blue-600 font-medium">Requests Used:</p>
-                                        <p id="api-requests-used" class="text-lg font-bold text-blue-800">Loading...</p>
-                                    </div>
-                                </div>
-                                <button id="refresh-api-status-btn" onclick="window.refreshApiStatus()" 
-                                        class="w-full py-2 px-4 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50">
-                                    Refresh API Status
-                                </button>
-                                <p class="text-xs text-blue-600">API status updates when you refresh investment data. Current limits may vary based on your API plan.</p>
-                            </div>
-                        </div>
-
-                        <!-- Account Actions -->
-                        <div class="bg-red-50 p-6 rounded-lg border border-red-200">
-                            <h3 class="text-xl font-semibold text-red-800 mb-4">Danger Zone</h3>
-                            <div class="space-y-4">
-                                <button id="logout-btn" class="w-full py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50">
-                                    Sign Out
-                                </button>
-                                <button id="delete-account-btn" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
-                                    Delete Account
-                                </button>
-                                <p class="text-xs text-red-600">Warning: Deleting your account will permanently remove all your data, including bots, strategies, and bet history.</p>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+            <div id="auth-section" class="mb-8">
+                <form id="signin-form-element" class="flex flex-col gap-4 mb-4 post9-card p-4">
+                    <input type="email" name="email" placeholder="Email" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit" class="post9-btn p-3">Sign In</button>
+                </form>
+                <form id="signup-form-element" class="flex flex-col gap-4 mb-4 post9-card p-4" style="display:none;">
+                    <input type="email" name="email" placeholder="Email" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+                    <button type="submit" class="post9-btn p-3">Sign Up</button>
+                </form>
+                <button id="demo-signin-btn" class="post9-btn p-3">Demo Sign In</button>
+            </div>
+            <div id="account-management-section" class="mb-8 hidden post9-card p-4">
+                <div class="mb-4">
+                    <span class="text-lg font-bold text-white">Welcome, <span id="user-email-display">Demo Mode</span></span>
                 </div>
+                <form id="profile-form" class="flex flex-col gap-4 mb-4">
+                    <input type="email" id="profile-email" name="email" placeholder="Email">
+                    <input type="text" id="profile-display-name" name="displayName" placeholder="Display Name">
+                    <button type="submit" class="post9-btn p-3">Update Profile</button>
+                </form>
+                <form id="password-form" class="flex flex-col gap-4 mb-4">
+                    <input type="password" name="currentPassword" placeholder="Current Password">
+                    <input type="password" name="newPassword" placeholder="New Password">
+                    <input type="password" name="confirmNewPassword" placeholder="Confirm New Password">
+                    <button type="submit" class="post9-btn p-3">Change Password</button>
+                </form>
+                <button id="logout-btn" class="post9-btn p-3 mb-2">Sign Out</button>
+                <button id="delete-account-btn" class="post9-btn p-3 bg-red-600 text-white">Delete Account</button>
             </div>
         </div>
     </div>
@@ -576,6 +486,15 @@
                     Save Settings
                 </button>
             </form>
+        </div>
+    </div>
+    
+    <!-- Stats Breakdown Modal -->
+    <div id="stats-breakdown-modal" class="modal">
+        <div class="modal-content post9-card">
+            <span class="modal-close" onclick="closeModal('stats-breakdown-modal')">&times;</span>
+            <h3 id="stats-breakdown-title" class="text-xl font-bold mb-4 text-white">Stat Breakdown</h3>
+            <div id="stats-breakdown-content"></div>
         </div>
     </div>
     

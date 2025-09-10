@@ -211,6 +211,7 @@ async function fetchBots() {
             bots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             displayBots();
             updateOverallStats();
+            setupStatsCardClicks();
             hideLoading();
         }, (error) => {
             console.error("Error fetching bots:", error);
@@ -255,21 +256,21 @@ function displayBots() {
             return;
         }
         const table = document.createElement('table');
-        table.className = 'min-w-full divide-y divide-gray-200';
+        table.className = 'min-w-full divide-y divide-gray-200 post9-card';
         table.innerHTML = `
-            <thead class="bg-gray-50">
+            <thead class="post9-card">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sport</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bet %</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P/L</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Sport</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Strategy</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Balance</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Bet %</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">P/L</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
                     <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="divide-y divide-gray-200 post9-card">
                 ${botsList.map(bot => {
                     const strategy = strategies.find(s => s.id === bot.strategy_id);
                     const strategyName = strategy ? strategy.name : 'Unknown';
@@ -278,7 +279,7 @@ function displayBots() {
                     const statusColor = bot.status === 'running' ? 'bg-blue-500' : 'bg-gray-500';
                     const statusText = bot.status.charAt(0).toUpperCase() + bot.status.slice(1);
                     return `
-                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.toggleBotWagers('${bot.id}')">
+                        <tr class="cursor-pointer post9-card" onclick="window.toggleBotWagers('${bot.id}')">
                             <td class="px-6 py-4 whitespace-nowrap font-semibold">${bot.name}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${bot.sport || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${strategyName}</td>
@@ -287,36 +288,36 @@ function displayBots() {
                             <td class="px-6 py-4 whitespace-nowrap ${profitLossClass}">$${profitLoss}</td>
                             <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor} text-white">${statusText}</span></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="event.stopPropagation(); window.showBotDetails('${bot.id}')" class="text-indigo-600 hover:text-indigo-900 mx-1">Edit</button>
-                                <button onclick="event.stopPropagation(); window.showBotHistory('${bot.id}')" class="text-blue-600 hover:text-blue-900 mx-1">History</button>
-                                <button onclick="event.stopPropagation(); window.showBotLog('${bot.id}')" class="text-gray-600 hover:text-gray-900 mx-1">Log</button>
-                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${bot.status}')" class="text-green-600 hover:text-green-900 mx-1">${bot.status === 'running' ? 'Stop' : 'Start'}</button>
-                                <button onclick="event.stopPropagation(); window.deleteBot('${bot.id}')" class="text-red-600 hover:text-red-900 ml-1">Delete</button>
+                                <button onclick="event.stopPropagation(); window.showBotDetails('${bot.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
+                                <button onclick="event.stopPropagation(); window.showBotHistory('${bot.id}')" class="text-blue-400 hover:text-blue-200 mx-1">History</button>
+                                <button onclick="event.stopPropagation(); window.showBotLog('${bot.id}')" class="text-gray-300 hover:text-gray-100 mx-1">Log</button>
+                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${bot.status}')" class="text-green-400 hover:text-green-200 mx-1">${bot.status === 'running' ? 'Stop' : 'Start'}</button>
+                                <button onclick="event.stopPropagation(); window.deleteBot('${bot.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
                             </td>
                         </tr>
-                        <tr id="wagers-${bot.id}" class="hidden bg-gray-50">
+                        <tr id="wagers-${bot.id}" class="hidden post9-card">
                             <td colspan="8" class="px-6 py-4">
                                 <div class="border-t border-gray-200 pt-4">
-                                    <h4 class="font-semibold text-gray-800 mb-2">Open Wagers:</h4>
-                                    <div id="wagers-content-${bot.id}" class="text-sm text-gray-600">
+                                    <h4 class="font-semibold text-gray-200 mb-2">Open Wagers:</h4>
+                                    <div id="wagers-content-${bot.id}" class="text-sm text-gray-200">
                                         ${bot.open_wagers && bot.open_wagers.length > 0 ? 
                                             bot.open_wagers.map(wager => `
-                                                <div class="mb-2 p-2 bg-white rounded border">
+                                                <div class="mb-2 p-2 post9-card">
                                                     <strong>${wager.teams || 'N/A'}</strong> - ${wager.bet_type || 'N/A'}<br>
                                                     Wager: $${wager.amount ? wager.amount.toFixed(2) : '0.00'} | 
                                                     Odds: ${wager.odds || 'N/A'} | 
                                                     Potential Payout: $${wager.potential_payout ? wager.potential_payout.toFixed(2) : '0.00'}
                                                 </div>
                                             `).join('') 
-                                            : '<p class="text-gray-500">No open wagers</p>'
+                                            : '<p class="text-gray-400">No open wagers</p>'
                                         }
                                     </div>
                                     ${bot.strategy_id ? `
                                         <div class="mt-4 pt-4 border-t border-gray-200">
-                                            <h4 class="font-semibold text-gray-800 mb-2">Strategy Picks:</h4>
+                                            <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
                                             <button onclick="event.stopPropagation(); window.getStrategyPicks('${bot.id}', '${bot.strategy_id}')" 
-                                                    class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">
-                                                Get Strategy Picks
+                                                    class="post9-btn px-4 py-2 text-sm">
+                                                Show Recommended Investments
                                             </button>
                                             <div id="picks-content-${bot.id}" class="mt-2"></div>
                                         </div>
@@ -339,34 +340,34 @@ function displayBots() {
 function displayStrategies() {
     const container = strategiesContainer;
     if (strategies.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-500 py-4">No strategies found. Add one above!</p>`;
+        container.innerHTML = `<p class="text-center text-gray-400 py-4">No strategies found. Add one above!</p>`;
         return;
     }
     const table = document.createElement('table');
-    table.className = 'min-w-full divide-y divide-gray-200';
+    table.className = 'min-w-full divide-y divide-gray-200 post9-card';
     table.innerHTML = `
-        <thead class="bg-gray-50">
+        <thead class="post9-card">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Linked Strategy</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Linked Strategy</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Description</th>
                 <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
             </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="divide-y divide-gray-200 post9-card">
             ${strategies.map(strategy => {
                 const linkedStrategy = strategies.find(s => s.id === strategy.linked_strategy_id);
                 const linkedStrategyName = linkedStrategy ? linkedStrategy.name : 'None';
                 return `
-                    <tr>
+                    <tr class="post9-card">
                         <td class="px-6 py-4 whitespace-nowrap font-semibold">${strategy.name}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${strategy.type}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${linkedStrategyName}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${strategy.description || 'N/A'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="window.showStrategyDetails('${strategy.id}')" class="text-indigo-600 hover:text-indigo-900 mx-1">Edit</button>
-                            <button onclick="window.deleteStrategy('${strategy.id}')" class="text-red-600 hover:text-red-900 ml-1">Delete</button>
+                            <button onclick="window.showStrategyDetails('${strategy.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
+                            <button onclick="window.deleteStrategy('${strategy.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -382,25 +383,36 @@ function updateOverallStats() {
     const totalProfit = bots.reduce((sum, bot) => sum + (bot.current_balance - bot.starting_balance), 0);
     const totalWagers = bots.reduce((sum, bot) => sum + bot.total_wagers, 0);
     const totalWins = bots.reduce((sum, bot) => sum + bot.total_wins, 0);
-
     const winRate = totalWagers > 0 ? ((totalWins / totalWagers) * 100).toFixed(2) : '0.00';
     const profitClass = totalProfit >= 0 ? 'text-green-600' : 'text-red-600';
     const sortedBots = [...bots].sort((a, b) => (b.current_balance - b.starting_balance) - (a.current_balance - a.starting_balance));
     const bestBot = sortedBots[0];
     const worstBot = sortedBots[sortedBots.length - 1];
 
-    document.getElementById('total-profit').textContent = `$${totalProfit.toFixed(2)}`;
-    document.getElementById('total-profit').className = `text-3xl font-bold ${profitClass}`;
-    document.getElementById('total-wagers').textContent = totalWagers;
-    document.getElementById('win-rate').textContent = `${winRate}%`;
-
-    if (bestBot) {
-        document.getElementById('best-bot-name').textContent = bestBot.name;
-        document.getElementById('best-bot-profit').textContent = `$${(bestBot.current_balance - bestBot.starting_balance).toFixed(2)}`;
+    const totalProfitEl = document.getElementById('total-profit');
+    if (totalProfitEl) {
+        totalProfitEl.textContent = `$${totalProfit.toFixed(2)}`;
+        totalProfitEl.className = `stats-value ${profitClass}`;
     }
-    if (worstBot) {
-        document.getElementById('worst-bot-name').textContent = worstBot.name;
-        document.getElementById('worst-bot-profit').textContent = `$${(worstBot.current_balance - worstBot.starting_balance).toFixed(2)}`;
+    const totalWagersEl = document.getElementById('total-wagers');
+    if (totalWagersEl) {
+        totalWagersEl.textContent = totalWagers;
+    }
+    const winRateEl = document.getElementById('win-rate');
+    if (winRateEl) {
+        winRateEl.textContent = `${winRate}%`;
+    }
+    const bestBotNameEl = document.getElementById('best-bot-name');
+    const bestBotProfitEl = document.getElementById('best-bot-profit');
+    if (bestBot && bestBotNameEl && bestBotProfitEl) {
+        bestBotNameEl.textContent = bestBot.name;
+        bestBotProfitEl.textContent = `$${(bestBot.current_balance - bestBot.starting_balance).toFixed(2)}`;
+    }
+    const worstBotNameEl = document.getElementById('worst-bot-name');
+    const worstBotProfitEl = document.getElementById('worst-bot-profit');
+    if (worstBot && worstBotNameEl && worstBotProfitEl) {
+        worstBotNameEl.textContent = worstBot.name;
+        worstBotProfitEl.textContent = `$${(worstBot.current_balance - worstBot.starting_balance).toFixed(2)}`;
     }
 }
 
@@ -692,7 +704,8 @@ window.deleteStrategy = async function(strategyId) {
 window.getStrategyPicks = async function(botId, strategyId) {
     try {
         showLoading();
-        const response = await fetch(`/api/strategy/${strategyId}/picks?bot_id=${botId}`);
+        // Pass userId in the API call
+        const response = await fetch(`/api/strategy/${strategyId}/picks?user_id=${userId}&bot_id=${botId}`);
         const data = await response.json();
         
         const picksContent = document.getElementById(`picks-content-${botId}`);
@@ -993,7 +1006,7 @@ function displayInvestments(investments) {
             if (inv.bookmakers) {
                 inv.bookmakers.forEach(bookmaker => {
                     bookmaker.markets.forEach(market => {
-                        const marketName = market.name || marketNameMapping[market.key] || market.key;
+                        const marketName = market.name || marketNameMapping[market.key] || market.key || 'UNDEFINED';
                         allMarkets.add(marketName);
                     });
                 });
@@ -1643,7 +1656,7 @@ async function initializeFirebase() {
     }
 }
 
-function startListeners() {
+async function startListeners() {
     if (!firebaseAvailable || !auth || !onAuthStateChanged) {
         // In demo mode without Firebase, just set up the UI
         console.log("Running in demo mode, skipping Firebase auth listeners");
@@ -1652,6 +1665,9 @@ function startListeners() {
         
         // Load demo settings
         loadUserSettings();
+        // Fetch strategies first, then bots
+        await fetchStrategies();
+        await fetchBots();
         hideLoading();
         return;
     }
@@ -1660,14 +1676,11 @@ function startListeners() {
         if (user) {
             userId = user.uid;
             document.getElementById('user-id').textContent = userId;
-            
             // Load user settings first
             await loadUserSettings();
-            
-            // Then load other data
-            fetchBots();
-            fetchStrategies();
-            
+            // Fetch strategies first, then bots
+            await fetchStrategies();
+            await fetchBots();
             // Check auto-refresh after everything is loaded
             setTimeout(checkAutoRefresh, 1000);
         } else {
@@ -1694,6 +1707,7 @@ document.getElementById('add-bot-form').addEventListener('submit', async functio
     };
     await window.addBot(botData);
     form.reset();
+    closeModal('add-bot-modal');
 });
 
 document.getElementById('edit-bot-form').addEventListener('submit', async function(event) {
@@ -1725,10 +1739,12 @@ document.getElementById('add-strategy-form').addEventListener('submit', async fu
     const strategyData = {
         name: form.name.value,
         type: form.type.value,
-        linked_strategy_id: form.linked_strategy_id.value || null
+        linked_strategy_id: form.linked_strategy_id.value || null,
+        description: form.description.value
     };
     await window.addStrategy(strategyData);
     form.reset();
+    closeModal('add-strategy-modal');
 });
 
 document.getElementById('edit-strategy-form').addEventListener('submit', async function(event) {
@@ -1778,7 +1794,6 @@ document.getElementById('settings-form').addEventListener('submit', async functi
     }
 });
 
-// Account page event listeners
 document.getElementById('signin-form-element').addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
@@ -1819,25 +1834,25 @@ document.getElementById('password-form').addEventListener('submit', async functi
     );
 });
 
-document.getElementById('preferences-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    
-    const preferences = {
-        autoRefresh: form.autoRefresh.checked,
-        notifications: form.notifications.checked,
-        theme: form.theme.value
-    };
-    
-    // Save preferences (extend existing settings functionality)
-    const newSettings = {
-        ...userSettings,
-        ...preferences
-    };
-    
-    await saveUserSettings(newSettings);
-    showMessage('Preferences saved successfully!', false);
-});
+const preferencesForm = document.getElementById('preferences-form');
+if (preferencesForm) {
+    preferencesForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        const preferences = {
+            autoRefresh: form.autoRefresh.checked,
+            notifications: form.notifications.checked,
+            theme: form.theme.value
+        };
+        // Save preferences (extend existing settings functionality)
+        const newSettings = {
+            ...userSettings,
+            ...preferences
+        };
+        await saveUserSettings(newSettings);
+        showMessage('Preferences saved successfully!', false);
+    });
+}
 
 document.getElementById('logout-btn').addEventListener('click', signOutUser);
 
@@ -1860,3 +1875,63 @@ initializeFirebase().then(() => {
     startListeners();
     initializeAccountPage();
 });
+
+function setupStatsCardClicks() {
+    document.querySelectorAll('.stats-card').forEach((card, idx) => {
+        card.onclick = function() {
+
+
+            let statType = '';
+            switch (idx) {
+                case 0: statType = 'profit'; break;
+                case 1: statType = 'wagers'; break;
+                case 2: statType = 'winrate'; break;
+                case 3: statType = 'bestbot'; break;
+                case 4: statType = 'worstbot'; break;
+                default: statType = '';
+            }
+            showStatsBreakdownInline(statType, card);
+        };
+    });
+}
+
+function showStatsBreakdownInline(statType, card) {
+    let title = '';
+    let html = '';
+    if (statType === 'profit') {
+        title = 'Total Profit Breakdown by Bot';
+        html = `<table class='min-w-full post9-card'><thead><tr><th>Bot</th><th>Profit</th></tr></thead><tbody>` +
+            bots.map(bot => `<tr><td>${bot.name}</td><td>$${(bot.current_balance - bot.starting_balance).toFixed(2)}</td></tr>`).join('') + '</tbody></table>';
+    } else if (statType === 'wagers') {
+        title = 'Total Wagers Breakdown by Bot';
+        html = `<table class='min-w-full post9-card'><thead><tr><th>Bot</th><th>Wagers</th></tr></thead><tbody>` +
+            bots.map(bot => `<tr><td>${bot.name}</td><td>${bot.total_wagers}</td></tr>`).join('') + '</tbody></table>';
+    } else if (statType === 'winrate') {
+        title = 'Win Rate Breakdown by Bot';
+        html = `<table class='min-w-full post9-card'><thead><tr><th>Bot</th><th>Win Rate</th></tr></thead><tbody>` +
+            bots.map(bot => {
+                const winRate = bot.total_wagers > 0 ? ((bot.total_wins / bot.total_wagers) * 100).toFixed(2) : '0.00';
+                return `<tr><td>${bot.name}</td><td>${winRate}%</td></tr>`;
+            }).join('') + '</tbody></table>';
+    } else if (statType === 'bestbot') {
+        title = 'Best Bot Details';
+        const bestBot = [...bots].sort((a, b) => (b.current_balance - b.starting_balance) - (a.current_balance - a.starting_balance))[0];
+        html = bestBot ? `<div class='post9-card p-4'><strong>${bestBot.name}</strong><br>Profit: $${(bestBot.current_balance - bestBot.starting_balance).toFixed(2)}</div>` : '<div>No bots found.</div>';
+    } else if (statType === 'worstbot') {
+        title = 'Worst Bot Details';
+        const worstBot = [...bots].sort((a, b) => (a.current_balance - a.starting_balance) - (b.current_balance - b.starting_balance))[0];
+        html = worstBot ? `<div class='post9-card p-4'><strong>${worstBot.name}</strong><br>Profit: $${(worstBot.current_balance - worstBot.starting_balance).toFixed(2)}</div>` : '<div>No bots found.</div>';
+    }
+    const breakdownContainer = document.getElementById('stats-breakdown-inline');
+    breakdownContainer.innerHTML = `
+        <div class='post9-card p-6 mt-4 mb-4'>
+            <div class='flex justify-between items-center mb-2'>
+                <span class='text-lg font-bold text-white'>${title}</span>
+                <button onclick="document.getElementById('stats-breakdown-inline').innerHTML = ''" class='post9-btn px-3 py-1 text-sm'>Close</button>
+            </div>
+            ${html}
+        </div>
+    `;
+    // Scroll to the breakdown if needed
+    breakdownContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
