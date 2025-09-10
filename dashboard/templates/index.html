@@ -221,8 +221,39 @@
                 </div>
             </section>
             <section class="table-container post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Strategy Editor</h2>
-                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-strategy-modal')">Add Strategy</button>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Strategy Manager</h2>
+                    <div class="flex gap-3">
+                        <button onclick="showModal('strategy-templates-modal')" class="post9-btn px-4 py-2">📈 Templates</button>
+                        <button onclick="showPage('strategy-builder-page')" class="post9-btn px-4 py-2">🎨 Visual Builder</button>
+                        <button onclick="showModal('add-strategy-modal')" class="post9-btn px-4 py-2">➕ Add Strategy</button>
+                    </div>
+                </div>
+                
+                <!-- Strategy Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-r from-green-500 to-green-700 p-4 rounded-lg text-white text-center">
+                        <div class="text-2xl mb-2">📊</div>
+                        <div class="text-sm opacity-90">Active Strategies</div>
+                        <div id="active-strategies-count" class="text-xl font-bold">0</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-700 p-4 rounded-lg text-white text-center">
+                        <div class="text-2xl mb-2">🏆</div>
+                        <div class="text-sm opacity-90">Best Performer</div>
+                        <div id="best-strategy-name" class="text-sm font-bold">-</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-700 p-4 rounded-lg text-white text-center">
+                        <div class="text-2xl mb-2">📈</div>
+                        <div class="text-sm opacity-90">Avg Win Rate</div>
+                        <div id="avg-win-rate" class="text-xl font-bold">0%</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-700 p-4 rounded-lg text-white text-center">
+                        <div class="text-2xl mb-2">💰</div>
+                        <div class="text-sm opacity-90">Total Profit</div>
+                        <div id="strategies-total-profit" class="text-xl font-bold">$0.00</div>
+                    </div>
+                </div>
+                
                 <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
                     <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
                 </div>
@@ -1090,6 +1121,149 @@
                 </button>
                 <button onclick="addGameToWatchlist()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
                     👀 Add to Watchlist
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Strategy Templates Modal -->
+    <div id="strategy-templates-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('strategy-templates-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-6 text-white">Strategy Templates</h2>
+            <p class="text-gray-300 mb-6">Choose from pre-built strategy templates to get started quickly, or use them as inspiration for your own custom strategies.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- +EV Template -->
+                <div class="bg-gradient-to-br from-green-500 to-green-700 p-6 rounded-lg text-white cursor-pointer hover:transform hover:scale-105 transition-all duration-200" onclick="loadTemplate('positive_ev')">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">📈</div>
+                        <div>
+                            <h3 class="text-xl font-bold">+EV (Positive Expected Value)</h3>
+                            <p class="text-green-100 text-sm">Mathematical edge betting</p>
+                        </div>
+                    </div>
+                    <p class="text-green-100 mb-4">Only bet when the odds provide positive expected value based on your model's predicted probabilities. Focuses on long-term mathematical profitability.</p>
+                    <div class="text-sm">
+                        <div class="mb-2"><strong>Key Features:</strong></div>
+                        <ul class="list-disc list-inside text-green-100 space-y-1">
+                            <li>Model probability vs. market odds comparison</li>
+                            <li>Minimum EV threshold (e.g., 5%+)</li>
+                            <li>Kelly Criterion bet sizing</li>
+                            <li>Risk management controls</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Conservative Template -->
+                <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-lg text-white cursor-pointer hover:transform hover:scale-105 transition-all duration-200" onclick="loadTemplate('conservative')">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🛡️</div>
+                        <div>
+                            <h3 class="text-xl font-bold">Conservative</h3>
+                            <p class="text-blue-100 text-sm">Low risk, steady growth</p>
+                        </div>
+                    </div>
+                    <p class="text-blue-100 mb-4">A safe approach with smaller bet sizes and strict criteria. Perfect for beginners or risk-averse investors.</p>
+                    <div class="text-sm">
+                        <div class="mb-2"><strong>Key Features:</strong></div>
+                        <ul class="list-disc list-inside text-blue-100 space-y-1">
+                            <li>Low bet sizes (1-2% of bankroll)</li>
+                            <li>High confidence threshold</li>
+                            <li>Maximum 3 bets per week</li>
+                            <li>Stop-loss protection</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Aggressive Template -->
+                <div class="bg-gradient-to-br from-red-500 to-red-700 p-6 rounded-lg text-white cursor-pointer hover:transform hover:scale-105 transition-all duration-200" onclick="loadTemplate('aggressive')">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🚀</div>
+                        <div>
+                            <h3 class="text-xl font-bold">Aggressive Growth</h3>
+                            <p class="text-red-100 text-sm">High risk, high reward</p>
+                        </div>
+                    </div>
+                    <p class="text-red-100 mb-4">Maximum growth potential with larger bet sizes and more frequent betting. Requires larger bankroll and risk tolerance.</p>
+                    <div class="text-sm">
+                        <div class="mb-2"><strong>Key Features:</strong></div>
+                        <ul class="list-disc list-inside text-red-100 space-y-1">
+                            <li>Higher bet sizes (3-5% of bankroll)</li>
+                            <li>More betting opportunities</li>
+                            <li>Progressive betting on wins</li>
+                            <li>Advanced recovery strategies</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Value Betting Template -->
+                <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-6 rounded-lg text-white cursor-pointer hover:transform hover:scale-105 transition-all duration-200" onclick="loadTemplate('value_betting')">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">💎</div>
+                        <div>
+                            <h3 class="text-xl font-bold">Value Betting</h3>
+                            <p class="text-purple-100 text-sm">Find market inefficiencies</p>
+                        </div>
+                    </div>
+                    <p class="text-purple-100 mb-4">Identify and exploit market inefficiencies by comparing multiple sportsbooks and finding the best odds.</p>
+                    <div class="text-sm">
+                        <div class="mb-2"><strong>Key Features:</strong></div>
+                        <ul class="list-disc list-inside text-purple-100 space-y-1">
+                            <li>Multi-sportsbook comparison</li>
+                            <li>Line movement tracking</li>
+                            <li>Arbitrage opportunities</li>
+                            <li>Sharp vs. public money analysis</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Contrarian Template -->
+                <div class="bg-gradient-to-br from-orange-500 to-orange-700 p-6 rounded-lg text-white cursor-pointer hover:transform hover:scale-105 transition-all duration-200" onclick="loadTemplate('contrarian')">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🎭</div>
+                        <div>
+                            <h3 class="text-xl font-bold">Contrarian</h3>
+                            <p class="text-orange-100 text-sm">Fade the public</p>
+                        </div>
+                    </div>
+                    <p class="text-orange-100 mb-4">Go against public betting trends and capitalize on overreactions in the market.</p>
+                    <div class="text-sm">
+                        <div class="mb-2"><strong>Key Features:</strong></div>
+                        <ul class="list-disc list-inside text-orange-100 space-y-1">
+                            <li>Public betting percentage analysis</li>
+                            <li>Reverse line movement detection</li>
+                            <li>Fade heavy public sides</li>
+                            <li>Contrarian indicators</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Weather-Based Template -->
+                <div class="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-lg text-white cursor-pointer hover:transform hover:scale-105 transition-all duration-200" onclick="loadTemplate('weather_based')">
+                    <div class="flex items-center mb-4">
+                        <div class="text-3xl mr-3">🌤️</div>
+                        <div>
+                            <h3 class="text-xl font-bold">Weather-Based</h3>
+                            <p class="text-teal-100 text-sm">Climate advantage betting</p>
+                        </div>
+                    </div>
+                    <p class="text-teal-100 mb-4">Leverage weather conditions to find edges in outdoor sports, especially totals betting.</p>
+                    <div class="text-sm">
+                        <div class="mb-2"><strong>Key Features:</strong></div>
+                        <ul class="list-disc list-inside text-teal-100 space-y-1">
+                            <li>Wind speed impact analysis</li>
+                            <li>Temperature effects on scoring</li>
+                            <li>Precipitation probability</li>
+                            <li>Dome vs. outdoor venue adjustments</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <button onclick="closeModal('strategy-templates-modal')" class="post9-btn px-6 py-3">
+                    Close Templates
                 </button>
             </div>
         </div>

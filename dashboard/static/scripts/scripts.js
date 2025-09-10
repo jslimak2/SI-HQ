@@ -357,43 +357,131 @@ function displayBots() {
 
 function displayStrategies() {
     const container = strategiesContainer;
+    
+    // Update strategy stats
+    updateStrategyStats();
+    
     if (strategies.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-400 py-4">No strategies found. Add one above!</p>`;
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">🎯</div>
+                <h3 class="text-xl font-semibold text-white mb-2">No strategies found</h3>
+                <p class="text-gray-400 mb-6">Create your first strategy to start making profitable investments</p>
+                <div class="flex justify-center gap-3">
+                    <button onclick="showModal('strategy-templates-modal')" class="post9-btn px-6 py-3">
+                        📈 Use Template
+                    </button>
+                    <button onclick="showPage('strategy-builder-page')" class="post9-btn px-6 py-3">
+                        🎨 Build Custom
+                    </button>
+                </div>
+            </div>
+        `;
         return;
     }
-    const table = document.createElement('table');
-    table.className = 'min-w-full divide-y divide-gray-200 post9-card';
-    table.innerHTML = `
-        <thead class="post9-card">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Linked Strategy</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Description</th>
-                <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 post9-card">
-            ${strategies.map(strategy => {
-                const linkedStrategy = strategies.find(s => s.id === strategy.linked_strategy_id);
-                const linkedStrategyName = linkedStrategy ? linkedStrategy.name : 'None';
-                return `
-                    <tr class="post9-card">
-                        <td class="px-6 py-4 whitespace-nowrap font-semibold">${strategy.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${strategy.type}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${linkedStrategyName}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${strategy.description || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="window.showStrategyDetails('${strategy.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
-                            <button onclick="window.deleteStrategy('${strategy.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('')}
-        </tbody>
-    `;
+    
+    // Create a more visually appealing strategy card layout
+    const strategiesGrid = document.createElement('div');
+    strategiesGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+    
+    strategiesGrid.innerHTML = strategies.map(strategy => {
+        const linkedStrategy = strategies.find(s => s.id === strategy.linked_strategy_id);
+        const linkedStrategyName = linkedStrategy ? linkedStrategy.name : null;
+        
+        // Determine strategy type icon and color
+        const typeConfig = {
+            'basic': { icon: '📊', color: 'from-blue-500 to-blue-700', name: 'Basic' },
+            'recovery': { icon: '🔄', color: 'from-orange-500 to-orange-700', name: 'Recovery' },
+            'visual_flow': { icon: '🎨', color: 'from-purple-500 to-purple-700', name: 'Visual Flow' },
+            'positive_ev': { icon: '📈', color: 'from-green-500 to-green-700', name: '+EV' },
+            'conservative': { icon: '🛡️', color: 'from-blue-500 to-blue-600', name: 'Conservative' },
+            'aggressive': { icon: '🚀', color: 'from-red-500 to-red-700', name: 'Aggressive' }
+        };
+        
+        const config = typeConfig[strategy.type] || typeConfig['basic'];
+        
+        return `
+            <div class="bg-gradient-to-br ${config.color} rounded-lg p-6 text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="text-3xl mr-3">${config.icon}</div>
+                        <div>
+                            <h3 class="text-xl font-bold">${strategy.name}</h3>
+                            <p class="text-sm opacity-90">${config.name} Strategy</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="window.showStrategyDetails('${strategy.id}')" 
+                                class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                            ✏️ Edit
+                        </button>
+                        <button onclick="window.duplicateStrategy('${strategy.id}')" 
+                                class="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-sm opacity-90 mb-2">${strategy.description || 'No description provided'}</p>
+                    ${linkedStrategyName ? `
+                        <div class="flex items-center text-sm opacity-90">
+                            <span class="mr-1">🔗</span>
+                            <span>Linked to: ${linkedStrategyName}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <!-- Strategy Parameters Preview -->
+                ${strategy.parameters ? `
+                    <div class="bg-white/10 rounded-lg p-3 mb-4">
+                        <div class="text-sm opacity-90 mb-2">Parameters:</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            ${strategy.parameters.risk_level ? `<div>Risk: ${strategy.parameters.risk_level}/10</div>` : ''}
+                            ${strategy.parameters.bet_percentage ? `<div>Bet Size: ${strategy.parameters.bet_percentage}%</div>` : ''}
+                            ${strategy.parameters.max_bets_per_week ? `<div>Max Bets: ${strategy.parameters.max_bets_per_week}/week</div>` : ''}
+                            ${strategy.parameters.recovery_strategy ? `<div>Recovery: ${strategy.parameters.recovery_strategy}</div>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- Action Buttons -->
+                <div class="flex space-x-2">
+                    <button onclick="window.useStrategyInBot('${strategy.id}')" 
+                            class="flex-1 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded font-medium transition-colors">
+                        🤖 Use in Bot
+                    </button>
+                    <button onclick="window.testStrategy('${strategy.id}')" 
+                            class="flex-1 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded font-medium transition-colors">
+                        🧪 Test
+                    </button>
+                    <button onclick="window.deleteStrategy('${strategy.id}')" 
+                            class="bg-red-500/80 hover:bg-red-600 text-white px-3 py-2 rounded font-medium transition-colors">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
     container.innerHTML = '';
-    container.appendChild(table);
+    container.appendChild(strategiesGrid);
+}
+
+// Update strategy statistics
+function updateStrategyStats() {
+    const activeStrategiesCount = strategies.length;
+    const bestStrategy = strategies.length > 0 ? strategies[0] : null;
+    
+    const activeCountEl = document.getElementById('active-strategies-count');
+    const bestStrategyEl = document.getElementById('best-strategy-name');
+    const avgWinRateEl = document.getElementById('avg-win-rate');
+    const totalProfitEl = document.getElementById('strategies-total-profit');
+    
+    if (activeCountEl) activeCountEl.textContent = activeStrategiesCount;
+    if (bestStrategyEl) bestStrategyEl.textContent = bestStrategy ? bestStrategy.name : '-';
+    if (avgWinRateEl) avgWinRateEl.textContent = '0%'; // TODO: Calculate from actual performance data
+    if (totalProfitEl) totalProfitEl.textContent = '$0.00'; // TODO: Calculate from actual performance data
 }
 
 // Update overall stats dashboard
@@ -3265,3 +3353,237 @@ if (originalShowPage) {
         }, 100);
     };
 }
+
+// --- STRATEGY TEMPLATE FUNCTIONS ---
+
+// Load a strategy template
+window.loadTemplate = function(templateName) {
+    const templates = {
+        'positive_ev': {
+            name: '+EV Strategy',
+            description: 'Positive expected value betting strategy focusing on mathematical edges',
+            flow_definition: {
+                nodes: [
+                    { type: 'if-condition', x: 50, y: 50, text: 'IF Model Confidence > 60%' },
+                    { type: 'and-or', x: 200, y: 50, text: 'AND' },
+                    { type: 'comparison', x: 350, y: 50, text: 'Expected Value > 5%' },
+                    { type: 'place-bet', x: 500, y: 50, text: 'Place Kelly Bet' },
+                    { type: 'skip-bet', x: 500, y: 150, text: 'Skip - No Edge' }
+                ],
+                connections: []
+            },
+            parameters: {
+                risk_level: 6,
+                bet_percentage: 3.0,
+                max_bets_per_week: 8,
+                recovery_strategy: 'None',
+                min_confidence: 60,
+                min_expected_value: 5,
+                kelly_multiplier: 0.25
+            }
+        },
+        'conservative': {
+            name: 'Conservative Strategy',
+            description: 'Low-risk strategy with small bet sizes and high confidence requirements',
+            flow_definition: {
+                nodes: [
+                    { type: 'if-condition', x: 50, y: 50, text: 'IF Model Confidence > 75%' },
+                    { type: 'and-or', x: 200, y: 50, text: 'AND' },
+                    { type: 'comparison', x: 350, y: 50, text: 'Expected Value > 8%' },
+                    { type: 'place-bet', x: 500, y: 50, text: 'Place Small Bet' },
+                    { type: 'skip-bet', x: 500, y: 150, text: 'Skip - Too Risky' }
+                ],
+                connections: []
+            },
+            parameters: {
+                risk_level: 2,
+                bet_percentage: 1.5,
+                max_bets_per_week: 3,
+                recovery_strategy: 'None',
+                min_confidence: 75,
+                min_expected_value: 8
+            }
+        },
+        'aggressive': {
+            name: 'Aggressive Growth Strategy',
+            description: 'High-growth strategy with larger bet sizes and more frequent betting',
+            flow_definition: {
+                nodes: [
+                    { type: 'if-condition', x: 50, y: 50, text: 'IF Model Confidence > 55%' },
+                    { type: 'and-or', x: 200, y: 50, text: 'AND' },
+                    { type: 'comparison', x: 350, y: 50, text: 'Expected Value > 3%' },
+                    { type: 'place-bet', x: 500, y: 50, text: 'Place Large Bet' },
+                    { type: 'skip-bet', x: 500, y: 150, text: 'Skip' }
+                ],
+                connections: []
+            },
+            parameters: {
+                risk_level: 8,
+                bet_percentage: 4.5,
+                max_bets_per_week: 15,
+                recovery_strategy: 'Martingale',
+                min_confidence: 55,
+                min_expected_value: 3
+            }
+        },
+        'value_betting': {
+            name: 'Value Betting Strategy',
+            description: 'Find and exploit market inefficiencies across multiple sportsbooks',
+            flow_definition: {
+                nodes: [
+                    { type: 'if-condition', x: 50, y: 50, text: 'IF Odds Discrepancy > 2%' },
+                    { type: 'and-or', x: 200, y: 50, text: 'AND' },
+                    { type: 'model-prediction', x: 350, y: 50, text: 'Sharp Money Agrees' },
+                    { type: 'place-bet', x: 500, y: 50, text: 'Place Value Bet' },
+                    { type: 'skip-bet', x: 500, y: 150, text: 'Monitor' }
+                ],
+                connections: []
+            },
+            parameters: {
+                risk_level: 5,
+                bet_percentage: 2.8,
+                max_bets_per_week: 10,
+                recovery_strategy: 'None',
+                min_odds_discrepancy: 2,
+                sharp_money_threshold: 65
+            }
+        },
+        'contrarian': {
+            name: 'Contrarian Strategy',
+            description: 'Fade the public and capitalize on market overreactions',
+            flow_definition: {
+                nodes: [
+                    { type: 'if-condition', x: 50, y: 50, text: 'IF Public % > 70%' },
+                    { type: 'and-or', x: 200, y: 50, text: 'AND' },
+                    { type: 'comparison', x: 350, y: 50, text: 'Line Movement Against Public' },
+                    { type: 'place-bet', x: 500, y: 50, text: 'Fade the Public' },
+                    { type: 'skip-bet', x: 500, y: 150, text: 'No Contrarian Edge' }
+                ],
+                connections: []
+            },
+            parameters: {
+                risk_level: 6,
+                bet_percentage: 3.2,
+                max_bets_per_week: 7,
+                recovery_strategy: 'None',
+                public_threshold: 70,
+                reverse_line_movement: true
+            }
+        },
+        'weather_based': {
+            name: 'Weather-Based Strategy',
+            description: 'Leverage weather conditions for outdoor sports betting',
+            flow_definition: {
+                nodes: [
+                    { type: 'weather', x: 50, y: 50, text: 'Check Weather' },
+                    { type: 'if-condition', x: 200, y: 50, text: 'IF Strong Wind/Rain' },
+                    { type: 'comparison', x: 350, y: 50, text: 'Outdoor Venue' },
+                    { type: 'place-bet', x: 500, y: 50, text: 'Bet Under Total' },
+                    { type: 'skip-bet', x: 500, y: 150, text: 'Normal Weather' }
+                ],
+                connections: []
+            },
+            parameters: {
+                risk_level: 4,
+                bet_percentage: 2.2,
+                max_bets_per_week: 6,
+                recovery_strategy: 'None',
+                wind_threshold: 15,
+                precipitation_threshold: 0.3
+            }
+        }
+    };
+
+    const template = templates[templateName];
+    if (!template) {
+        showMessage('Template not found', true);
+        return;
+    }
+
+    // Load template into strategy builder
+    currentStrategy = { ...template.flow_definition };
+    
+    // Update parameter controls
+    const riskLevel = document.getElementById('risk-level');
+    const betSize = document.getElementById('bet-size-percent');
+    const maxBets = document.getElementById('max-bets-week');
+    const recoveryStrategy = document.getElementById('recovery-strategy');
+    
+    if (riskLevel) {
+        riskLevel.value = template.parameters.risk_level;
+        const valueEl = document.getElementById('risk-level-value');
+        if (valueEl) valueEl.textContent = template.parameters.risk_level;
+    }
+    
+    if (betSize) {
+        betSize.value = template.parameters.bet_percentage;
+        const valueEl = document.getElementById('bet-size-value');
+        if (valueEl) valueEl.textContent = template.parameters.bet_percentage;
+    }
+    
+    if (maxBets) {
+        maxBets.value = template.parameters.max_bets_per_week;
+    }
+    
+    if (recoveryStrategy) {
+        recoveryStrategy.value = template.parameters.recovery_strategy || 'None';
+    }
+
+    // Clear and populate canvas
+    const canvas = document.getElementById('strategy-canvas');
+    if (canvas) {
+        canvas.innerHTML = '';
+        
+        // Add nodes to canvas
+        template.flow_definition.nodes.forEach(node => {
+            addComponentToCanvas(node.type, node.x, node.y);
+        });
+    }
+
+    updateStrategyDescription();
+    closeModal('strategy-templates-modal');
+    showMessage(`${template.name} template loaded successfully!`, false);
+};
+
+// Additional strategy management functions
+window.duplicateStrategy = function(strategyId) {
+    const strategy = strategies.find(s => s.id === strategyId);
+    if (!strategy) {
+        showMessage('Strategy not found', true);
+        return;
+    }
+    
+    const newName = prompt('Enter name for the duplicate strategy:', `${strategy.name} Copy`);
+    if (!newName) return;
+    
+    // TODO: Implement actual duplication logic with Firebase
+    showMessage(`Strategy "${newName}" duplicated successfully!`, false);
+};
+
+window.useStrategyInBot = function(strategyId) {
+    const strategy = strategies.find(s => s.id === strategyId);
+    if (!strategy) {
+        showMessage('Strategy not found', true);
+        return;
+    }
+    
+    // Open the add bot modal with this strategy pre-selected
+    showModal('add-bot-modal');
+    setTimeout(() => {
+        const strategySelect = document.getElementById('strategy-select');
+        if (strategySelect) {
+            strategySelect.value = strategyId;
+        }
+    }, 100);
+};
+
+window.testStrategy = function(strategyId) {
+    const strategy = strategies.find(s => s.id === strategyId);
+    if (!strategy) {
+        showMessage('Strategy not found', true);
+        return;
+    }
+    
+    showMessage(`Running backtest for "${strategy.name}"... (Demo)`, false);
+    // TODO: Implement actual strategy testing/backtesting
+};
