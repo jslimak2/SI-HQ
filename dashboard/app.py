@@ -778,6 +778,210 @@ def get_investment_stats():
         print(f"Error fetching investment stats: {e}")
         return jsonify({'success': False, 'message': f'Failed to fetch stats: {e}'}), 500
 
+@app.route('/api/bot-recommendations', methods=['GET'])
+def get_bot_recommendations():
+    """Get bot recommendations for current investment opportunities"""
+    user_id = request.args.get('user_id', 'anonymous')
+    
+    try:
+        # In demo mode, generate mock recommendations
+        if demo_mode or not db:
+            recommendations = generate_demo_bot_recommendations()
+            return jsonify({
+                'success': True,
+                'recommendations': recommendations,
+                'demo_mode': True
+            }), 200
+        
+        # Get user's bots
+        collections = get_user_collections(user_id)
+        if not collections:
+            return jsonify({'success': False, 'message': 'Database not available'}), 500
+        
+        # For now, use demo recommendations even in non-demo mode
+        # In a real implementation, this would:
+        # 1. Fetch user's active bots
+        # 2. Get current investment data
+        # 3. Run each bot's strategy against current games
+        # 4. Return recommendations with confidence levels
+        
+        recommendations = generate_demo_bot_recommendations()
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'demo_mode': False
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting bot recommendations: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get recommendations: {str(e)}'}), 500
+
+def generate_demo_bot_recommendations():
+    """Generate demo bot recommendations for testing"""
+    import random
+    
+    # Demo bots with different characteristics
+    demo_bots = [
+        {
+            'id': 'demo_bot_1',
+            'name': 'Value Hunter',
+            'strategy': 'Finds undervalued bets',
+            'confidence_style': 'conservative',  # 60-75% confidence range
+            'preferred_odds_range': [150, 300],  # Prefers higher odds for value
+            'color': '#10B981'  # green
+        },
+        {
+            'id': 'demo_bot_2', 
+            'name': 'Safe Bet',
+            'strategy': 'Low risk, steady gains',
+            'confidence_style': 'safe',  # 70-85% confidence range
+            'preferred_odds_range': [-150, 150],  # Prefers lower odds
+            'color': '#3B82F6'  # blue
+        },
+        {
+            'id': 'demo_bot_3',
+            'name': 'High Roller',
+            'strategy': 'High risk, high reward',
+            'confidence_style': 'aggressive',  # 55-90% confidence range
+            'preferred_odds_range': [200, 500],  # Prefers high odds
+            'color': '#F59E0B'  # amber
+        }
+    ]
+    
+    recommendations = {}
+    
+    # Demo games that match what we show in investments
+    demo_games = [
+        {
+            'game_id': 'demo_game_0',
+            'teams': 'Lakers vs Warriors',
+            'sport': 'NBA'
+        },
+        {
+            'game_id': 'demo_game_1', 
+            'teams': 'Celtics vs Heat',
+            'sport': 'NBA'
+        }
+    ]
+    
+    # Generate recommendations for each game
+    for game in demo_games:
+        game_recommendations = []
+        
+        for bot in demo_bots:
+            # Each bot might recommend different markets/selections
+            if random.random() < 0.7:  # 70% chance bot has a recommendation
+                
+                # Determine confidence based on bot's style
+                if bot['confidence_style'] == 'conservative':
+                    confidence = random.randint(60, 75)
+                elif bot['confidence_style'] == 'safe':
+                    confidence = random.randint(70, 85)
+                else:  # aggressive
+                    confidence = random.randint(55, 90)
+                
+                # Generate recommendation for random sportsbook and market
+                sportsbooks = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
+                markets = [
+                    {'key': 'h2h', 'name': 'Moneyline', 'selections': ['Lakers', 'Warriors'] if 'Lakers' in game['teams'] else ['Celtics', 'Heat']},
+                    {'key': 'spreads', 'name': 'Spreads', 'selections': ['Lakers', 'Warriors'] if 'Lakers' in game['teams'] else ['Celtics', 'Heat']},
+                    {'key': 'totals', 'name': 'Totals', 'selections': ['Over', 'Under']}
+                ]
+                
+                selected_sportsbook = random.choice(sportsbooks)
+                selected_market = random.choice(markets)
+                selected_selection = random.choice(selected_market['selections'])
+                
+                # Generate bet amount (typically 1-5% of a demo balance)
+                demo_balance = random.randint(800, 1200)
+                bet_percentage = random.uniform(1.5, 4.0)
+                recommended_amount = round((demo_balance * bet_percentage / 100), 2)
+                
+                recommendation = {
+                    'bot_id': bot['id'],
+                    'bot_name': bot['name'],
+                    'bot_strategy': bot['strategy'],
+                    'bot_color': bot['color'],
+                    'sportsbook': selected_sportsbook,
+                    'market_key': selected_market['key'],
+                    'market_name': selected_market['name'],
+                    'selection': selected_selection,
+                    'confidence': confidence,
+                    'recommended_amount': recommended_amount,
+                    'reasoning': f"{bot['strategy']} - {confidence}% confidence",
+                    'status': 'recommended'  # vs 'placed'
+                }
+                
+                game_recommendations.append(recommendation)
+        
+        recommendations[game['game_id']] = game_recommendations
+    
+    return recommendations
+
+@app.route('/api/place-bets', methods=['POST'])
+def place_bets():
+    """Place multiple bets from the cart"""
+    data = request.json
+    user_id = data.get('user_id', 'anonymous')
+    bets = data.get('bets', [])
+    
+    if not bets:
+        return jsonify({'success': False, 'message': 'No bets provided'}), 400
+    
+    try:
+        # In demo mode, just return success
+        if demo_mode or not db:
+            return jsonify({
+                'success': True,
+                'message': f'Demo mode: {len(bets)} bets placed successfully',
+                'placed_bets': bets
+            }), 200
+        
+        # For real implementation, you would:
+        # 1. Validate each bet
+        # 2. Check user balance/permissions
+        # 3. Submit bets to actual sportsbooks
+        # 4. Store bet records in database
+        # 5. Update user balance/statistics
+        
+        collections = get_user_collections(user_id)
+        if not collections:
+            return jsonify({'success': False, 'message': 'Database not available'}), 500
+        
+        placed_bets = []
+        for bet in bets:
+            # Create bet record
+            bet_record = {
+                'id': bet.get('id'),
+                'user_id': user_id,
+                'game_id': bet.get('gameId'),
+                'teams': bet.get('teams'),
+                'sport': bet.get('sport'),
+                'sportsbook': bet.get('sportsbook'),
+                'market_type': bet.get('marketType'),
+                'selection': bet.get('selection'),
+                'odds': bet.get('odds'),
+                'bet_amount': bet.get('betAmount'),
+                'potential_payout': bet.get('potentialPayout'),
+                'status': 'pending',
+                'placed_at': datetime.datetime.now().isoformat(),
+                'commence_time': bet.get('commenceTime')
+            }
+            
+            # Add to database
+            collections['bets'].add(bet_record)
+            placed_bets.append(bet_record)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully placed {len(bets)} bet(s)',
+            'placed_bets': placed_bets
+        }), 200
+        
+    except Exception as e:
+        print(f"Error placing bets: {e}")
+        return jsonify({'success': False, 'message': f'Failed to place bets: {str(e)}'}), 500
+
 @app.route('/api/api-status', methods=['GET'])
 def get_api_status():
     """Get current API usage status from the sports API."""

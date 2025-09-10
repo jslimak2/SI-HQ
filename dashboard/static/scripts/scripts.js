@@ -39,6 +39,13 @@ let bots = [];
 let strategies = [];
 let userSettings = {};
 
+// Bet cart management
+let betCart = [];
+let cartVisible = false;
+
+// Bot recommendations cache
+let botRecommendations = {};
+
 // UI elements
 const activeBotsContainer = document.getElementById('active-bots-container');
 const inactiveBotsContainer = document.getElementById('inactive-bots-container');
@@ -794,12 +801,36 @@ window.loadCachedInvestments = async function() {
     showLoading();
 
     try {
-        const response = await fetch(`/api/investments?user_id=${userId}&refresh=false`);
-        const data = await response.json();
+        // Load investments and bot recommendations in parallel
+        const [investmentsResponse, recommendationsResponse] = await Promise.all([
+            fetch(`/api/investments?user_id=${userId}&refresh=false`),
+            fetch(`/api/bot-recommendations?user_id=${userId}`).catch(e => {
+                console.warn('Failed to load bot recommendations:', e);
+                return { ok: false };
+            })
+        ]);
+        
+        const investmentsData = await investmentsResponse.json();
+        
+        // Load bot recommendations if available
+        if (recommendationsResponse.ok) {
+            try {
+                const recommendationsData = await recommendationsResponse.json();
+                if (recommendationsData.success) {
+                    botRecommendations = recommendationsData.recommendations || {};
+                    console.log('Loaded bot recommendations:', Object.keys(botRecommendations).length, 'games');
+                }
+            } catch (e) {
+                console.warn('Failed to parse bot recommendations:', e);
+                botRecommendations = {};
+            }
+        } else {
+            botRecommendations = {};
+        }
 
-        if (data.success && data.investments.length > 0) {
-            displayInvestments(data.investments);
-            updateCacheStatus(data);
+        if (investmentsData.success && investmentsData.investments.length > 0) {
+            displayInvestments(investmentsData.investments);
+            updateCacheStatus(investmentsData);
         } else {
             noInvestmentsMessage.classList.remove('hidden');
             updateCacheStatus({ cached: false, has_cache: false });
@@ -1465,6 +1496,9 @@ function createInvestmentCard(investment) {
         'WynnBET': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' }
     };
 
+    // Get bot recommendations for this game
+    const gameRecommendations = botRecommendations[investment.id] || [];
+
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
         const colors = sportsbookColors[bookmaker.title] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
@@ -1480,10 +1514,51 @@ function createInvestmentCard(investment) {
                 }
                 const priceText = outcome.price > 0 ? `+${outcome.price}` : outcome.price;
                 
+                // Create unique bet ID for cart functionality
+                const betId = `${investment.id}_${bookmaker.key}_${market.key}_${outcome.name}`;
+                const betData = {
+                    id: betId,
+                    gameId: investment.id,
+                    teams: investment.teams,
+                    sport: investment.sport_title || investment.sport || 'Sport',
+                    commenceTime: investment.commence_time,
+                    sportsbook: bookmaker.title,
+                    sportsbookKey: bookmaker.key,
+                    marketType: marketName,
+                    marketKey: market.key,
+                    selection: displayText,
+                    selectionName: outcome.name,
+                    odds: outcome.price,
+                    point: outcome.point
+                };
+
+                // Find bot recommendations for this specific bet
+                const matchingRecommendations = gameRecommendations.filter(rec => 
+                    rec.sportsbook === bookmaker.title && 
+                    rec.market_key === market.key && 
+                    rec.selection === outcome.name
+                );
+
+                // Generate bot recommendation badges
+                const botBadgesHtml = matchingRecommendations.map(rec => `
+                    <div class="absolute -top-1 -right-1 flex flex-wrap gap-1 z-10">
+                        <div class="bot-recommendation-badge bg-white border-2 rounded-full px-2 py-1 text-xs font-bold shadow-md" 
+                             style="border-color: ${rec.bot_color}; color: ${rec.bot_color};"
+                             title="${rec.bot_name}: ${rec.confidence}% confidence, $${rec.recommended_amount} recommended">
+                            ${rec.bot_name.charAt(0)}${rec.confidence}%
+                        </div>
+                    </div>
+                `).join('');
+                
                 return `
-                    <div class="text-center p-2 border border-gray-100 rounded">
+                    <div class="text-center p-2 border border-gray-100 rounded relative group">
                         <div class="text-xs font-medium text-gray-600">${displayText}</div>
                         <div class="text-sm font-bold text-gray-900">${priceText}</div>
+                        ${botBadgesHtml}
+                        <button onclick="addToCart(${JSON.stringify(betData).replace(/"/g, '&quot;')})" 
+                                class="absolute inset-0 bg-blue-500 bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow-lg">+ Cart</span>
+                        </button>
                     </div>
                 `;
             }).join('');
@@ -1506,12 +1581,38 @@ function createInvestmentCard(investment) {
         `;
     }).join('');
 
+    // Generate game-level bot summary if there are recommendations
+    let botSummaryHtml = '';
+    if (gameRecommendations.length > 0) {
+        const uniqueBots = [...new Set(gameRecommendations.map(rec => rec.bot_name))];
+        botSummaryHtml = `
+            <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="text-xs font-semibold text-gray-600 mb-2">🤖 Bot Recommendations:</div>
+                <div class="flex flex-wrap gap-2">
+                    ${uniqueBots.map(botName => {
+                        const botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
+                        const avgConfidence = Math.round(botRecs.reduce((sum, rec) => sum + rec.confidence, 0) / botRecs.length);
+                        const totalAmount = botRecs.reduce((sum, rec) => sum + rec.recommended_amount, 0);
+                        const botColor = botRecs[0].bot_color;
+                        
+                        return `
+                            <div class="text-xs px-2 py-1 rounded-full" style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};">
+                                ${botName}: ${botRecs.length} bet${botRecs.length > 1 ? 's' : ''}, ${avgConfidence}% avg, $${totalAmount.toFixed(0)}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
     card.innerHTML = `
         <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">${investment.teams}</h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
             <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
         </div>
+        ${botSummaryHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
         </div>
@@ -1934,4 +2035,379 @@ function showStatsBreakdownInline(statType, card) {
     `;
     // Scroll to the breakdown if needed
     breakdownContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// --- BET CART FUNCTIONALITY ---
+
+window.addToCart = function(betData) {
+    // Check if bet already exists in cart
+    const existingIndex = betCart.findIndex(item => item.id === betData.id);
+    
+    if (existingIndex >= 0) {
+        showMessage('This bet is already in your cart!', true);
+        return;
+    }
+    
+    // Add bet amount (default $10, can be customized later)
+    betData.betAmount = 10;
+    betData.potentialPayout = calculatePayout(betData.betAmount, betData.odds);
+    betData.addedAt = new Date().toISOString();
+    
+    betCart.push(betData);
+    updateCartUI();
+    showMessage(`Added ${betData.selection} to cart!`, false);
+}
+
+window.removeFromCart = function(betId) {
+    betCart = betCart.filter(item => item.id !== betId);
+    updateCartUI();
+    showMessage('Removed bet from cart', false);
+}
+
+window.clearCart = function() {
+    if (betCart.length === 0) {
+        showMessage('Cart is already empty', true);
+        return;
+    }
+    
+    if (confirm('Are you sure you want to clear all bets from your cart?')) {
+        betCart = [];
+        updateCartUI();
+        showMessage('Cart cleared', false);
+    }
+}
+
+window.toggleBetCart = function() {
+    const sidebar = document.getElementById('bet-cart-sidebar');
+    const overlay = document.getElementById('cart-overlay');
+    
+    if (cartVisible) {
+        closeBetCart();
+    } else {
+        sidebar.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden');
+        cartVisible = true;
+    }
+}
+
+window.closeBetCart = function() {
+    const sidebar = document.getElementById('bet-cart-sidebar');
+    const overlay = document.getElementById('cart-overlay');
+    
+    sidebar.classList.add('translate-x-full');
+    overlay.classList.add('hidden');
+    cartVisible = false;
+}
+
+window.showBetConfirmation = function() {
+    if (betCart.length === 0) {
+        showMessage('No bets in cart to place', true);
+        return;
+    }
+    
+    populateConfirmationModal();
+    showModal('bet-confirmation-modal');
+}
+
+window.confirmPlaceBets = function() {
+    confirmPlaceBetsInternal();
+}
+
+window.exportToExcel = function() {
+    exportToExcelInternal();
+}
+
+function updateCartUI() {
+    const cartCount = betCart.length;
+    const cartBadge = document.getElementById('cart-count-badge');
+    const cartItemsCount = document.getElementById('cart-items-count');
+    const cartContainer = document.getElementById('cart-items-container');
+    const emptyMessage = document.getElementById('empty-cart-message');
+    const placeBetsBtn = document.getElementById('place-bets-btn');
+    const exportBtn = document.getElementById('export-excel-btn');
+    
+    // Update cart count badge
+    if (cartCount > 0) {
+        cartBadge.textContent = cartCount;
+        cartBadge.classList.remove('hidden');
+    } else {
+        cartBadge.classList.add('hidden');
+    }
+    
+    // Update items count
+    cartItemsCount.textContent = cartCount;
+    
+    // Show/hide empty message
+    if (cartCount === 0) {
+        emptyMessage.classList.remove('hidden');
+        cartContainer.innerHTML = '';
+        cartContainer.appendChild(emptyMessage);
+    } else {
+        emptyMessage.classList.add('hidden');
+        renderCartItems();
+    }
+    
+    // Enable/disable buttons
+    placeBetsBtn.disabled = cartCount === 0;
+    exportBtn.disabled = cartCount === 0;
+    
+    // Update total payout
+    updateCartTotals();
+}
+
+function renderCartItems() {
+    const container = document.getElementById('cart-items-container');
+    container.innerHTML = '';
+    
+    betCart.forEach(bet => {
+        const cartItem = document.createElement('div');
+        cartItem.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3';
+        
+        const commenceTime = new Date(bet.commenceTime).toLocaleString();
+        
+        cartItem.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex-1">
+                    <div class="font-semibold text-sm text-gray-900">${bet.teams}</div>
+                    <div class="text-xs text-gray-600">${bet.sport} • ${commenceTime}</div>
+                </div>
+                <button onclick="removeFromCart('${bet.id}')" class="text-red-500 hover:text-red-700 ml-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="text-xs text-gray-700 mb-2">
+                <div><span class="font-medium">Book:</span> ${bet.sportsbook}</div>
+                <div><span class="font-medium">Market:</span> ${bet.marketType}</div>
+                <div><span class="font-medium">Selection:</span> ${bet.selection}</div>
+                <div><span class="font-medium">Odds:</span> ${bet.odds > 0 ? '+' : ''}${bet.odds}</div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-xs text-gray-600 mr-2">Bet:</span>
+                    <input type="number" value="${bet.betAmount}" min="1" step="0.01" 
+                           onchange="updateBetAmount('${bet.id}', this.value)"
+                           class="w-20 px-2 py-1 border border-gray-300 rounded text-xs">
+                </div>
+                <div class="text-xs">
+                    <div class="text-green-600 font-semibold">$${bet.potentialPayout.toFixed(2)}</div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(cartItem);
+    });
+}
+
+function updateBetAmount(betId, newAmount) {
+    const bet = betCart.find(item => item.id === betId);
+    if (bet) {
+        bet.betAmount = parseFloat(newAmount) || 0;
+        bet.potentialPayout = calculatePayout(bet.betAmount, bet.odds);
+        updateCartTotals();
+    }
+}
+
+function calculatePayout(betAmount, odds) {
+    if (odds > 0) {
+        return betAmount * (odds / 100);
+    } else {
+        return betAmount * (100 / Math.abs(odds));
+    }
+}
+
+function updateCartTotals() {
+    const totalPayout = betCart.reduce((sum, bet) => sum + bet.potentialPayout, 0);
+    document.getElementById('cart-total-payout').textContent = `$${totalPayout.toFixed(2)}`;
+}
+
+function toggleBetCart() {
+    const sidebar = document.getElementById('bet-cart-sidebar');
+    const overlay = document.getElementById('cart-overlay');
+    
+    if (cartVisible) {
+        closeBetCart();
+    } else {
+        sidebar.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden');
+        cartVisible = true;
+    }
+}
+
+function closeBetCart() {
+    const sidebar = document.getElementById('bet-cart-sidebar');
+    const overlay = document.getElementById('cart-overlay');
+    
+    sidebar.classList.add('translate-x-full');
+    overlay.classList.add('hidden');
+    cartVisible = false;
+}
+
+function showBetConfirmation() {
+    if (betCart.length === 0) {
+        showMessage('No bets in cart to place', true);
+        return;
+    }
+    
+    populateConfirmationModal();
+    showModal('bet-confirmation-modal');
+}
+
+function populateConfirmationModal() {
+    // Calculate totals
+    const totalBets = betCart.length;
+    const totalAmount = betCart.reduce((sum, bet) => sum + bet.betAmount, 0);
+    const totalPayout = betCart.reduce((sum, bet) => sum + bet.potentialPayout, 0);
+    const totalProfit = totalPayout - totalAmount;
+    
+    // Update summary
+    document.getElementById('confirm-bet-count').textContent = totalBets;
+    document.getElementById('confirm-total-amount').textContent = `$${totalAmount.toFixed(2)}`;
+    document.getElementById('confirm-potential-payout').textContent = `$${totalPayout.toFixed(2)}`;
+    document.getElementById('confirm-potential-profit').textContent = `$${totalProfit.toFixed(2)}`;
+    
+    // Group by sportsbook
+    const betsBySportsbook = {};
+    const betsByBot = { 'Manual Selection': betCart }; // For now, all bets are manual
+    
+    betCart.forEach(bet => {
+        if (!betsBySportsbook[bet.sportsbook]) {
+            betsBySportsbook[bet.sportsbook] = [];
+        }
+        betsBySportsbook[bet.sportsbook].push(bet);
+    });
+    
+    // Render by sportsbook
+    const sportsbookContainer = document.getElementById('bets-by-sportsbook');
+    sportsbookContainer.innerHTML = '';
+    
+    Object.entries(betsBySportsbook).forEach(([sportsbook, bets]) => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-50 border rounded-lg p-4';
+        
+        const sportsbookTotal = bets.reduce((sum, bet) => sum + bet.betAmount, 0);
+        const sportsbookPayout = bets.reduce((sum, bet) => sum + bet.potentialPayout, 0);
+        
+        div.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-lg">${sportsbook}</h4>
+                <div class="text-sm text-gray-600">
+                    ${bets.length} bet(s) • $${sportsbookTotal.toFixed(2)} → $${sportsbookPayout.toFixed(2)}
+                </div>
+            </div>
+            <div class="space-y-2">
+                ${bets.map(bet => `
+                    <div class="text-sm bg-white p-2 rounded border">
+                        <div class="font-medium">${bet.teams}</div>
+                        <div class="text-gray-600">${bet.marketType}: ${bet.selection} (${bet.odds > 0 ? '+' : ''}${bet.odds})</div>
+                        <div class="text-green-600">$${bet.betAmount} → $${bet.potentialPayout.toFixed(2)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        sportsbookContainer.appendChild(div);
+    });
+    
+    // Render by bot (simplified for now)
+    const botContainer = document.getElementById('bets-by-bot');
+    botContainer.innerHTML = `
+        <div class="bg-gray-50 border rounded-lg p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-lg">Manual Selection</h4>
+                <div class="text-sm text-gray-600">
+                    ${totalBets} bet(s) • $${totalAmount.toFixed(2)} → $${totalPayout.toFixed(2)}
+                </div>
+            </div>
+            <div class="text-sm text-gray-600">All bets selected manually from available investments</div>
+        </div>
+    `;
+}
+
+async function confirmPlaceBetsInternal() {
+    if (betCart.length === 0) {
+        showMessage('No bets to place', true);
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        // For demo mode, just simulate placing bets
+        const response = await fetch('/api/place-bets', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                bets: betCart
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showMessage(`Successfully placed ${betCart.length} bet(s)!`, false);
+            betCart = [];
+            updateCartUI();
+            closeModal('bet-confirmation-modal');
+            closeBetCart();
+        } else {
+            showMessage(`Failed to place bets: ${data.message}`, true);
+        }
+        
+    } catch (error) {
+        console.error('Error placing bets:', error);
+        showMessage('Failed to place bets. Please try again.', true);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function exportToExcelInternal() {
+    if (betCart.length === 0) {
+        showMessage('No bets to export', true);
+        return;
+    }
+    
+    try {
+        // Create CSV content
+        const headers = ['Game', 'Sport', 'Sportsbook', 'Market', 'Selection', 'Odds', 'Bet Amount', 'Potential Payout', 'Game Time'];
+        const rows = betCart.map(bet => [
+            bet.teams,
+            bet.sport,
+            bet.sportsbook,
+            bet.marketType,
+            bet.selection,
+            bet.odds,
+            bet.betAmount,
+            bet.potentialPayout.toFixed(2),
+            new Date(bet.commenceTime).toLocaleString()
+        ]);
+        
+        const csvContent = [headers, ...rows].map(row => 
+            row.map(cell => `"${cell}"`).join(',')
+        ).join('\n');
+        
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `bet-cart-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showMessage('Bet cart exported to CSV file', false);
+        
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        showMessage('Failed to export bets. Please try again.', true);
+    }
 }
