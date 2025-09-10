@@ -1,10 +1,11 @@
 # betting_logic.py
 """
 This module contains the core logic for simulating betting scenarios.
-It now includes a function for running a full backtest simulation.
+It now includes a function for running a full backtest simulation and Expected Value calculations.
 """
 import random
 import datetime
+import math
 
 def simulate_single_bet(bot_data):
     """
@@ -118,3 +119,175 @@ def simulate_real_world_bet(bot_data, num_bets):
     }
 
     return report
+
+def calculate_implied_probability(odds):
+    """
+    Calculate implied probability from American odds.
+    
+    Args:
+        odds (int): American odds (e.g. -110, +150)
+        
+    Returns:
+        float: Implied probability (0.0 to 1.0)
+    """
+    if odds > 0:
+        # Positive odds: implied_prob = 100 / (odds + 100)
+        return 100 / (odds + 100)
+    else:
+        # Negative odds: implied_prob = abs(odds) / (abs(odds) + 100)
+        return abs(odds) / (abs(odds) + 100)
+
+def calculate_expected_value(true_prob, odds, bet_amount):
+    """
+    Calculate the expected value of a bet.
+    
+    Args:
+        true_prob (float): True probability of winning (0.0 to 1.0)
+        odds (int): American odds
+        bet_amount (float): Amount to bet
+        
+    Returns:
+        float: Expected value of the bet
+    """
+    if odds > 0:
+        # Positive odds payout calculation
+        win_amount = bet_amount * (odds / 100)
+    else:
+        # Negative odds payout calculation  
+        win_amount = bet_amount * (100 / abs(odds))
+    
+    # EV = (probability of win * amount won) - (probability of loss * amount lost)
+    ev = (true_prob * win_amount) - ((1 - true_prob) * bet_amount)
+    return ev
+
+def estimate_true_probability(game_data, market_type='moneyline'):
+    """
+    Estimate the true probability of an outcome.
+    This is a simplified model - in production this would use complex ML models.
+    
+    Args:
+        game_data (dict): Information about the game
+        market_type (str): Type of bet (moneyline, spread, totals)
+        
+    Returns:
+        float: Estimated true probability (0.0 to 1.0)
+    """
+    # This is a simplified model for demonstration
+    # In a real system, this would analyze:
+    # - Historical team performance
+    # - Player injuries/status
+    # - Weather conditions
+    # - Home field advantage
+    # - Recent form/momentum
+    # - Head-to-head records
+    
+    base_probability = 0.5  # Start with 50/50
+    
+    # Add some simulated factors that create edge opportunities
+    sport = game_data.get('sport', 'NBA')
+    teams = game_data.get('teams', '')
+    
+    # Simulate some edge scenarios based on team names (for demo purposes)
+    if 'Lakers' in teams or 'Warriors' in teams:
+        # Popular teams might be overvalued by public
+        base_probability -= 0.03  # 3% public overvaluation
+    
+    if 'Chiefs' in teams or 'Cowboys' in teams:
+        # Popular NFL teams often overvalued
+        base_probability -= 0.04
+        
+    if sport == 'MLB':
+        # Baseball has more variance, creates more +EV opportunities
+        base_probability += random.uniform(-0.08, 0.08)
+    elif sport == 'NBA':
+        # Basketball favorites can be undervalued late season
+        base_probability += random.uniform(-0.05, 0.05)
+    elif sport in ['NFL', 'NCAAF']:
+        # Football spreads can have value
+        base_probability += random.uniform(-0.06, 0.06)
+    
+    # Ensure probability stays within valid range
+    return max(0.1, min(0.9, base_probability))
+
+def find_positive_ev_bets(games_data, min_ev_threshold=0.02):
+    """
+    Analyze games to find bets with positive expected value.
+    
+    Args:
+        games_data (list): List of game data with odds
+        min_ev_threshold (float): Minimum EV% required to recommend bet
+        
+    Returns:
+        list: List of +EV betting opportunities
+    """
+    ev_bets = []
+    
+    for game in games_data:
+        # Analyze each market type for this game
+        for market_type in ['moneyline', 'spreads', 'totals']:
+            
+            # Get odds for this market (simplified - using random odds for demo)
+            if market_type == 'moneyline':
+                odds_options = [
+                    {'selection': game['teams'].split(' vs ')[0], 'odds': random.randint(-200, 250)},
+                    {'selection': game['teams'].split(' vs ')[1], 'odds': random.randint(-200, 250)}
+                ]
+            elif market_type == 'spreads':
+                spread = random.uniform(-10, 10)
+                odds_options = [
+                    {'selection': game['teams'].split(' vs ')[0], 'odds': random.randint(-120, 120), 'spread': spread},
+                    {'selection': game['teams'].split(' vs ')[1], 'odds': random.randint(-120, 120), 'spread': -spread}
+                ]
+            else:  # totals
+                total_points = random.randint(45, 65) if game.get('sport') in ['NFL', 'NCAAF'] else random.randint(200, 250)
+                odds_options = [
+                    {'selection': 'Over', 'odds': random.randint(-120, 120), 'total': total_points},
+                    {'selection': 'Under', 'odds': random.randint(-120, 120), 'total': total_points}
+                ]
+            
+            # Analyze each betting option
+            for option in odds_options:
+                # Estimate true probability for this outcome
+                true_prob = estimate_true_probability(game, market_type)
+                
+                # If analyzing the second option (away team, under, etc.), use complement probability
+                if option == odds_options[1] and market_type in ['moneyline']:
+                    true_prob = 1 - true_prob
+                
+                # Calculate implied probability from odds
+                implied_prob = calculate_implied_probability(option['odds'])
+                
+                # Calculate EV for a standard bet amount
+                standard_bet = 100
+                expected_value = calculate_expected_value(true_prob, option['odds'], standard_bet)
+                ev_percentage = (expected_value / standard_bet) * 100
+                
+                # Check if this is a +EV opportunity
+                if ev_percentage >= min_ev_threshold * 100:  # Convert threshold to percentage
+                    ev_opportunity = {
+                        'game_id': game.get('id', ''),
+                        'teams': game['teams'],
+                        'sport': game.get('sport', 'Unknown'),
+                        'market_type': market_type,
+                        'selection': option['selection'],
+                        'odds': option['odds'],
+                        'true_probability': round(true_prob, 3),
+                        'implied_probability': round(implied_prob, 3),
+                        'edge_percentage': round((true_prob - implied_prob) * 100, 2),
+                        'expected_value_per_100': round(expected_value, 2),
+                        'ev_percentage': round(ev_percentage, 2),
+                        'confidence': min(95, max(55, 70 + (ev_percentage * 2)))  # Scale confidence with EV
+                    }
+                    
+                    # Add market-specific data
+                    if 'spread' in option:
+                        ev_opportunity['spread'] = option['spread']
+                    if 'total' in option:
+                        ev_opportunity['total'] = option['total']
+                    
+                    ev_bets.append(ev_opportunity)
+    
+    # Sort by EV percentage (highest first)
+    ev_bets.sort(key=lambda x: x['ev_percentage'], reverse=True)
+    
+    return ev_bets

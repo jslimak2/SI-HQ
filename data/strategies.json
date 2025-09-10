@@ -16,5 +16,11 @@
         "name": "Loss Recovery",
         "type": "recovery",
         "linked_strategy_id": null
+    },
+    {
+        "id": 4,
+        "name": "+EV Strategy",
+        "type": "expected_value",
+        "linked_strategy_id": null
     }
 ]

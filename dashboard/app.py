@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 
 # Import core betting logic to avoid code duplication
-from betting_logic import simulate_single_bet, simulate_real_world_bet
+from betting_logic import simulate_single_bet, simulate_real_world_bet, find_positive_ev_bets
 
 # Load environment variables from .env file
 load_dotenv()
@@ -381,6 +381,8 @@ def generate_strategy_picks(strategy_data, bot_data, max_picks):
         return generate_basic_strategy_picks(bot_data, max_picks)
     elif strategy_type == 'recovery':
         return generate_recovery_strategy_picks(bot_data, max_picks)
+    elif strategy_type == 'expected_value':
+        return generate_expected_value_strategy_picks(bot_data, max_picks)
     else:
         return generate_basic_strategy_picks(bot_data, max_picks)
 
@@ -441,6 +443,85 @@ def generate_recovery_strategy_picks(bot_data, max_picks):
             pick['confidence'] = pick['confidence'] - 10  # Lower confidence due to higher risk
     
     return basic_picks
+
+def generate_expected_value_strategy_picks(bot_data, max_picks):
+    """Generate +EV strategy picks - only positive expected value bets."""
+    
+    # Get available games (using demo games for now)
+    demo_games = [
+        {'id': 'game_1', 'teams': 'Lakers vs Warriors', 'sport': 'NBA'},
+        {'id': 'game_2', 'teams': 'Celtics vs Heat', 'sport': 'NBA'},
+        {'id': 'game_3', 'teams': 'Chiefs vs Bills', 'sport': 'NFL'},
+        {'id': 'game_4', 'teams': 'Cowboys vs Eagles', 'sport': 'NFL'},
+        {'id': 'game_5', 'teams': 'Yankees vs Red Sox', 'sport': 'MLB'},
+    ]
+    
+    # Filter by bot's preferred sport if specified
+    bot_sport = bot_data.get('sport')
+    if bot_sport and bot_sport != 'All':
+        filtered_games = [g for g in demo_games if g['sport'] == bot_sport]
+        if filtered_games:
+            demo_games = filtered_games
+    
+    # Find positive EV betting opportunities
+    ev_opportunities = find_positive_ev_bets(demo_games, min_ev_threshold=0.02)  # 2% minimum EV
+    
+    picks = []
+    
+    # Convert EV opportunities to picks format
+    for i, opportunity in enumerate(ev_opportunities[:max_picks]):
+        
+        # Calculate bet amount using Kelly Criterion for optimal bet sizing
+        edge = opportunity['edge_percentage'] / 100  # Convert to decimal
+        kelly_fraction = edge / 1.0  # Simplified Kelly (assuming even odds for calculation)
+        
+        # Conservative Kelly: use 25% of full Kelly to reduce risk
+        conservative_kelly = kelly_fraction * 0.25
+        
+        # Calculate bet amount based on Kelly and bot's constraints
+        base_bet_amount = bot_data['current_balance'] * (bot_data['bet_percentage'] / 100)
+        kelly_bet_amount = bot_data['current_balance'] * max(0.01, min(0.05, conservative_kelly))  # Cap at 5%
+        
+        # Use the smaller of the two for safety
+        recommended_amount = min(base_bet_amount, kelly_bet_amount)
+        
+        # Calculate potential payout
+        odds = opportunity['odds']
+        if odds > 0:
+            potential_payout = recommended_amount * (1 + odds/100)
+        else:
+            potential_payout = recommended_amount * (1 + 100/abs(odds))
+        
+        pick = {
+            'teams': opportunity['teams'],
+            'sport': opportunity['sport'],
+            'bet_type': opportunity['market_type'].title(),
+            'selection': opportunity['selection'],
+            'odds': odds,
+            'american_odds': f"{'+' if odds > 0 else ''}{odds}",
+            'recommended_amount': round(recommended_amount, 2),
+            'potential_payout': round(potential_payout, 2),
+            'confidence': opportunity['confidence'],
+            'expected_value': opportunity['expected_value_per_100'],
+            'ev_percentage': opportunity['ev_percentage'],
+            'edge_percentage': opportunity['edge_percentage'],
+            'true_probability': opportunity['true_probability'],
+            'implied_probability': opportunity['implied_probability'],
+            'reasoning': f"+EV: {opportunity['ev_percentage']:.1f}% expected return, {opportunity['edge_percentage']:.1f}% edge",
+            'strategy_type': 'Expected Value'
+        }
+        
+        # Add market-specific information
+        if 'spread' in opportunity:
+            pick['spread'] = opportunity['spread']
+            pick['selection'] = f"{pick['selection']} {pick['spread']:+.1f}"
+        if 'total' in opportunity:
+            pick['total'] = opportunity['total']
+            pick['selection'] = f"{pick['selection']} {pick['total']}"
+        
+        picks.append(pick)
+    
+    return picks
 
 @app.route('/api/investments', methods=["GET"])
 def get_available_investments():
