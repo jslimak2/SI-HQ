@@ -43,6 +43,9 @@ let userSettings = {};
 let betCart = [];
 let cartVisible = false;
 
+// Bot recommendations cache
+let botRecommendations = {};
+
 // UI elements
 const activeBotsContainer = document.getElementById('active-bots-container');
 const inactiveBotsContainer = document.getElementById('inactive-bots-container');
@@ -798,12 +801,36 @@ window.loadCachedInvestments = async function() {
     showLoading();
 
     try {
-        const response = await fetch(`/api/investments?user_id=${userId}&refresh=false`);
-        const data = await response.json();
+        // Load investments and bot recommendations in parallel
+        const [investmentsResponse, recommendationsResponse] = await Promise.all([
+            fetch(`/api/investments?user_id=${userId}&refresh=false`),
+            fetch(`/api/bot-recommendations?user_id=${userId}`).catch(e => {
+                console.warn('Failed to load bot recommendations:', e);
+                return { ok: false };
+            })
+        ]);
+        
+        const investmentsData = await investmentsResponse.json();
+        
+        // Load bot recommendations if available
+        if (recommendationsResponse.ok) {
+            try {
+                const recommendationsData = await recommendationsResponse.json();
+                if (recommendationsData.success) {
+                    botRecommendations = recommendationsData.recommendations || {};
+                    console.log('Loaded bot recommendations:', Object.keys(botRecommendations).length, 'games');
+                }
+            } catch (e) {
+                console.warn('Failed to parse bot recommendations:', e);
+                botRecommendations = {};
+            }
+        } else {
+            botRecommendations = {};
+        }
 
-        if (data.success && data.investments.length > 0) {
-            displayInvestments(data.investments);
-            updateCacheStatus(data);
+        if (investmentsData.success && investmentsData.investments.length > 0) {
+            displayInvestments(investmentsData.investments);
+            updateCacheStatus(investmentsData);
         } else {
             noInvestmentsMessage.classList.remove('hidden');
             updateCacheStatus({ cached: false, has_cache: false });
@@ -1469,6 +1496,9 @@ function createInvestmentCard(investment) {
         'WynnBET': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' }
     };
 
+    // Get bot recommendations for this game
+    const gameRecommendations = botRecommendations[investment.id] || [];
+
     // Generate bookmakers HTML
     const bookmakersHtml = bookmakers.map(bookmaker => {
         const colors = sportsbookColors[bookmaker.title] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
@@ -1501,11 +1531,30 @@ function createInvestmentCard(investment) {
                     odds: outcome.price,
                     point: outcome.point
                 };
+
+                // Find bot recommendations for this specific bet
+                const matchingRecommendations = gameRecommendations.filter(rec => 
+                    rec.sportsbook === bookmaker.title && 
+                    rec.market_key === market.key && 
+                    rec.selection === outcome.name
+                );
+
+                // Generate bot recommendation badges
+                const botBadgesHtml = matchingRecommendations.map(rec => `
+                    <div class="absolute -top-1 -right-1 flex flex-wrap gap-1 z-10">
+                        <div class="bot-recommendation-badge bg-white border-2 rounded-full px-2 py-1 text-xs font-bold shadow-md" 
+                             style="border-color: ${rec.bot_color}; color: ${rec.bot_color};"
+                             title="${rec.bot_name}: ${rec.confidence}% confidence, $${rec.recommended_amount} recommended">
+                            ${rec.bot_name.charAt(0)}${rec.confidence}%
+                        </div>
+                    </div>
+                `).join('');
                 
                 return `
                     <div class="text-center p-2 border border-gray-100 rounded relative group">
                         <div class="text-xs font-medium text-gray-600">${displayText}</div>
                         <div class="text-sm font-bold text-gray-900">${priceText}</div>
+                        ${botBadgesHtml}
                         <button onclick="addToCart(${JSON.stringify(betData).replace(/"/g, '&quot;')})" 
                                 class="absolute inset-0 bg-blue-500 bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded shadow-lg">+ Cart</span>
@@ -1532,12 +1581,38 @@ function createInvestmentCard(investment) {
         `;
     }).join('');
 
+    // Generate game-level bot summary if there are recommendations
+    let botSummaryHtml = '';
+    if (gameRecommendations.length > 0) {
+        const uniqueBots = [...new Set(gameRecommendations.map(rec => rec.bot_name))];
+        botSummaryHtml = `
+            <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="text-xs font-semibold text-gray-600 mb-2">🤖 Bot Recommendations:</div>
+                <div class="flex flex-wrap gap-2">
+                    ${uniqueBots.map(botName => {
+                        const botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
+                        const avgConfidence = Math.round(botRecs.reduce((sum, rec) => sum + rec.confidence, 0) / botRecs.length);
+                        const totalAmount = botRecs.reduce((sum, rec) => sum + rec.recommended_amount, 0);
+                        const botColor = botRecs[0].bot_color;
+                        
+                        return `
+                            <div class="text-xs px-2 py-1 rounded-full" style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};">
+                                ${botName}: ${botRecs.length} bet${botRecs.length > 1 ? 's' : ''}, ${avgConfidence}% avg, $${totalAmount.toFixed(0)}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
     card.innerHTML = `
         <div class="mb-4">
             <h3 class="text-lg font-bold text-gray-900">${investment.teams}</h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
             <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
         </div>
+        ${botSummaryHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
         </div>
