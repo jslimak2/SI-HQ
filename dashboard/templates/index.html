@@ -271,14 +271,70 @@
                 </form>
             </div>
         </div>
-        <div id="investments-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
-            <h2 class="text-2xl font-bold mb-6 text-white">Available Investments</h2>
+        <div id="investments-page" class="mt-8 post9-card rounded-lg shadow-lg p-6 relative" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Available Investments</h2>
+                <div class="flex items-center gap-4">
+                    <button id="cart-toggle-btn" class="post9-btn px-4 py-2 relative" onclick="toggleBetCart()">
+                        <span class="inline-block mr-2">🛒</span>Bet Cart
+                        <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs px-2 py-1 hidden">0</span>
+                    </button>
+                </div>
+            </div>
             <div id="sport-tabs-container" class="mb-6"></div>
             <div id="cache-indicator" class="w-3 h-3 rounded-full bg-blue-500 inline-block mr-2"></div>
             <span id="cache-text" class="text-sm text-gray-300"></span>
             <div id="investments-container" class="mt-6"></div>
             <div id="no-investments-message" class="text-center text-gray-400 mt-8 hidden">No investments available.</div>
             <button id="refresh-investments-btn" class="post9-btn px-4 py-2 mt-6"><span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments</button>
+            
+            <!-- Bet Cart Sidebar -->
+            <div id="bet-cart-sidebar" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 overflow-hidden">
+                <div class="h-full flex flex-col">
+                    <div class="p-4 border-b bg-gray-50">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-bold text-gray-900">Bet Cart</h3>
+                            <button onclick="closeBetCart()" class="text-gray-500 hover:text-gray-700">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Selected: <span id="cart-items-count">0</span> bets</p>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div id="cart-items-container" class="space-y-3">
+                            <div id="empty-cart-message" class="text-center text-gray-500 mt-8">
+                                <p class="text-lg">🛒</p>
+                                <p>No bets selected</p>
+                                <p class="text-sm">Add bets from the investment options</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t bg-gray-50 p-4">
+                        <div class="mb-3">
+                            <div class="text-sm text-gray-600">Total Potential Payout:</div>
+                            <div id="cart-total-payout" class="text-xl font-bold text-green-600">$0.00</div>
+                        </div>
+                        <div class="space-y-2">
+                            <button id="place-bets-btn" onclick="showBetConfirmation()" class="w-full post9-btn py-3" disabled>
+                                Place Selected Bets
+                            </button>
+                            <button id="export-excel-btn" onclick="exportToExcel()" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50" disabled>
+                                Export to Excel
+                            </button>
+                            <button onclick="clearCart()" class="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600">
+                                Clear Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cart Overlay -->
+            <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="closeBetCart()"></div>
         </div>
         <div id="account-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
             <h2 class="text-2xl font-bold mb-6 text-white">Account</h2>
@@ -495,6 +551,61 @@
             <span class="modal-close" onclick="closeModal('stats-breakdown-modal')">&times;</span>
             <h3 id="stats-breakdown-title" class="text-xl font-bold mb-4 text-white">Stat Breakdown</h3>
             <div id="stats-breakdown-content"></div>
+        </div>
+    </div>
+
+    <!-- Bet Confirmation Modal -->
+    <div id="bet-confirmation-modal" class="modal">
+        <div class="modal-content max-w-4xl">
+            <span class="modal-close" onclick="window.closeModal('bet-confirmation-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-6">Confirm Bet Placement</h2>
+            
+            <div class="mb-6">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="font-semibold">Total Bets:</span>
+                        <span id="confirm-bet-count">0</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold">Total Amount:</span>
+                        <span id="confirm-total-amount" class="text-green-600 font-bold">$0.00</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold">Potential Payout:</span>
+                        <span id="confirm-potential-payout" class="text-green-600 font-bold">$0.00</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold">Potential Profit:</span>
+                        <span id="confirm-potential-profit" class="text-green-600 font-bold">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-4">Bets by Sportsbook</h3>
+                <div id="bets-by-sportsbook" class="space-y-4"></div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-4">Bets by Bot</h3>
+                <div id="bets-by-bot" class="space-y-4"></div>
+            </div>
+
+            <div class="flex justify-between">
+                <div class="flex space-x-3">
+                    <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                        Export to Excel
+                    </button>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="window.closeModal('bet-confirmation-modal')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                        Cancel
+                    </button>
+                    <button onclick="confirmPlaceBets()" class="post9-btn px-6 py-2">
+                        Confirm & Place Bets
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     

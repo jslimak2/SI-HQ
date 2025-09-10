@@ -778,6 +778,70 @@ def get_investment_stats():
         print(f"Error fetching investment stats: {e}")
         return jsonify({'success': False, 'message': f'Failed to fetch stats: {e}'}), 500
 
+@app.route('/api/place-bets', methods=['POST'])
+def place_bets():
+    """Place multiple bets from the cart"""
+    data = request.json
+    user_id = data.get('user_id', 'anonymous')
+    bets = data.get('bets', [])
+    
+    if not bets:
+        return jsonify({'success': False, 'message': 'No bets provided'}), 400
+    
+    try:
+        # In demo mode, just return success
+        if demo_mode or not db:
+            return jsonify({
+                'success': True,
+                'message': f'Demo mode: {len(bets)} bets placed successfully',
+                'placed_bets': bets
+            }), 200
+        
+        # For real implementation, you would:
+        # 1. Validate each bet
+        # 2. Check user balance/permissions
+        # 3. Submit bets to actual sportsbooks
+        # 4. Store bet records in database
+        # 5. Update user balance/statistics
+        
+        collections = get_user_collections(user_id)
+        if not collections:
+            return jsonify({'success': False, 'message': 'Database not available'}), 500
+        
+        placed_bets = []
+        for bet in bets:
+            # Create bet record
+            bet_record = {
+                'id': bet.get('id'),
+                'user_id': user_id,
+                'game_id': bet.get('gameId'),
+                'teams': bet.get('teams'),
+                'sport': bet.get('sport'),
+                'sportsbook': bet.get('sportsbook'),
+                'market_type': bet.get('marketType'),
+                'selection': bet.get('selection'),
+                'odds': bet.get('odds'),
+                'bet_amount': bet.get('betAmount'),
+                'potential_payout': bet.get('potentialPayout'),
+                'status': 'pending',
+                'placed_at': datetime.datetime.now().isoformat(),
+                'commence_time': bet.get('commenceTime')
+            }
+            
+            # Add to database
+            collections['bets'].add(bet_record)
+            placed_bets.append(bet_record)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully placed {len(bets)} bet(s)',
+            'placed_bets': placed_bets
+        }), 200
+        
+    except Exception as e:
+        print(f"Error placing bets: {e}")
+        return jsonify({'success': False, 'message': f'Failed to place bets: {str(e)}'}), 500
+
 @app.route('/api/api-status', methods=['GET'])
 def get_api_status():
     """Get current API usage status from the sports API."""
