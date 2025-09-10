@@ -197,7 +197,15 @@ body {
     position: relative;
     max-width: 90%;
     width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     animation: fadeIn 0.3s;
+}
+
+/* Special handling for large modals like analytics */
+.modal-content.max-w-6xl {
+    width: 90%;
+    max-width: 72rem; /* 6xl is 72rem */
 }
 
 .modal-close {

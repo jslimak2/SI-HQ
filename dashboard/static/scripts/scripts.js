@@ -185,6 +185,17 @@ window.closeModal = function(modalId) {
     document.getElementById(modalId).style.display = 'none';
 };
 
+// Add Escape key functionality for closing modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        // Find any open modals and close them
+        const openModals = document.querySelectorAll('.modal[style*="flex"]');
+        openModals.forEach(modal => {
+            modal.style.display = 'none';
+        });
+    }
+});
+
 // --- CRUD OPERATIONS & DATA DISPLAY ---
 
 // Function to fetch and display strategies
