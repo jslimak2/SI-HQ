@@ -212,12 +212,11 @@ def demo():
     """Renders a demo page showing the new bot functionality."""
     return render_template('demo.html')
 
-# @app.route('/ml')
-# def ml_dashboard():
-#     """Renders the advanced ML dashboard - DEPRECATED: Integrated into main app as Predictive Analytics"""
-#     # This route is deprecated - ML functionality now integrated into main dashboard
-#     # Redirect to main dashboard with predictive analytics section
-#     return render_template('index.html')
+@app.route('/ml')
+def ml_dashboard_redirect():
+    """Redirect from deprecated ML dashboard to integrated Predictive Analytics"""
+    # Show deprecation notice and redirect to main app
+    return render_template('ml_dashboard.html')
 
 @app.errorhandler(404)
 def page_not_found(e):
