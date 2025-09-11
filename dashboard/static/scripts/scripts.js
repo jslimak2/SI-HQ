@@ -3901,6 +3901,10 @@ async function makeMLPrediction() {
     }
 }
 
+// Make functions globally available
+window.makeMLPrediction = makeMLPrediction;
+window.viewModelDetails = viewModelDetails;
+
 function generateDemoPrediction(data) {
     const homeAdvantage = data.home_win_pct - data.away_win_pct;
     const confidence = Math.min(0.95, Math.max(0.55, 0.6 + Math.abs(homeAdvantage) / 100));
