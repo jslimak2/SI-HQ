@@ -3,12 +3,37 @@ import random
 import datetime
 import firebase_admin
 import requests
+import numpy as np
 from firebase_admin import credentials, firestore, auth # Added 'auth' here
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
 
 # Import core betting logic to avoid code duplication
 from betting_logic import simulate_single_bet, simulate_real_world_bet
+
+# Import advanced ML and analytics components
+try:
+    import sys
+    sys.path.append(os.path.dirname(__file__))
+    
+    from ml.model_manager import model_manager
+    from analytics.advanced_stats import AdvancedSportsAnalyzer, generate_demo_analytics_data
+    from models.neural_predictor import SportsNeuralPredictor, generate_demo_training_data
+    from models.ensemble_predictor import SportsEnsemblePredictor
+    ML_AVAILABLE = True
+    print("Advanced ML components loaded successfully")
+except ImportError as e:
+    print(f"Advanced ML components not available: {e}")
+    try:
+        # Fallback to basic ML components
+        from ml.basic_predictor import BasicSportsPredictor, BasicAnalyzer, generate_demo_data
+        ML_AVAILABLE = True
+        BASIC_ML_ONLY = True
+        print("Basic ML components loaded as fallback")
+    except ImportError as e2:
+        print(f"Basic ML components also not available: {e2}")
+        ML_AVAILABLE = False
+        BASIC_ML_ONLY = False
 
 # Load environment variables from .env file
 load_dotenv()
@@ -78,6 +103,11 @@ def get_user_collections(user_id):
 def demo():
     """Renders a demo page showing the new bot functionality."""
     return render_template('demo.html')
+
+@app.route('/ml')
+def ml_dashboard():
+    """Renders the advanced ML dashboard"""
+    return render_template('ml_dashboard.html')
 
 @app.route('/')
 def home():
@@ -1421,6 +1451,276 @@ def get_performance_analytics():
     except Exception as e:
         print(f"Error getting performance analytics: {e}")
         return jsonify({'success': False, 'message': f'Analytics failed: {e}'}), 500
+
+# --- ADVANCED ML AND ANALYTICS ENDPOINTS ---
+
+@app.route('/api/ml/models', methods=['GET'])
+def list_ml_models():
+    """List available ML models"""
+    if not ML_AVAILABLE:
+        return jsonify({'error': 'ML components not available'}), 500
+    
+    try:
+        sport = request.args.get('sport')
+        status = request.args.get('status')
+        
+        if globals().get('BASIC_ML_ONLY', False):
+            # Return basic model info for demo
+            return jsonify({
+                'success': True,
+                'models': [{
+                    'id': 'basic_statistical_nba',
+                    'sport': 'NBA',
+                    'model_type': 'basic_statistical',
+                    'status': 'available',
+                    'description': 'Basic statistical predictor for NBA games'
+                }],
+                'total_count': 1,
+                'basic_mode': True
+            })
+        else:
+            models = model_manager.list_models(sport=sport, status=status)
+            return jsonify({
+                'success': True,
+                'models': models,
+                'total_count': len(models)
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ml/demo/predict', methods=['POST'])
+def demo_prediction():
+    """Make a demo prediction using any available trained model"""
+    if not ML_AVAILABLE:
+        return jsonify({'error': 'ML components not available'}), 500
+    
+    try:
+        data = request.json or {}
+        sport = data.get('sport', 'NBA')
+        
+        # Check if we have basic ML only
+        if globals().get('BASIC_ML_ONLY', False):
+            # Use basic predictor
+            from ml.basic_predictor import BasicSportsPredictor, generate_demo_data
+            predictor = BasicSportsPredictor(sport)
+            
+            # Generate and train on demo data
+            demo_training_data = generate_demo_data(sport, 1000)
+            training_results = predictor.train_model(demo_training_data)
+            
+            # Generate sample game data
+            if sport == 'NBA':
+                game_data = {
+                    'home_team_ppg': data.get('home_team_ppg', 110),
+                    'away_team_ppg': data.get('away_team_ppg', 108),
+                    'home_win_pct': data.get('home_win_pct', 0.6),
+                    'away_win_pct': data.get('away_win_pct', 0.55),
+                    'home_pace': data.get('home_pace', 100),
+                    'away_pace': data.get('away_pace', 98)
+                }
+            elif sport == 'NFL':
+                game_data = {
+                    'home_team_off_yards': data.get('home_team_off_yards', 350),
+                    'away_team_off_yards': data.get('away_team_off_yards', 340),
+                    'home_win_pct': data.get('home_win_pct', 0.6),
+                    'away_win_pct': data.get('away_win_pct', 0.55)
+                }
+            else:
+                game_data = {
+                    'home_win_pct': data.get('home_win_pct', 0.6),
+                    'away_win_pct': data.get('away_win_pct', 0.55),
+                    'home_score_avg': data.get('home_score_avg', 105),
+                    'away_score_avg': data.get('away_score_avg', 100)
+                }
+            
+            # Make prediction
+            prediction = predictor.predict_game(game_data)
+            
+            return jsonify({
+                'success': True,
+                'prediction': prediction,
+                'training_results': training_results,
+                'game_data': game_data,
+                'sport': sport,
+                'model_type': 'basic_statistical'
+            })
+        
+        else:
+            # Use advanced ML components (placeholder for when dependencies are available)
+            return jsonify({
+                'success': False,
+                'error': 'Advanced ML components would be used here when dependencies are installed'
+            })
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/analytics/kelly', methods=['POST'])
+def calculate_kelly_basic():
+    """Calculate Kelly Criterion using basic analytics"""
+    try:
+        data = request.json
+        win_probability = data.get('win_probability')
+        odds = data.get('odds')
+        bankroll = data.get('bankroll', 1000)
+        
+        if win_probability is None or odds is None:
+            return jsonify({'error': 'win_probability and odds are required'}), 400
+        
+        if globals().get('BASIC_ML_ONLY', False):
+            from ml.basic_predictor import BasicAnalyzer
+            kelly_result = BasicAnalyzer.calculate_kelly_criterion(win_probability, odds, bankroll)
+        else:
+            # Use advanced analyzer when available
+            kelly_result = {'error': 'Advanced analytics not available'}
+        
+        return jsonify({
+            'success': True,
+            'kelly_analysis': kelly_result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/ml/basic/train', methods=['POST'])
+def train_basic_model():
+    """Train a basic statistical model"""
+    try:
+        data = request.json or {}
+        sport = data.get('sport', 'NBA')
+        num_samples = data.get('num_samples', 1000)
+        
+        from ml.basic_predictor import BasicSportsPredictor, generate_demo_data
+        
+        # Create basic predictor
+        predictor = BasicSportsPredictor(sport)
+        
+        # Generate training data
+        training_data = generate_demo_data(sport, num_samples)
+        
+        # Train model
+        results = predictor.train_model(training_data)
+        
+        # Get feature importance
+        importance = predictor.get_feature_importance()
+        
+        return jsonify({
+            'success': True,
+            'training_results': results,
+            'feature_importance': importance,
+            'sport': sport,
+            'model_type': 'basic_statistical'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/analytics/basic', methods=['GET'])
+def get_basic_analytics():
+    """Get basic analytics without heavy dependencies"""
+    try:
+        sport = request.args.get('sport', 'NBA')
+        
+        # Generate demo performance data
+        demo_results = []
+        np.random.seed(42)
+        
+        for i in range(50):
+            outcome = 'win' if np.random.random() > 0.45 else 'loss'  # 55% win rate
+            amount = np.random.uniform(50, 200)
+            odds = np.random.uniform(1.5, 3.0)
+            profit = amount * (odds - 1) if outcome == 'win' else -amount
+            
+            demo_results.append({
+                'outcome': outcome,
+                'amount': amount,
+                'odds': odds,
+                'profit': profit
+            })
+        
+        # Analyze performance
+        if globals().get('BASIC_ML_ONLY', False):
+            from ml.basic_predictor import BasicAnalyzer
+            performance = BasicAnalyzer.analyze_betting_performance(demo_results)
+        else:
+            performance = {'error': 'Advanced analytics not available'}
+        
+        # Kelly analysis for sample bet
+        from ml.basic_predictor import BasicAnalyzer
+        kelly_sample = BasicAnalyzer.calculate_kelly_criterion(0.58, 1.85, 1000)
+        
+        return jsonify({
+            'success': True,
+            'performance_analysis': performance,
+            'kelly_sample': kelly_sample,
+            'sport': sport,
+            'generated_at': datetime.datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/gallery', methods=['GET'])
+def get_model_gallery():
+    """Get model gallery with filtering capabilities"""
+    try:
+        sport = request.args.get('sport', 'all')
+        model_type = request.args.get('type', 'all')
+        
+        # Demo model gallery
+        demo_models = [
+            {
+                'id': 'nba_basic_statistical',
+                'name': 'NBA Statistical Predictor',
+                'description': 'Basic statistical model using win percentage, scoring averages, and pace',
+                'sport': 'NBA',
+                'model_type': 'statistical',
+                'accuracy': 68.2,
+                'features_count': 6,
+                'training_samples': 1000,
+                'status': 'active',
+                'created_at': '2024-01-15T10:30:00Z'
+            },
+            {
+                'id': 'nfl_basic_statistical',
+                'name': 'NFL Statistical Predictor',
+                'description': 'Basic model for NFL games using offensive yards and win percentage',
+                'sport': 'NFL', 
+                'model_type': 'statistical',
+                'accuracy': 64.8,
+                'features_count': 5,
+                'training_samples': 800,
+                'status': 'active',
+                'created_at': '2024-01-10T14:20:00Z'
+            },
+            {
+                'id': 'mlb_basic_statistical',
+                'name': 'MLB Statistical Predictor',
+                'description': 'Baseball prediction model using ERA, OPS, and win percentage',
+                'sport': 'MLB',
+                'model_type': 'statistical', 
+                'accuracy': 61.5,
+                'features_count': 4,
+                'training_samples': 600,
+                'status': 'active',
+                'created_at': '2024-01-05T09:15:00Z'
+            }
+        ]
+        
+        # Apply filters
+        filtered_models = demo_models
+        if sport != 'all':
+            filtered_models = [m for m in filtered_models if m['sport'].lower() == sport.lower()]
+        if model_type != 'all':
+            filtered_models = [m for m in filtered_models if m['model_type'] == model_type]
+        
+        return jsonify({
+            'success': True,
+            'models': filtered_models,
+            'total_count': len(filtered_models),
+            'available_sports': ['NBA', 'NFL', 'MLB'],
+            'available_types': ['statistical', 'ensemble', 'neural'],
+            'basic_mode': globals().get('BASIC_ML_ONLY', False)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
