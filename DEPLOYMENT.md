@@ -1,4 +1,4 @@
-# SI-HQ Deployment Guide
+# Post9 Deployment Guide
 
 ## Production Deployment
 
@@ -12,8 +12,8 @@
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/jslimak2/SI-HQ.git
-cd SI-HQ
+git clone https://github.com/jslimak2/Post9.git
+cd Post9
 ```
 
 2. **Create virtual environment:**
@@ -106,7 +106,7 @@ server {
     }
 
     location /static/ {
-        alias /path/to/SI-HQ/dashboard/static/;
+        alias /path/to/Post9/dashboard/static/;
         expires 1y;
         add_header Cache-Control public;
     }

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Production server configuration for SI-HQ
+Production server configuration for Post9
 """
 
 import os
@@ -34,7 +34,7 @@ def setup_production_logging():
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
-        app.logger.info('SI-HQ startup')
+        app.logger.info('Post9 startup')
 
 def create_production_app():
     """Create production-ready Flask app"""

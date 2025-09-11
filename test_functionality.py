@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script to demonstrate the SI-HQ ML model management functionality
+Test script to demonstrate the Post9 ML model management functionality
 """
 
 import requests
@@ -93,17 +93,17 @@ def test_kelly_calculator():
         print(f"❌ Kelly calculation failed: {response.status_code}")
 
 def main():
-    print("🚀 SI-HQ ML Model Management System Test")
+    print("🚀 Post9 ML Model Management System Test")
     print("=" * 50)
     
     try:
         # Test basic connectivity
         response = requests.get(f"{BASE_URL}/")
         if response.status_code != 200:
-            print("❌ Cannot connect to SI-HQ server. Make sure it's running on port 5000.")
+            print("❌ Cannot connect to Post9 server. Make sure it's running on port 5000.")
             return
         
-        print("✅ Connected to SI-HQ server")
+        print("✅ Connected to Post9 server")
         
         # Run tests
         test_model_gallery()
@@ -112,13 +112,13 @@ def main():
         test_kelly_calculator()
         
         print("\n" + "=" * 50)
-        print("🎉 All tests completed! The SI-HQ ML system is working.")
+        print("🎉 All tests completed! The Post9 ML system is working.")
         print("\n📱 Access the web interface at:")
         print(f"   Main Dashboard: {BASE_URL}/")
         print(f"   ML Dashboard:   {BASE_URL}/ml")
         
     except requests.exceptions.ConnectionError:
-        print("❌ Cannot connect to SI-HQ server.")
+        print("❌ Cannot connect to Post9 server.")
         print("   Make sure to run: cd dashboard && python app.py")
     except Exception as e:
         print(f"❌ Unexpected error: {e}")

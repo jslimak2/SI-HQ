@@ -1,2 +1,2 @@
-# Advanced Analytics package for SI-HQ
+# Advanced Analytics package for Post9
 # Professional sports analysis and statistics

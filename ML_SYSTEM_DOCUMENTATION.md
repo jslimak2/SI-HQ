@@ -1,8 +1,8 @@
-# SI-HQ: Sports Investment Platform - ML Model Management System
+# Post9: Sports Investment Platform - ML Model Management System
 
 ## Overview
 
-SI-HQ (Sports Investment Headquarters) is a comprehensive platform that enables users to develop, train, and deploy machine learning models for sports investment strategies. The platform provides end-to-end workflow capabilities from model parameter tuning to automated bot recommendations.
+Post9 is a comprehensive platform that enables users to develop, train, and deploy machine learning models for sports investment strategies. The platform provides end-to-end workflow capabilities from model parameter tuning to automated bot recommendations.
 
 ## Key Features Implemented
 
@@ -269,7 +269,7 @@ The platform includes comprehensive demo functionality that works without extern
 
 ### Installation
 ```bash
-cd SI-HQ/dashboard
+cd Post9/dashboard
 pip install -r ../requirements.txt
 python app.py
 ```
@@ -302,4 +302,4 @@ For questions or issues, refer to the codebase documentation or create an issue 
 
 ---
 
-**SI-HQ**: Stop Betting. Start Investing. 🚀
+**Post9**: Stop Betting. Start Investing. 🚀
