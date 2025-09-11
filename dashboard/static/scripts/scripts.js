@@ -3757,73 +3757,14 @@ async function loadMLAnalytics() {
 }
 
 function initializeMLAnalytics() {
-    // Add ML-specific content to analytics page if not already added
+    // Initialize analytics page without the ML prediction tool
+    // The ML prediction tool was moved to the dedicated Predictive Analytics section
     const analyticsPage = document.getElementById('analytics-page');
     if (!analyticsPage) return;
     
-    // Check if ML content already exists
-    if (analyticsPage.querySelector('#ml-analytics-section')) return;
-    
-    // Add ML prediction tool to analytics page
-    const mlSection = document.createElement('div');
-    mlSection.id = 'ml-analytics-section';
-    mlSection.className = 'mt-8';
-    mlSection.innerHTML = `
-        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">🤖 ML Prediction Tool</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
-                    <select id="ml-predict-sport" class="w-full p-2 border border-gray-300 rounded">
-                        <option value="NBA">NBA</option>
-                        <option value="NFL">NFL</option>
-                        <option value="MLB">MLB</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Home Win %</label>
-                    <input type="number" id="ml-home-win-pct" class="w-full p-2 border border-gray-300 rounded" 
-                           min="0" max="100" step="0.1" value="65.5" placeholder="65.5">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Away Win %</label>
-                    <input type="number" id="ml-away-win-pct" class="w-full p-2 border border-gray-300 rounded" 
-                           min="0" max="100" step="0.1" value="58.2" placeholder="58.2">
-                </div>
-                <div class="flex items-end">
-                    <button onclick="makeMLPrediction()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
-                        Predict
-                    </button>
-                </div>
-            </div>
-            
-            <div id="ml-prediction-results" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="text-center">
-                        <div class="text-sm font-semibold text-gray-600">Prediction</div>
-                        <div id="ml-predicted-outcome" class="text-lg font-bold text-blue-600">-</div>
-                        <div id="ml-confidence-level" class="text-sm text-gray-500">-</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-sm font-semibold text-gray-600">Kelly Bet Size</div>
-                        <div id="ml-kelly-size" class="text-lg font-bold text-green-600">-</div>
-                        <div class="text-sm text-gray-500">Recommended</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-sm font-semibold text-gray-600">Expected ROI</div>
-                        <div id="ml-expected-roi" class="text-lg font-bold text-purple-600">-</div>
-                        <div class="text-sm text-gray-500">Projected</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Insert before the existing charts
-    const chartsRow = analyticsPage.querySelector('.grid.grid-cols-1.lg\\:grid-cols-2');
-    if (chartsRow) {
-        chartsRow.parentNode.insertBefore(mlSection, chartsRow);
-    }
+    // Analytics page now focuses purely on performance analysis and reporting
+    // Removed the ML prediction tool as it belongs in the Predictive Analytics section
+    console.log('Analytics page initialized - ML prediction tool removed from this section');
 }
 
 function displayMLAnalytics(analytics) {
@@ -4010,4 +3951,273 @@ function updateMLStatsDisplay(stats) {
     if (accuracyTrendEl) {
         accuracyTrendEl.textContent = stats.accuracy_trend || '▲ +2.1%';
     }
+}
+
+// --- PREDICTIVE ANALYTICS FUNCTIONS ---
+
+// Tab management for Predictive Analytics page
+function showPredictiveTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.predictive-tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.predictive-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    const selectedContent = document.getElementById(`${tabName}-tab-content`);
+    if (selectedContent) {
+        selectedContent.classList.remove('hidden');
+    }
+    
+    // Add active class to selected tab button
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Load content for specific tabs
+    if (tabName === 'models') {
+        loadPredictiveModels();
+    }
+}
+
+// Load predictive models for the models tab
+function loadPredictiveModels() {
+    const modelsGrid = document.getElementById('predictive-models-grid');
+    if (!modelsGrid) return;
+    
+    // Demo models data
+    const demoModels = [
+        {
+            id: 'nba_advanced_lstm',
+            name: 'NBA Advanced LSTM',
+            sport: 'NBA',
+            accuracy: 68.2,
+            status: 'active',
+            predictions: 156,
+            profit: 1234.56
+        },
+        {
+            id: 'nfl_ensemble_v2',
+            name: 'NFL Ensemble v2.0',
+            sport: 'NFL', 
+            accuracy: 64.8,
+            status: 'active',
+            predictions: 89,
+            profit: 892.34
+        },
+        {
+            id: 'mlb_statistical',
+            name: 'MLB Statistical',
+            sport: 'MLB',
+            accuracy: 61.5,
+            status: 'training',
+            predictions: 67,
+            profit: 329.88
+        }
+    ];
+    
+    modelsGrid.innerHTML = demoModels.map(model => `
+        <div class="p-4 border rounded-lg ${model.status === 'active' ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-50'}">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="font-bold text-gray-800">${model.name}</h4>
+                <span class="px-2 py-1 text-xs rounded ${model.status === 'active' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}">
+                    ${model.status}
+                </span>
+            </div>
+            <div class="text-sm text-gray-600 space-y-1">
+                <div>Sport: ${model.sport}</div>
+                <div>Accuracy: ${model.accuracy}%</div>
+                <div>Predictions: ${model.predictions}</div>
+                <div>Profit: $${model.profit}</div>
+            </div>
+            <div class="mt-3 flex gap-2">
+                <button onclick="viewModelDetails('${model.id}')" class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                    View Details
+                </button>
+                ${model.status === 'active' ? `
+                    <button onclick="makePredictionWithModel('${model.id}')" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
+                        Use Model
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Make prediction using the prediction tab form
+function makePrediction() {
+    const sport = document.getElementById('pred-sport').value;
+    const homeWinPct = parseFloat(document.getElementById('pred-home-win-pct').value);
+    const awayWinPct = parseFloat(document.getElementById('pred-away-win-pct').value);
+    
+    if (!homeWinPct || !awayWinPct) {
+        showMessage('Please enter valid win percentages', true);
+        return;
+    }
+    
+    // Use the existing makeMLPrediction logic but with new IDs
+    const demoResult = generateDemoPrediction({
+        sport: sport,
+        home_win_pct: homeWinPct / 100,
+        away_win_pct: awayWinPct / 100
+    });
+    
+    displayPredictionResults(demoResult);
+}
+
+// Display prediction results in the predictions tab
+function displayPredictionResults(result) {
+    const resultsDiv = document.getElementById('prediction-results');
+    if (!resultsDiv) return;
+    
+    const prediction = result.prediction;
+    const training = result.training_results || {};
+    
+    // Update prediction outcome
+    const outcomeEl = document.getElementById('predicted-outcome');
+    if (outcomeEl) {
+        outcomeEl.textContent = prediction.predicted_outcome;
+        outcomeEl.className = `text-lg font-bold ${prediction.confidence > 70 ? 'text-green-600' : prediction.confidence > 60 ? 'text-yellow-600' : 'text-red-600'}`;
+    }
+    
+    // Update confidence level
+    const confidenceEl = document.getElementById('confidence-level');
+    if (confidenceEl) {
+        confidenceEl.textContent = `${(prediction.confidence * 100).toFixed(1)}% confidence`;
+    }
+    
+    // Calculate and display Kelly bet size (demo calculation)
+    const kellyEl = document.getElementById('kelly-bet-size');
+    if (kellyEl) {
+        const bankroll = 1000; // Demo bankroll
+        const odds = 2.0; // Demo odds
+        const winProb = prediction.confidence;
+        const kellyFraction = (winProb * odds - 1) / (odds - 1);
+        const betSize = Math.max(0, kellyFraction * bankroll * 0.25); // Quarter Kelly
+        kellyEl.textContent = `$${betSize.toFixed(2)}`;
+    }
+    
+    // Calculate and display expected ROI
+    const roiEl = document.getElementById('expected-roi');
+    if (roiEl) {
+        const expectedRoi = ((prediction.confidence * 2.0 - 1) * 100).toFixed(1);
+        roiEl.textContent = `${expectedRoi}%`;
+    }
+    
+    resultsDiv.classList.remove('hidden');
+}
+
+// Calculate Kelly optimal bet size
+function calculateKellyOptimal() {
+    const winProb = parseFloat(document.getElementById('kelly-win-prob').value) / 100;
+    const odds = parseFloat(document.getElementById('kelly-odds').value);
+    const bankroll = parseFloat(document.getElementById('kelly-bankroll').value);
+    
+    if (!winProb || !odds || !bankroll) {
+        showMessage('Please fill in all Kelly calculator fields', true);
+        return;
+    }
+    
+    // Kelly formula: f* = (bp - q) / b
+    // where b = odds-1, p = win probability, q = 1-p
+    const b = odds - 1;
+    const p = winProb;
+    const q = 1 - p;
+    const kellyFraction = (b * p - q) / b;
+    
+    const optimalBet = Math.max(0, kellyFraction * bankroll);
+    const percentage = Math.max(0, kellyFraction * 100);
+    const expectedGrowth = (p * Math.log(1 + b * kellyFraction) + q * Math.log(1 - kellyFraction)) * 100;
+    
+    // Display results
+    document.getElementById('kelly-bet-amount').textContent = `$${optimalBet.toFixed(2)}`;
+    document.getElementById('kelly-percentage').textContent = `${percentage.toFixed(2)}%`;
+    document.getElementById('kelly-growth').textContent = `${expectedGrowth.toFixed(2)}%`;
+    
+    document.getElementById('kelly-results').classList.remove('hidden');
+}
+
+// Start model training
+function startModelTraining() {
+    const sport = document.getElementById('train-sport').value;
+    const modelType = document.getElementById('train-model-type').value;
+    
+    showMessage(`Starting ${modelType} model training for ${sport}...`, false);
+    
+    // Simulate training process
+    setTimeout(() => {
+        showMessage(`${sport} ${modelType} model training completed successfully!`, false);
+    }, 3000);
+}
+
+// Refresh predictive models
+function refreshPredictiveModels() {
+    showMessage('Refreshing predictive models...', false);
+    setTimeout(() => {
+        loadPredictiveModels();
+        showMessage('Models refreshed successfully!', false);
+    }, 1000);
+}
+
+// Make prediction with specific model
+function makePredictionWithModel(modelId) {
+    showMessage(`Using model ${modelId} for prediction...`, false);
+    // Switch to predictions tab and populate with model-specific prediction
+    showPredictiveTab('predictions');
+}
+
+// Extend the original showPage function to handle predictive analytics
+const originalShowPageFunc = window.showPage;
+window.showPage = function(pageId) {
+    originalShowPageFunc(pageId);
+    
+    // Initialize predictive analytics page when shown
+    if (pageId === 'predictive-analytics-page') {
+        setTimeout(() => {
+            showPredictiveTab('models'); // Default to models tab
+        }, 100);
+    }
+};
+
+// Make functions globally available
+window.showPredictiveTab = showPredictiveTab;
+window.makePrediction = makePrediction;
+window.calculateKellyOptimal = calculateKellyOptimal;
+window.startModelTraining = startModelTraining;
+window.refreshPredictiveModels = refreshPredictiveModels;
+
+// Add form handler for train model modal
+document.addEventListener('DOMContentLoaded', function() {
+    const trainModelForm = document.getElementById('train-model-form');
+    if (trainModelForm) {
+        trainModelForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const modelData = Object.fromEntries(formData.entries());
+            
+            // Validate required fields
+            if (!modelData.model_name || !modelData.sport || !modelData.model_type) {
+                showMessage('Please fill in all required fields', true);
+                return;
+            }
+            
+            showMessage(`Starting training for ${modelData.model_name}...`, false);
+            closeModal('train-model-modal');
+            
+            // Simulate training process
+            setTimeout(() => {
+                showMessage(`${modelData.model_name} training initiated successfully! Training will complete in background.`, false);
+            }, 1000);
+            
+            // Reset form
+            trainModelForm.reset();
+        });
+    }
+});
 }

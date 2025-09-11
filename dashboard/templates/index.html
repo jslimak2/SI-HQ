@@ -125,10 +125,38 @@
         .stats-trend.negative {
             background: rgba(244, 67, 54, 0.2);
         }
+        
+        /* Predictive Analytics Styles */
+        .predictive-tab-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            color: #9CA3AF;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        .predictive-tab-btn.active {
+            background: #ff9900;
+            color: #0a1a2f;
+        }
+        .predictive-tab-btn:hover:not(.active) {
+            color: #ffffff;
+            background: rgba(255, 153, 0, 0.2);
+        }
+        .predictive-tab-content {
+            min-height: 400px;
+        }
+        .predictive-tab-content.hidden {
+            display: none;
+        }
     </style>
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'analytics-page', 'account-page'];
+            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'predictive-analytics-page', 'analytics-page', 'account-page'];
             pages.forEach(id => {
                 const pageElement = document.getElementById(id);
                 if (pageElement) {
@@ -157,7 +185,7 @@
         <button onclick="showPage('investments-page')" class="nav-btn">Available Investments</button>
         <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button>
         <button onclick="showPage('model-gallery-page')" class="nav-btn">Model Gallery</button>
-        <button onclick="window.open('/ml', '_blank')" class="nav-btn">🤖 ML Dashboard</button>
+        <button onclick="showPage('predictive-analytics-page')" class="nav-btn">🔮 Predictive Analytics</button>
         <button onclick="showPage('analytics-page')" class="nav-btn">Advanced Analytics</button>
         <button onclick="showPage('account-page')" class="nav-btn">Account</button>
     </nav>
@@ -800,6 +828,219 @@
                 </div>
             </div>
         </div>
+
+        <!-- Predictive Analytics Page (formerly ML Dashboard) -->
+        <div id="predictive-analytics-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">🔮 Predictive Analytics</h2>
+                <div class="flex gap-3">
+                    <button onclick="refreshPredictiveModels()" class="post9-btn px-4 py-2">🔄 Refresh Models</button>
+                    <button onclick="showModal('train-model-modal')" class="post9-btn px-4 py-2">🏋️ Train Model</button>
+                </div>
+            </div>
+
+            <!-- Predictive Analytics Tabs -->
+            <div class="mb-6">
+                <nav class="flex space-x-1 bg-gray-800 rounded-lg p-1">
+                    <button onclick="showPredictiveTab('models')" id="models-tab" class="predictive-tab-btn active">Models</button>
+                    <button onclick="showPredictiveTab('predictions')" id="predictions-tab" class="predictive-tab-btn">Predictions</button>
+                    <button onclick="showPredictiveTab('training')" id="training-tab" class="predictive-tab-btn">Training</button>
+                    <button onclick="showPredictiveTab('optimizer')" id="optimizer-tab" class="predictive-tab-btn">Kelly Optimizer</button>
+                </nav>
+            </div>
+
+            <!-- Models Tab -->
+            <div id="models-tab-content" class="predictive-tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Model Status Cards -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Active Models</h3>
+                            <span class="text-2xl">🤖</span>
+                        </div>
+                        <div class="text-2xl font-bold text-blue-600" id="active-models-count">3</div>
+                        <div class="text-sm text-gray-600">Running</div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Avg Accuracy</h3>
+                            <span class="text-2xl">🎯</span>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600" id="avg-accuracy">68.2%</div>
+                        <div class="text-sm text-gray-600">Last 30 days</div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Predictions</h3>
+                            <span class="text-2xl">📊</span>
+                        </div>
+                        <div class="text-2xl font-bold text-purple-600" id="predictions-count">156</div>
+                        <div class="text-sm text-gray-600">This month</div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">Profit</h3>
+                            <span class="text-2xl">💰</span>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600" id="model-profit">+$1,234</div>
+                        <div class="text-sm text-gray-600">From predictions</div>
+                    </div>
+                </div>
+
+                <!-- Model Gallery -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Model Gallery</h3>
+                    <div id="predictive-models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Models will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predictions Tab -->
+            <div id="predictions-tab-content" class="predictive-tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🔮 Game Prediction Tool</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+                            <select id="pred-sport" class="w-full p-2 border border-gray-300 rounded">
+                                <option value="NBA">NBA</option>
+                                <option value="NFL">NFL</option>
+                                <option value="MLB">MLB</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Home Team Win %</label>
+                            <input type="number" id="pred-home-win-pct" class="w-full p-2 border border-gray-300 rounded" 
+                                   min="0" max="100" step="0.1" value="65.5" placeholder="65.5">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Away Team Win %</label>
+                            <input type="number" id="pred-away-win-pct" class="w-full p-2 border border-gray-300 rounded" 
+                                   min="0" max="100" step="0.1" value="58.2" placeholder="58.2">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="makePrediction()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+                                Generate Prediction
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="prediction-results" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Predicted Outcome</div>
+                                <div id="predicted-outcome" class="text-lg font-bold text-blue-600">-</div>
+                                <div id="confidence-level" class="text-sm text-gray-500">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Kelly Bet Size</div>
+                                <div id="kelly-bet-size" class="text-lg font-bold text-green-600">-</div>
+                                <div class="text-sm text-gray-500">Recommended</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Expected ROI</div>
+                                <div id="expected-roi" class="text-lg font-bold text-purple-600">-</div>
+                                <div class="text-sm text-gray-500">Projected</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Predictions -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Predictions</h3>
+                    <div id="recent-predictions" class="space-y-3">
+                        <!-- Recent predictions will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training Tab -->
+            <div id="training-tab-content" class="predictive-tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Model Training</h3>
+                    <p class="text-gray-600 mb-4">Configure and train new predictive models for sports betting analysis.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+                            <select id="train-sport" class="w-full p-2 border border-gray-300 rounded">
+                                <option value="NBA">NBA</option>
+                                <option value="NFL">NFL</option>
+                                <option value="MLB">MLB</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Model Type</label>
+                            <select id="train-model-type" class="w-full p-2 border border-gray-300 rounded">
+                                <option value="statistical">Statistical</option>
+                                <option value="neural">Neural Network</option>
+                                <option value="ensemble">Ensemble</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button onclick="startModelTraining()" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition-colors">
+                            Start Training
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kelly Optimizer Tab -->
+            <div id="optimizer-tab-content" class="predictive-tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Kelly Criterion Optimizer</h3>
+                    <p class="text-gray-600 mb-4">Calculate optimal bet sizes using the Kelly Criterion for risk management.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Win Probability (%)</label>
+                            <input type="number" id="kelly-win-prob" class="w-full p-2 border border-gray-300 rounded" 
+                                   min="0" max="100" step="0.1" value="55.0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Odds (Decimal)</label>
+                            <input type="number" id="kelly-odds" class="w-full p-2 border border-gray-300 rounded" 
+                                   min="1" step="0.01" value="2.00">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bankroll ($)</label>
+                            <input type="number" id="kelly-bankroll" class="w-full p-2 border border-gray-300 rounded" 
+                                   min="1" value="1000">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button onclick="calculateKellyOptimal()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors">
+                            Calculate Optimal Bet
+                        </button>
+                    </div>
+                    
+                    <div id="kelly-results" class="mt-6 hidden p-4 bg-gray-50 rounded-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Optimal Bet Size</div>
+                                <div id="kelly-bet-amount" class="text-xl font-bold text-green-600">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">% of Bankroll</div>
+                                <div id="kelly-percentage" class="text-xl font-bold text-blue-600">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Expected Growth</div>
+                                <div id="kelly-growth" class="text-xl font-bold text-purple-600">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <div id="bot-details-modal" class="modal">
@@ -1216,6 +1457,61 @@
         </div>
     </div>
     
+    <!-- Train Model Modal -->
+    <div id="train-model-modal" class="modal">
+        <div class="modal-content post9-card">
+            <span class="modal-close" onclick="closeModal('train-model-modal')">&times;</span>
+            <h3 class="text-xl font-bold mb-4 text-white">Train New Model</h3>
+            <form id="train-model-form" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Model Name</label>
+                    <input type="text" name="model_name" placeholder="e.g., NBA Advanced v2.0" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Sport</label>
+                    <select name="sport" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white" required>
+                        <option value="">Select Sport</option>
+                        <option value="NBA">NBA</option>
+                        <option value="NFL">NFL</option>
+                        <option value="MLB">MLB</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Model Type</label>
+                    <select name="model_type" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white" required>
+                        <option value="">Select Type</option>
+                        <option value="statistical">Statistical</option>
+                        <option value="neural">Neural Network</option>
+                        <option value="ensemble">Ensemble</option>
+                        <option value="lstm">LSTM</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Training Samples</label>
+                        <input type="number" name="training_samples" placeholder="1000" min="100" max="10000" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Epochs</label>
+                        <input type="number" name="epochs" placeholder="50" min="10" max="200" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                    <textarea name="description" placeholder="Brief description of the model's purpose and features..." rows="3" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" onclick="closeModal('train-model-modal')" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        Start Training
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <!-- Professional Footer -->
     <footer class="mt-16 bg-gray-900 text-gray-300 py-8">
         <div class="container mx-auto px-4">
@@ -1230,7 +1526,7 @@
                         <li><a href="#" onclick="showPage('dashboard-page')" class="hover:text-blue-400">Dashboard</a></li>
                         <li><a href="#" onclick="showPage('model-gallery-page')" class="hover:text-blue-400">ML Models</a></li>
                         <li><a href="#" onclick="showPage('analytics-page')" class="hover:text-blue-400">Analytics</a></li>
-                        <li><a href="/ml" class="hover:text-blue-400">ML Dashboard</a></li>
+                        <li><a href="#" onclick="showPage('predictive-analytics-page')" class="hover:text-blue-400">Predictive Analytics</a></li>
                     </ul>
                 </div>
                 <div>
