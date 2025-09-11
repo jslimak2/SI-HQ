@@ -1,6 +1,7 @@
 import os
 import random
 import datetime
+import time
 import firebase_admin
 import requests
 import numpy as np
@@ -1721,6 +1722,357 @@ def get_model_gallery():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/create', methods=['POST'])
+def create_model():
+    """Create a new ML model"""
+    try:
+        data = request.json
+        user_id = data.get('user_id', 'anonymous')
+        
+        model_config = {
+            'sport': data.get('sport', 'NBA'),
+            'model_type': data.get('model_type', 'statistical'),
+            'neural_type': data.get('neural_type', 'lstm'),
+            'use_neural': data.get('use_neural', True),
+            'description': data.get('description', f"Custom {data.get('sport', 'NBA')} model")
+        }
+        
+        if not ML_AVAILABLE:
+            # Return demo response
+            model_id = f"demo_{model_config['sport']}_{model_config['model_type']}_{int(time.time())}"
+            return jsonify({
+                'success': True,
+                'model_id': model_id,
+                'message': 'Model created successfully (demo mode)'
+            }), 201
+        
+        # Use model manager to create model
+        model_id = model_manager.create_model(model_config)
+        
+        return jsonify({
+            'success': True,
+            'model_id': model_id,
+            'message': 'Model created successfully'
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/train', methods=['POST'])
+def train_model():
+    """Train a model asynchronously"""
+    try:
+        data = request.json
+        model_id = data.get('model_id')
+        
+        if not model_id:
+            return jsonify({'success': False, 'error': 'Model ID required'}), 400
+        
+        training_config = {
+            'num_samples': data.get('num_samples', 1000),
+            'epochs': data.get('epochs', 50),
+            'batch_size': data.get('batch_size', 32),
+            'optimize_hyperparams': data.get('optimize_hyperparams', True)
+        }
+        
+        if not ML_AVAILABLE:
+            # Return demo response with simulated training
+            job_id = f"train_job_{int(time.time())}"
+            return jsonify({
+                'success': True,
+                'job_id': job_id,
+                'message': 'Training started (demo mode)'
+            }), 200
+        
+        # Start async training
+        job_id = model_manager.train_model_async(model_id, training_config)
+        
+        return jsonify({
+            'success': True,
+            'job_id': job_id,
+            'message': 'Training started'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/training/status/<job_id>', methods=['GET'])
+def get_training_status(job_id):
+    """Get training job status"""
+    try:
+        if not ML_AVAILABLE:
+            # Return demo status
+            return jsonify({
+                'success': True,
+                'status': 'completed',
+                'progress': 100,
+                'message': 'Training completed (demo mode)'
+            }), 200
+        
+        status = model_manager.get_training_status(job_id)
+        
+        return jsonify({
+            'success': True,
+            **status
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/<model_id>/predict', methods=['POST'])
+def model_predict(model_id):
+    """Make prediction using specific model"""
+    try:
+        data = request.json
+        
+        if not ML_AVAILABLE:
+            # Return demo prediction
+            return jsonify({
+                'success': True,
+                'prediction': {
+                    'predicted_outcome': 'Home Win',
+                    'confidence': 0.72,
+                    'probabilities': {'Home Win': 0.72, 'Away Win': 0.28}
+                },
+                'model_id': model_id,
+                'demo_mode': True
+            }), 200
+        
+        prediction = model_manager.predict_game(model_id, data)
+        
+        if 'error' in prediction:
+            return jsonify({'success': False, 'error': prediction['error']}), 400
+        
+        return jsonify({
+            'success': True,
+            'prediction': prediction,
+            'model_id': model_id
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/<model_id>/performance', methods=['GET'])
+def get_model_performance(model_id):
+    """Get model performance metrics"""
+    try:
+        if not ML_AVAILABLE:
+            # Return demo performance data
+            return jsonify({
+                'success': True,
+                'performance': {
+                    'accuracy': 0.682,
+                    'precision': 0.671,
+                    'recall': 0.694,
+                    'f1_score': 0.682,
+                    'predictions_count': 45,
+                    'average_confidence': 0.74
+                },
+                'model_id': model_id,
+                'demo_mode': True
+            }), 200
+        
+        performance = model_manager.get_model_performance(model_id)
+        
+        if 'error' in performance:
+            return jsonify({'success': False, 'error': performance['error']}), 400
+        
+        return jsonify({
+            'success': True,
+            'performance': performance,
+            'model_id': model_id
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/strategies/model-based', methods=['POST'])
+def create_model_based_strategy():
+    """Create a strategy that uses a specific ML model"""
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        model_id = data.get('model_id')
+        
+        if not user_id or not model_id:
+            return jsonify({'success': False, 'message': 'User ID and Model ID required'}), 400
+        
+        if not db:
+            return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+        
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        new_strategy_ref = strategies_collection_user.document()
+        strategy_id = new_strategy_ref.id
+        
+        strategy_data = {
+            'id': strategy_id,
+            'name': data.get('name', f'ML Strategy ({model_id})'),
+            'type': 'model_based',
+            'description': data.get('description', f'Strategy powered by ML model {model_id}'),
+            'model_id': model_id,
+            'parameters': {
+                'confidence_threshold': data.get('confidence_threshold', 70),
+                'max_bet_percentage': data.get('max_bet_percentage', 3.0),
+                'kelly_fraction': data.get('kelly_fraction', 0.25),
+                **data.get('parameters', {})
+            },
+            'performance': {
+                'total_bets': 0,
+                'won_bets': 0,
+                'win_rate': 0.0,
+                'total_profit': 0.0,
+                'roi': 0.0
+            },
+            'created_at': datetime.datetime.now().isoformat(),
+            'updated_at': datetime.datetime.now().isoformat()
+        }
+        
+        new_strategy_ref.set(strategy_data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Model-based strategy created successfully',
+            'strategy_id': strategy_id
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to create strategy: {e}'}), 500
+
+@app.route('/api/bots/<bot_id>/assign-model', methods=['POST'])
+def assign_model_to_bot():
+    """Assign a trained model to a bot for recommendations"""
+    try:
+        data = request.json
+        bot_id = data.get('bot_id')
+        model_id = data.get('model_id')
+        user_id = data.get('user_id')
+        
+        if not all([bot_id, model_id, user_id]):
+            return jsonify({'success': False, 'message': 'Bot ID, Model ID, and User ID required'}), 400
+        
+        if not db:
+            return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+        
+        # Update bot configuration to use the model
+        bot_ref = bots_collection.document(bot_id)
+        bot_doc = bot_ref.get()
+        
+        if not bot_doc.exists:
+            return jsonify({'success': False, 'message': 'Bot not found'}), 404
+        
+        bot_ref.update({
+            'assigned_model_id': model_id,
+            'model_assigned_at': datetime.datetime.now().isoformat(),
+            'last_updated': datetime.datetime.now().isoformat()
+        })
+        
+        return jsonify({
+            'success': True,
+            'message': f'Model {model_id} assigned to bot {bot_id}',
+            'bot_id': bot_id,
+            'model_id': model_id
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to assign model: {e}'}), 500
+
+@app.route('/api/bots/<bot_id>/model-recommendations', methods=['GET'])
+def get_bot_model_recommendations(bot_id):
+    """Get ML model-powered recommendations for a bot"""
+    try:
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': 'User ID required'}), 400
+        
+        if not db:
+            return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+        
+        # Get bot data
+        bot_ref = bots_collection.document(bot_id)
+        bot_doc = bot_ref.get()
+        
+        if not bot_doc.exists:
+            return jsonify({'success': False, 'message': 'Bot not found'}), 404
+        
+        bot_data = bot_doc.to_dict()
+        assigned_model_id = bot_data.get('assigned_model_id')
+        
+        if not assigned_model_id:
+            return jsonify({
+                'success': True,
+                'recommendations': [],
+                'message': 'No model assigned to this bot'
+            }), 200
+        
+        # Get current games data (in demo mode, use sample data)
+        sample_games = [
+            {
+                'game_id': 'game_1',
+                'teams': 'Lakers vs Warriors',
+                'sport': 'NBA',
+                'home_team': 'Lakers',
+                'away_team': 'Warriors',
+                'commence_time': datetime.datetime.now().isoformat()
+            },
+            {
+                'game_id': 'game_2',
+                'teams': 'Celtics vs Heat',
+                'sport': 'NBA',
+                'home_team': 'Celtics',
+                'away_team': 'Heat',
+                'commence_time': datetime.datetime.now().isoformat()
+            }
+        ]
+        
+        recommendations = []
+        
+        for game in sample_games:
+            # Use model manager to get predictions if available
+            if ML_AVAILABLE:
+                prediction = model_manager.predict_game(assigned_model_id, {
+                    'sport': game['sport'],
+                    'home_team': game['home_team'],
+                    'away_team': game['away_team']
+                })
+            else:
+                # Demo prediction
+                prediction = {
+                    'predicted_outcome': 'Home Win',
+                    'confidence': 0.72,
+                    'probabilities': {'Home Win': 0.72, 'Away Win': 0.28}
+                }
+            
+            if 'error' not in prediction:
+                confidence = prediction.get('confidence', 0.5) * 100
+                
+                # Only recommend if confidence meets bot's threshold
+                if confidence >= bot_data.get('confidence_threshold', 60):
+                    bet_amount = bot_data.get('current_balance', 1000) * (bot_data.get('bet_percentage', 2.0) / 100)
+                    
+                    recommendations.append({
+                        'game': game,
+                        'prediction': prediction,
+                        'confidence': confidence,
+                        'recommended_bet': {
+                            'selection': prediction['predicted_outcome'],
+                            'amount': round(bet_amount, 2),
+                            'reasoning': f"ML Model prediction with {confidence:.1f}% confidence"
+                        },
+                        'model_id': assigned_model_id
+                    })
+        
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'bot_id': bot_id,
+            'model_id': assigned_model_id,
+            'total_recommendations': len(recommendations)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to get recommendations: {e}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

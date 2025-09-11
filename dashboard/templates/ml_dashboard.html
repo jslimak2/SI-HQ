@@ -91,7 +91,8 @@
     <!-- Navigation -->
     <nav class="flex justify-center gap-4 p-6 sticky top-0 z-50 bg-opacity-90 backdrop-blur-sm" style="background: rgba(10,26,47,0.9);">
         <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
-        <button class="nav-btn" onclick="showSection('models')">ML Models</button>
+        <button class="nav-btn" onclick="showSection('models')">Model Gallery</button>
+        <button class="nav-btn" onclick="showSection('training')">Model Training</button>
         <button class="nav-btn" onclick="showSection('predictions')">Predictions</button>
         <button class="nav-btn" onclick="showSection('analytics')">Analytics</button>
         <button class="nav-btn" onclick="showSection('kelly')">Kelly Optimizer</button>
@@ -220,12 +221,136 @@
             </div>
         </div>
 
-        <!-- ML Models Section -->
+        <!-- Model Gallery Section -->
         <div id="models-section" class="section hidden">
             <div class="ml-card p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">🤖 ML Model Gallery</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">🤖 Model Gallery</h2>
+                    <div class="flex gap-4">
+                        <select id="gallery-sport-filter" class="px-4 py-2 border border-gray-300 rounded-lg" onchange="loadModelGallery()">
+                            <option value="all">All Sports</option>
+                            <option value="NBA">NBA</option>
+                            <option value="NFL">NFL</option>
+                            <option value="MLB">MLB</option>
+                        </select>
+                        <button onclick="showCreateModelDialog()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+                            + New Model
+                        </button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="model-gallery">
                     <!-- Models will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Training Section -->
+        <div id="training-section" class="section hidden">
+            <div class="space-y-6">
+                <!-- Training Control Panel -->
+                <div class="ml-card p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">🎯 Model Training Center</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-700 mb-4">Training Configuration</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Model Type</label>
+                                    <select id="train-model-type" class="w-full p-3 border border-gray-300 rounded-lg">
+                                        <option value="statistical">Statistical Model</option>
+                                        <option value="ensemble">Ensemble Model</option>
+                                        <option value="neural">Neural Network</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sport</label>
+                                    <select id="train-sport" class="w-full p-3 border border-gray-300 rounded-lg">
+                                        <option value="NBA">NBA</option>
+                                        <option value="NFL">NFL</option>
+                                        <option value="MLB">MLB</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Training Samples</label>
+                                    <input type="number" id="train-samples" class="w-full p-3 border border-gray-300 rounded-lg" 
+                                           value="1000" min="100" max="10000" step="100">
+                                </div>
+                                <div id="neural-params" class="space-y-4 hidden">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Epochs</label>
+                                        <input type="number" id="train-epochs" class="w-full p-3 border border-gray-300 rounded-lg" 
+                                               value="50" min="10" max="200" step="10">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Batch Size</label>
+                                        <input type="number" id="train-batch-size" class="w-full p-3 border border-gray-300 rounded-lg" 
+                                               value="32" min="16" max="128" step="16">
+                                    </div>
+                                </div>
+                                <button onclick="startTraining()" id="start-training-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                                    🚀 Start Training
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-700 mb-4">Training Progress</h3>
+                            <div id="training-status" class="space-y-4">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm font-semibold text-gray-600 mb-2">Status</div>
+                                    <div id="training-status-text" class="text-lg font-bold text-gray-800">Ready to train</div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm font-semibold text-gray-600 mb-2">Progress</div>
+                                    <div class="w-full bg-gray-200 rounded-full h-4">
+                                        <div id="training-progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                    <div id="training-progress-text" class="text-sm text-gray-600 mt-1">0%</div>
+                                </div>
+                                <div id="training-logs" class="bg-gray-50 p-4 rounded-lg max-h-48 overflow-y-auto">
+                                    <div class="text-sm font-semibold text-gray-600 mb-2">Training Logs</div>
+                                    <div id="training-logs-content" class="text-sm text-gray-700 font-mono">
+                                        Waiting for training to start...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parameter Tuning Panel -->
+                <div class="ml-card p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">⚙️ Model Parameter Tuning</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-700 mb-4">Select Model to Tune</h3>
+                            <select id="tune-model-select" class="w-full p-3 border border-gray-300 rounded-lg mb-4" onchange="loadModelParameters()">
+                                <option value="">Select a trained model...</option>
+                            </select>
+                            <div id="parameter-controls" class="space-y-4">
+                                <!-- Parameter controls will be loaded here -->
+                            </div>
+                            <button onclick="applyParameterChanges()" id="apply-params-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-4" disabled>
+                                Apply Parameter Changes
+                            </button>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-700 mb-4">Model Performance</h3>
+                            <div id="model-performance" class="space-y-3">
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm font-semibold text-gray-600">Current Accuracy</div>
+                                    <div id="current-accuracy" class="text-xl font-bold text-blue-600">-</div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm font-semibold text-gray-600">Predictions Made</div>
+                                    <div id="predictions-count" class="text-xl font-bold text-green-600">-</div>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-lg">
+                                    <div class="text-sm font-semibold text-gray-600">Avg. Confidence</div>
+                                    <div id="avg-confidence" class="text-xl font-bold text-purple-600">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -370,6 +495,17 @@
                 loadModelGallery();
             } else if (sectionName === 'analytics') {
                 loadAnalytics();
+            } else if (sectionName === 'training') {
+                // Show/hide neural parameters based on model type
+                document.getElementById('train-model-type').addEventListener('change', function() {
+                    const neuralParams = document.getElementById('neural-params');
+                    if (this.value === 'neural') {
+                        neuralParams.classList.remove('hidden');
+                    } else {
+                        neuralParams.classList.add('hidden');
+                    }
+                });
+                loadModelGallery(); // Load models for tuning dropdown
             }
         }
 
@@ -477,7 +613,10 @@
         // Load Model Gallery
         async function loadModelGallery() {
             try {
-                const response = await fetch('/api/models/gallery');
+                const sportFilter = document.getElementById('gallery-sport-filter').value;
+                const url = sportFilter === 'all' ? '/api/models/gallery' : `/api/models/gallery?sport=${sportFilter}`;
+                
+                const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -493,7 +632,7 @@
                                 <span class="px-2 py-1 text-xs font-semibold rounded ${model.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${model.status}</span>
                             </div>
                             <p class="text-gray-600 text-sm mb-4">${model.description}</p>
-                            <div class="space-y-2">
+                            <div class="space-y-2 mb-4">
                                 <div class="flex justify-between">
                                     <span class="text-sm font-medium">Sport:</span>
                                     <span class="text-sm">${model.sport}</span>
@@ -506,15 +645,249 @@
                                     <span class="text-sm font-medium">Features:</span>
                                     <span class="text-sm">${model.features_count}</span>
                                 </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium">Samples:</span>
+                                    <span class="text-sm">${model.training_samples}</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="loadModelForTuning('${model.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded">
+                                    Tune
+                                </button>
+                                <button onclick="useModelForPrediction('${model.id}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-3 rounded">
+                                    Predict
+                                </button>
+                                <button onclick="saveModelToGallery('${model.id}')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-2 px-3 rounded">
+                                    Save
+                                </button>
                             </div>
                         `;
                         gallery.appendChild(modelCard);
                     });
+                    
+                    // Also populate the tuning dropdown
+                    populateTuningDropdown(result.models);
                 }
             } catch (error) {
                 console.error('Error loading model gallery:', error);
             }
         }
+
+        // Model Training Functions
+        async function startTraining() {
+            const modelType = document.getElementById('train-model-type').value;
+            const sport = document.getElementById('train-sport').value;
+            const samples = parseInt(document.getElementById('train-samples').value);
+            
+            const trainingConfig = {
+                sport: sport,
+                model_type: modelType,
+                num_samples: samples
+            };
+
+            // Add neural network specific parameters
+            if (modelType === 'neural') {
+                trainingConfig.epochs = parseInt(document.getElementById('train-epochs').value);
+                trainingConfig.batch_size = parseInt(document.getElementById('train-batch-size').value);
+            }
+
+            try {
+                // Disable training button
+                document.getElementById('start-training-btn').disabled = true;
+                document.getElementById('start-training-btn').textContent = 'Training...';
+                
+                // Update status
+                updateTrainingStatus('Starting training...', 0);
+                
+                // Start training
+                const response = await fetch('/api/ml/basic/train', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(trainingConfig)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Simulate training progress
+                    await simulateTrainingProgress(result);
+                    
+                    // Update gallery after successful training
+                    loadModelGallery();
+                } else {
+                    updateTrainingStatus('Training failed: ' + result.error, 0);
+                }
+            } catch (error) {
+                console.error('Training error:', error);
+                updateTrainingStatus('Training failed: ' + error.message, 0);
+            } finally {
+                // Re-enable training button
+                document.getElementById('start-training-btn').disabled = false;
+                document.getElementById('start-training-btn').textContent = '🚀 Start Training';
+            }
+        }
+
+        async function simulateTrainingProgress(result) {
+            const steps = [
+                { progress: 10, message: 'Initializing model...' },
+                { progress: 25, message: 'Loading training data...' },
+                { progress: 50, message: 'Training in progress...' },
+                { progress: 75, message: 'Validating model...' },
+                { progress: 90, message: 'Calculating metrics...' },
+                { progress: 100, message: 'Training completed!' }
+            ];
+            
+            for (let step of steps) {
+                updateTrainingStatus(step.message, step.progress);
+                addTrainingLog(step.message);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            // Add final results
+            addTrainingLog(`Training Accuracy: ${(result.training_results.accuracy * 100).toFixed(1)}%`);
+            addTrainingLog(`Model saved successfully`);
+        }
+
+        function updateTrainingStatus(message, progress) {
+            document.getElementById('training-status-text').textContent = message;
+            document.getElementById('training-progress-bar').style.width = progress + '%';
+            document.getElementById('training-progress-text').textContent = progress + '%';
+        }
+
+        function addTrainingLog(message) {
+            const logsContent = document.getElementById('training-logs-content');
+            const timestamp = new Date().toLocaleTimeString();
+            logsContent.innerHTML += `[${timestamp}] ${message}<br>`;
+            logsContent.scrollTop = logsContent.scrollHeight;
+        }
+
+        // Parameter Tuning Functions
+        function populateTuningDropdown(models) {
+            const select = document.getElementById('tune-model-select');
+            select.innerHTML = '<option value="">Select a trained model...</option>';
+            
+            models.forEach(model => {
+                if (model.status === 'active') {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = `${model.name} (${model.sport})`;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        async function loadModelParameters() {
+            const modelId = document.getElementById('tune-model-select').value;
+            if (!modelId) {
+                document.getElementById('parameter-controls').innerHTML = '';
+                document.getElementById('apply-params-btn').disabled = true;
+                return;
+            }
+
+            // Generate parameter controls based on model type
+            const parameters = getDefaultParameters(modelId);
+            renderParameterControls(parameters);
+            
+            // Load model performance
+            loadModelPerformance(modelId);
+            
+            document.getElementById('apply-params-btn').disabled = false;
+        }
+
+        function getDefaultParameters(modelId) {
+            // In a real implementation, this would fetch from the API
+            return {
+                'confidence_threshold': { value: 65, min: 50, max: 95, step: 5, description: 'Minimum confidence for predictions' },
+                'max_bet_percentage': { value: 3.0, min: 1.0, max: 10.0, step: 0.5, description: 'Maximum bet as % of bankroll' },
+                'min_expected_value': { value: 5.0, min: 0.0, max: 20.0, step: 1.0, description: 'Minimum expected value %' },
+                'kelly_fraction': { value: 0.25, min: 0.1, max: 1.0, step: 0.05, description: 'Kelly criterion fraction' }
+            };
+        }
+
+        function renderParameterControls(parameters) {
+            const container = document.getElementById('parameter-controls');
+            container.innerHTML = '';
+            
+            Object.entries(parameters).forEach(([key, param]) => {
+                const control = document.createElement('div');
+                control.className = 'space-y-2';
+                control.innerHTML = `
+                    <label class="block text-sm font-semibold text-gray-700">${param.description}</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" id="param-${key}" 
+                               min="${param.min}" max="${param.max}" step="${param.step}" value="${param.value}"
+                               class="flex-1" onchange="updateParameterValue('${key}')">
+                        <span id="param-${key}-value" class="text-sm font-bold text-blue-600 w-16">${param.value}</span>
+                    </div>
+                `;
+                container.appendChild(control);
+            });
+        }
+
+        function updateParameterValue(paramKey) {
+            const slider = document.getElementById(`param-${paramKey}`);
+            const display = document.getElementById(`param-${paramKey}-value`);
+            display.textContent = slider.value;
+        }
+
+        async function applyParameterChanges() {
+            const modelId = document.getElementById('tune-model-select').value;
+            const parameters = {};
+            
+            // Collect all parameter values
+            document.querySelectorAll('[id^="param-"]').forEach(element => {
+                if (element.type === 'range') {
+                    const paramKey = element.id.replace('param-', '');
+                    parameters[paramKey] = parseFloat(element.value);
+                }
+            });
+
+            try {
+                // In a real implementation, this would update the model
+                console.log('Applying parameters to model:', modelId, parameters);
+                alert('Parameters updated successfully! (Demo mode)');
+                
+                // Refresh model performance
+                loadModelPerformance(modelId);
+            } catch (error) {
+                console.error('Error applying parameters:', error);
+                alert('Failed to update parameters');
+            }
+        }
+
+        async function loadModelPerformance(modelId) {
+            // In a real implementation, this would fetch actual performance data
+            // For demo, we'll show simulated data
+            document.getElementById('current-accuracy').textContent = (Math.random() * 20 + 65).toFixed(1) + '%';
+            document.getElementById('predictions-count').textContent = Math.floor(Math.random() * 100 + 50);
+            document.getElementById('avg-confidence').textContent = (Math.random() * 15 + 70).toFixed(1) + '%';
+        }
+
+        // Model Gallery Functions
+        function loadModelForTuning(modelId) {
+            showSection('training');
+            document.getElementById('tune-model-select').value = modelId;
+            loadModelParameters();
+        }
+
+        function useModelForPrediction(modelId) {
+            showSection('predictions');
+            // In a real implementation, this would set the active model for predictions
+            alert(`Model ${modelId} is now active for predictions! (Demo mode)`);
+        }
+
+        function saveModelToGallery(modelId) {
+            // In a real implementation, this would save the model state
+            alert(`Model ${modelId} saved to gallery! (Demo mode)`);
+        }
+
+        function showCreateModelDialog() {
+            alert('Create new model dialog would open here. Use the Training section to create models.');
+        }
+
+
 
         // Load Analytics
         function loadAnalytics() {
