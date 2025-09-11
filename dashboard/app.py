@@ -17,6 +17,9 @@ from error_handling import (
 )
 from api_documentation import validate_endpoint_request, Post9APIDocumentation
 from security import SecurityManager, require_authentication, rate_limit, sanitize_request_data
+from model_registry import model_registry, ModelStatus
+from data_validation import data_validator, data_processor
+from user_engagement import engagement_system
 
 # Import core betting logic to avoid code duplication
 from betting_logic import simulate_single_bet, simulate_real_world_bet
@@ -1805,6 +1808,364 @@ def train_basic_model():
     except Exception as e:
         logger.error(f"Model training failed: {e}")
         raise ValidationError(f'Model training failed: {e}')
+
+# --- PROFESSIONAL MODEL REGISTRY ENDPOINTS ---
+
+@app.route('/api/models/registry', methods=['GET'])
+@handle_errors
+@require_authentication
+def list_registered_models():
+    """List models from professional registry with filtering"""
+    try:
+        sport = request.args.get('sport')
+        model_type = request.args.get('model_type')
+        status = request.args.get('status')
+        created_by = request.args.get('created_by')
+        
+        # Convert status string to enum if provided
+        status_enum = None
+        if status:
+            try:
+                status_enum = ModelStatus(status.lower())
+            except ValueError:
+                raise ValidationError(f"Invalid status: {status}")
+        
+        models = model_registry.list_models(
+            sport=sport,
+            model_type=model_type,
+            status=status_enum,
+            created_by=created_by
+        )
+        
+        # Convert to dict for JSON serialization
+        models_data = []
+        for model in models:
+            model_dict = {
+                'model_id': model.model_id,
+                'name': model.name,
+                'sport': model.sport,
+                'model_type': model.model_type,
+                'version': model.version,
+                'status': model.status.value,
+                'created_at': model.created_at,
+                'created_by': model.created_by,
+                'description': model.description,
+                'performance_metrics': model.performance_metrics
+            }
+            models_data.append(model_dict)
+        
+        return jsonify({
+            'success': True,
+            'models': models_data,
+            'total_count': len(models_data),
+            'filters_applied': {
+                'sport': sport,
+                'model_type': model_type,
+                'status': status,
+                'created_by': created_by
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to list registered models: {e}")
+        raise ValidationError(f'Failed to list models: {e}')
+
+@app.route('/api/models/register', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['name', 'sport', 'model_type'], optional_fields=['description', 'hyperparameters'])
+def register_new_model():
+    """Register a new model in the professional registry"""
+    try:
+        data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
+        
+        # Validate inputs
+        sport = data.get('sport')
+        if sport not in ['NBA', 'NFL', 'MLB']:
+            raise ValidationError("Sport must be one of: NBA, NFL, MLB", field='sport')
+        
+        model_type = data.get('model_type')
+        if model_type not in ['statistical', 'neural', 'ensemble']:
+            raise ValidationError("Model type must be one of: statistical, neural, ensemble", field='model_type')
+        
+        # Register model
+        model_id = model_registry.register_model(
+            name=data.get('name'),
+            sport=sport,
+            model_type=model_type,
+            created_by=user_id,
+            description=data.get('description', ''),
+            hyperparameters=data.get('hyperparameters', {})
+        )
+        
+        logger.info(f"Model registered: {model_id} by user {user_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Model registered successfully',
+            'model_id': model_id,
+            'registry_version': '2.0'
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Model registration failed: {e}")
+        raise ValidationError(f'Model registration failed: {e}')
+
+@app.route('/api/models/<model_id>/status', methods=['PUT'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['status'], optional_fields=['performance_metrics'])
+def update_model_status(model_id):
+    """Update model status and performance metrics"""
+    try:
+        data = g.sanitized_request_data
+        
+        # Validate status
+        status_str = data.get('status')
+        try:
+            status = ModelStatus(status_str.lower())
+        except ValueError:
+            raise ValidationError(f"Invalid status: {status_str}")
+        
+        performance_metrics = data.get('performance_metrics', {})
+        
+        # Update model status
+        model_registry.update_model_status(model_id, status, performance_metrics)
+        
+        logger.info(f"Model {model_id} status updated to {status.value}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Model status updated to {status.value}',
+            'model_id': model_id
+        })
+        
+    except ValueError as e:
+        raise ResourceNotFoundError('Model', model_id)
+    except Exception as e:
+        logger.error(f"Failed to update model status: {e}")
+        raise ValidationError(f'Failed to update model status: {e}')
+
+# --- DATA VALIDATION ENDPOINTS ---
+
+@app.route('/api/data/validate', methods=['POST'])
+@handle_errors
+@require_authentication
+@rate_limit(requests_per_hour=50)
+@sanitize_request_data(required_fields=['data', 'sport'], optional_fields=['data_type'])
+def validate_data_quality():
+    """Professional data quality validation"""
+    try:
+        data = g.sanitized_request_data
+        
+        sport = data.get('sport')
+        if sport not in ['NBA', 'NFL', 'MLB']:
+            raise ValidationError("Sport must be one of: NBA, NFL, MLB", field='sport')
+        
+        raw_data = data.get('data')
+        if not isinstance(raw_data, list):
+            raise ValidationError("Data must be a list of records", field='data')
+        
+        # Convert numpy types to native Python types for JSON serialization
+        def convert_numpy_types(obj):
+            if hasattr(obj, 'item'):  # numpy scalar
+                return obj.item()
+            elif isinstance(obj, dict):
+                return {k: convert_numpy_types(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_numpy_types(v) for v in obj]
+            else:
+                return obj
+        
+        # Validate data quality
+        quality_report = data_validator.validate_sports_data(raw_data, sport)
+        
+        logger.info(f"Data validation completed for {sport}: {quality_report.overall_quality.value}")
+        
+        # Convert report to dict and handle numpy types
+        report_dict = {
+            'overall_quality': quality_report.overall_quality.value,
+            'total_records': convert_numpy_types(quality_report.total_records),
+            'valid_records': convert_numpy_types(quality_report.valid_records),
+            'missing_data_percentage': convert_numpy_types(quality_report.missing_data_percentage),
+            'outlier_percentage': convert_numpy_types(quality_report.outlier_percentage),
+            'duplicate_percentage': convert_numpy_types(quality_report.duplicate_percentage),
+            'quality_score': convert_numpy_types(quality_report.quality_score),
+            'issues': quality_report.issues,
+            'recommendations': quality_report.recommendations,
+            'timestamp': quality_report.timestamp
+        }
+        
+        return jsonify({
+            'success': True,
+            'quality_report': report_dict,
+            'validation_version': '2.0'
+        })
+        
+    except Exception as e:
+        logger.error(f"Data validation failed: {e}")
+        raise ValidationError(f'Data validation failed: {e}')
+
+# --- USER ENGAGEMENT ENDPOINTS ---
+
+@app.route('/api/user/preferences', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['email'], optional_fields=['weekly_report_enabled', 'preferred_day', 'favorite_sports'])
+def set_user_preferences():
+    """Set user preferences for weekly reports and notifications"""
+    try:
+        data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
+        
+        # Validate email
+        email = data.get('email')
+        if '@' not in email:
+            raise ValidationError("Invalid email format", field='email')
+        
+        # Register preferences
+        user_data = dict(data)
+        user_data.pop('user_id', None)  # Remove user_id from preferences data
+        
+        preferences = engagement_system.register_user_preferences(
+            user_id=user_id,
+            email=email,
+            preferences=user_data
+        )
+        
+        logger.info(f"User preferences set for {user_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'User preferences saved successfully',
+            'user_id': user_id,
+            'preferences': {
+                'weekly_report_enabled': preferences.weekly_report_enabled,
+                'preferred_day': preferences.preferred_day,
+                'favorite_sports': preferences.favorite_sports
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to set user preferences: {e}")
+        raise ValidationError(f'Failed to set preferences: {e}')
+
+@app.route('/api/reports/weekly/send', methods=['POST'])
+@handle_errors
+@require_authentication
+def send_weekly_reports():
+    """Send weekly reports to all eligible users (admin only)"""
+    try:
+        user_id = g.current_user.get('user_id')
+        
+        # In production, check admin permissions
+        if not user_id or 'admin' not in g.current_user.get('permissions', []):
+            logger.warning(f"Non-admin user {user_id} attempted to send weekly reports")
+        
+        target_day = request.json.get('target_day') if request.is_json else None
+        
+        # Send reports
+        result = engagement_system.send_weekly_reports(target_day)
+        
+        logger.info(f"Weekly reports sent: {result['sent_count']} successful, {result['failed_count']} failed")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Weekly reports processing completed',
+            'result': result
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to send weekly reports: {e}")
+        raise ValidationError(f'Failed to send weekly reports: {e}')
+
+@app.route('/api/engagement/analytics', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_engagement_analytics():
+    """Get user engagement analytics"""
+    try:
+        analytics = engagement_system.get_engagement_analytics()
+        
+        return jsonify({
+            'success': True,
+            'analytics': analytics
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get engagement analytics: {e}")
+        raise ValidationError(f'Failed to get analytics: {e}')
+
+# --- ADVANCED SYSTEM MONITORING ---
+
+@app.route('/api/system/metrics', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_system_metrics():
+    """Get comprehensive system metrics and performance data"""
+    try:
+        import psutil
+        import os
+        
+        # System metrics
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        # Application metrics
+        model_count = len(model_registry.list_models())
+        error_stats = error_monitor.get_error_stats()
+        
+        # Performance metrics
+        process = psutil.Process(os.getpid())
+        app_memory = process.memory_info().rss / 1024 / 1024  # MB
+        
+        metrics = {
+            'system': {
+                'cpu_percent': cpu_percent,
+                'memory_percent': memory.percent,
+                'memory_available_gb': memory.available / 1024 / 1024 / 1024,
+                'disk_percent': (disk.used / disk.total) * 100,
+                'disk_free_gb': disk.free / 1024 / 1024 / 1024
+            },
+            'application': {
+                'model_count': model_count,
+                'error_stats': error_stats,
+                'memory_usage_mb': app_memory,
+                'uptime_seconds': time.time() - g.start_time if hasattr(g, 'start_time') else 0
+            },
+            'database': {
+                'mode': 'demo' if demo_mode else 'connected',
+                'ml_available': ML_AVAILABLE
+            },
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics
+        })
+        
+    except ImportError:
+        # Fallback if psutil not available
+        metrics = {
+            'system': {'status': 'monitoring_unavailable'},
+            'application': {
+                'model_count': len(model_registry.list_models()),
+                'error_stats': error_monitor.get_error_stats()
+            },
+            'timestamp': datetime.datetime.utcnow().isoformat()
+        }
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get system metrics: {e}")
+        raise ValidationError(f'Failed to get system metrics: {e}')
 
 @app.route('/api/analytics/basic', methods=['GET'])
 def get_basic_analytics():

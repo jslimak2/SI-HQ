@@ -224,8 +224,11 @@ def require_authentication(f):
                 raise AuthenticationError("Invalid session token")
         else:
             # For demo purposes, allow anonymous access with user_id from request
-            request_data = request.get_json() or {}
-            user_id = request_data.get('user_id') or request.args.get('user_id', 'anonymous')
+            if request.method == 'GET':
+                user_id = request.args.get('user_id', 'anonymous')
+            else:
+                request_data = request.get_json() or {}
+                user_id = request_data.get('user_id', 'anonymous')
             
             g.current_user = {
                 'user_id': user_id,
