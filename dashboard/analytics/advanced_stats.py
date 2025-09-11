@@ -14,7 +14,6 @@ from scipy.optimize import minimize
 import statsmodels.api as sm
 from statsmodels.tsa.arima.model import ARIMA
 from arch import arch_model
-from sklearn.metrics import sharpe_ratio
 import warnings
 warnings.filterwarnings('ignore')
 
