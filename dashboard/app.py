@@ -213,8 +213,9 @@ def demo():
     return render_template('demo.html')
 
 @app.route('/ml')
-def ml_dashboard():
-    """Renders the advanced ML dashboard"""
+def ml_dashboard_redirect():
+    """Redirect from deprecated ML dashboard to integrated Predictive Analytics"""
+    # Show deprecation notice and redirect to main app
     return render_template('ml_dashboard.html')
 
 @app.errorhandler(404)
