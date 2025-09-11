@@ -5,9 +5,18 @@ import time
 import firebase_admin
 import requests
 import numpy as np
+import uuid
 from firebase_admin import credentials, firestore, auth # Added 'auth' here
-from flask import Flask, request, jsonify, render_template
-from dotenv import load_dotenv
+from flask import Flask, request, jsonify, render_template, g
+
+# Professional imports
+from config import ConfigManager, setup_logging, validate_config
+from error_handling import (
+    handle_errors, ValidationError, ResourceNotFoundError, 
+    create_error_response, validate_required_fields, error_monitor
+)
+from api_documentation import validate_endpoint_request, Post9APIDocumentation
+from security import SecurityManager, require_authentication, rate_limit, sanitize_request_data
 
 # Import core betting logic to avoid code duplication
 from betting_logic import simulate_single_bet, simulate_real_world_bet
@@ -37,48 +46,100 @@ except ImportError as e:
         BASIC_ML_ONLY = False
 
 # Load environment variables from .env file
-load_dotenv()
+config = ConfigManager.load_config()
+logger = setup_logging(config)
+
+# Validate configuration
+config_warnings = validate_config(config)
+for warning in config_warnings:
+    logger.warning(f"Configuration warning: {warning}")
 
 # --- Firebase Initialization ---
 # Load the path to the service account key from an environment variable
 demo_mode = False
 try:
-    cred_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    cred_path = config.database.service_account_path
     if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
-        print("Running in demo mode - Firebase features will be limited")
+        logger.info("Running in demo mode - Firebase features will be limited")
         demo_mode = True
         db = None
     else:
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
         db = firestore.client()
-        print("Firestore client initialized successfully.")
+        logger.info("Firestore client initialized successfully.")
 except Exception as e:
-    print(f"Firebase initialization failed, running in demo mode: {e}")
+    logger.error(f"Firebase initialization failed, running in demo mode: {e}")
     demo_mode = True
     db = None
 
 app = Flask(__name__)
+app.secret_key = config.secret_key
+
+# Initialize security manager
+app.security_manager = SecurityManager(config.secret_key)
 
 # Load the Firebase App ID for collections from an environment variable
-app_id = os.getenv('FIREBASE_APP_ID')
+app_id = config.database.firebase_app_id
 if not app_id:
     raise ValueError("FIREBASE_APP_ID not found in environment variables.")
 
 # Load the client-side Firebase configuration from environment variables
 firebase_config = {
-    'apiKey': os.getenv('FIREBASE_API_KEY'),
-    'authDomain': os.getenv('FIREBASE_AUTH_DOMAIN'),
-    'projectId': os.getenv('FIREBASE_PROJECT_ID'),
-    'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET'),
-    'messagingSenderId': os.getenv('FIREBASE_MESSAGING_SENDER_ID'),
-    'appId': os.getenv('FIREBASE_APP_ID')
+    'apiKey': config.database.firebase_api_key,
+    'authDomain': config.database.firebase_auth_domain,
+    'projectId': config.database.firebase_project_id,
+    'storageBucket': config.database.firebase_storage_bucket,
+    'messagingSenderId': config.database.firebase_messaging_sender_id,
+    'appId': config.database.firebase_app_id
 }
 
 # Load the external sports betting API key
-external_api_key = os.getenv('SPORTS_API_KEY')
+external_api_key = config.api.sports_api_key
 if not external_api_key:
-    print("Warning: SPORTS_API_KEY is not set in your .env file. The available investments feature will not work.")
+    logger.warning("SPORTS_API_KEY is not set. The available investments feature will not work.")
+
+# Professional request tracking middleware
+@app.before_request
+def before_request():
+    """Professional request tracking and security"""
+    g.request_id = str(uuid.uuid4())
+    g.start_time = time.time()
+    
+    logger.info(f"Request started: {request.method} {request.path} [ID: {g.request_id}]")
+
+@app.after_request  
+def after_request(response):
+    """Log request completion and performance metrics"""
+    duration = time.time() - g.start_time
+    
+    logger.info(f"Request completed: {request.method} {request.path} "
+               f"[ID: {g.request_id}] [Status: {response.status_code}] "
+               f"[Duration: {duration:.3f}s]")
+    
+    # Add security headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['X-Request-ID'] = g.request_id
+    
+    return response
+
+# Professional error handlers
+@app.errorhandler(ValidationError)
+def handle_validation_error(error):
+    error_monitor.record_error(error.error_code, request.endpoint)
+    return create_error_response(error)
+
+@app.errorhandler(ResourceNotFoundError)
+def handle_not_found_error(error):
+    error_monitor.record_error(error.error_code, request.endpoint)
+    return create_error_response(error)
+
+@app.errorhandler(Exception)
+def handle_generic_error(error):
+    error_monitor.record_error('INTERNAL_SERVER_ERROR', request.endpoint)
+    return create_error_response(error)
 
 # Firestore Collection references
 if not demo_mode and db:
@@ -100,6 +161,39 @@ def get_user_collections(user_id):
     }
 
 # --- API Endpoints ---
+@app.route('/api/docs')
+def api_documentation():
+    """API documentation endpoint"""
+    try:
+        openapi_spec = Post9APIDocumentation.generate_openapi_spec()
+        return jsonify(openapi_spec)
+    except Exception as e:
+        return create_error_response(e)
+
+@app.route('/api/health')
+def health_check():
+    """Professional health check endpoint"""
+    try:
+        health_status = {
+            'status': 'healthy',
+            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'version': '1.0.0',
+            'environment': config.environment.value,
+            'services': {
+                'database': 'demo' if demo_mode else 'connected',
+                'ml_models': 'available' if ML_AVAILABLE else 'limited',
+                'external_api': 'demo' if not external_api_key or 'demo' in external_api_key else 'connected'
+            },
+            'error_stats': error_monitor.get_error_stats()
+        }
+        
+        return jsonify({
+            'success': True,
+            'health': health_status
+        })
+    except Exception as e:
+        return create_error_response(e)
+
 @app.route('/terms')
 def terms():
     """Terms of Service page"""
@@ -208,45 +302,79 @@ def get_overall_stats():
         return jsonify({'success': False, 'message': f'Failed to get overall stats: {e}'}), 500
 
 @app.route('/api/bots', methods=['POST'])
+@handle_errors
+@require_authentication
+@rate_limit(requests_per_hour=100)
+@sanitize_request_data(required_fields=['name', 'initial_balance'], optional_fields=['bet_percentage', 'max_bets_per_week', 'sport'])
 def add_bot():
-    """Adds a new bot to the Firestore database."""
+    """Adds a new bot to the Firestore database with professional validation."""
     if not db:
-        return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+        raise ValidationError("Database not available in demo mode")
+    
     try:
-        data = request.json
+        # Get sanitized data
+        data = g.sanitized_request_data
+        
+        # Additional validation
+        initial_balance = float(data.get('initial_balance', 1000.0))
+        if initial_balance <= 0 or initial_balance > 1000000:
+            raise ValidationError("Initial balance must be between $1 and $1,000,000")
+        
+        bet_percentage = float(data.get('bet_percentage', 2.0))
+        if bet_percentage <= 0 or bet_percentage > 20:
+            raise ValidationError("Bet percentage must be between 0.1% and 20%")
+        
+        max_bets_per_week = int(data.get('max_bets_per_week', 5))
+        if max_bets_per_week <= 0 or max_bets_per_week > 100:
+            raise ValidationError("Max bets per week must be between 1 and 100")
+        
         new_bot_ref = bots_collection.document()
         bot_id = new_bot_ref.id
+        
         initial_bot_data = {
             'id': bot_id,
-            'name': data.get('name', f'Bot-{random.randint(1000, 9999)}'),
-            'current_balance': float(data.get('initial_balance', 1000.0)),
-            'starting_balance': float(data.get('initial_balance', 1000.0)),  # Frontend expects this field name
-            'initial_balance': float(data.get('initial_balance', 1000.0)),
-            'bet_percentage': float(data.get('bet_percentage', 2.0)),
-            'max_bets_per_week': int(data.get('max_bets_per_week', 5)),
-            'sport': data.get('sport', 'NBA'),  # Add sport field
-            'bet_type': data.get('bet_type', 'Moneyline'),  # Add bet type field
-            'status': 'stopped',  # Default status
-            'strategy_id': data.get('strategy_id', None),  # Use strategy_id instead of linked_strategy_id
+            'name': data.get('name'),
+            'current_balance': initial_balance,
+            'starting_balance': initial_balance,
+            'initial_balance': initial_balance,
+            'bet_percentage': bet_percentage,
+            'max_bets_per_week': max_bets_per_week,
+            'sport': data.get('sport', 'NBA'),
+            'bet_type': data.get('bet_type', 'Moneyline'),
+            'status': 'stopped',
+            'strategy_id': data.get('strategy_id', None),
             'linked_strategy_id': data.get('linked_strategy_id', None),
             'total_profit': 0.0,
             'total_bets': 0,
             'total_wins': 0,
             'total_losses': 0,
             'total_wagered': 0.0,
-            'open_wagers': [],  # List of current open wagers
-            'bets_this_week': 0,  # Counter for bets placed this week
-            'week_reset_date': datetime.datetime.now().isoformat(),  # Track when to reset weekly counter
+            'open_wagers': [],
+            'bets_this_week': 0,
+            'week_reset_date': datetime.datetime.now().isoformat(),
             'created_at': datetime.datetime.now().isoformat(),
             'last_updated': datetime.datetime.now().isoformat(),
-            'bet_history': []
+            'bet_history': [],
+            'created_by': g.current_user.get('user_id'),
+            'version': '2.0'
         }
         
         new_bot_ref.set(initial_bot_data)
-        return jsonify({'success': True, 'message': 'Bot added successfully.', 'bot_id': bot_id}), 201
+        
+        logger.info(f"Bot created successfully: {bot_id} by user {g.current_user.get('user_id')}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Bot created successfully with enhanced validation.', 
+            'bot_id': bot_id,
+            'bot_data': initial_bot_data
+        }), 201
+        
+    except ValueError as e:
+        raise ValidationError(f"Invalid numeric value: {str(e)}")
     except Exception as e:
-        print(f"Failed to add bot: {e}")
-        return jsonify({'success': False, 'message': f'Failed to add bot: {e}'}), 500
+        logger.error(f"Failed to add bot: {e}")
+        raise ValidationError(f'Failed to add bot: {e}')
 
 @app.route('/api/bots/simulate', methods=['POST'])
 def simulate_bot_bet():
@@ -1616,12 +1744,26 @@ def calculate_kelly_basic():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/ml/basic/train', methods=['POST'])
+@handle_errors
+@require_authentication  
+@rate_limit(requests_per_hour=20)  # Lower limit for resource-intensive operations
+@sanitize_request_data(required_fields=['sport'], optional_fields=['num_samples', 'model_type'])
 def train_basic_model():
-    """Train a basic statistical model"""
+    """Train a basic statistical model with professional validation"""
+    if not ML_AVAILABLE:
+        raise ValidationError("ML components not available")
+    
     try:
-        data = request.json or {}
-        sport = data.get('sport', 'NBA')
-        num_samples = data.get('num_samples', 1000)
+        data = g.sanitized_request_data
+        
+        # Validate inputs
+        sport = data.get('sport')
+        if sport not in ['NBA', 'NFL', 'MLB']:
+            raise ValidationError("Sport must be one of: NBA, NFL, MLB", field='sport')
+        
+        num_samples = int(data.get('num_samples', 1000))
+        if num_samples < 100 or num_samples > config.ml.max_training_samples:
+            raise ValidationError(f"Number of samples must be between 100 and {config.ml.max_training_samples}", field='num_samples')
         
         from ml.basic_predictor import BasicSportsPredictor, generate_demo_data
         
@@ -1632,20 +1774,37 @@ def train_basic_model():
         training_data = generate_demo_data(sport, num_samples)
         
         # Train model
+        training_start = time.time()
         results = predictor.train_model(training_data)
+        training_duration = time.time() - training_start
         
         # Get feature importance
         importance = predictor.get_feature_importance()
         
+        # Log training completion
+        logger.info(f"Model training completed for {sport} with {num_samples} samples "
+                   f"in {training_duration:.2f}s by user {g.current_user.get('user_id')}")
+        
         return jsonify({
             'success': True,
-            'training_results': results,
+            'training_results': {
+                **results,
+                'training_duration_seconds': round(training_duration, 2),
+                'samples_used': num_samples
+            },
             'feature_importance': importance,
             'sport': sport,
-            'model_type': 'basic_statistical'
+            'model_type': 'basic_statistical',
+            'model_version': '2.0',
+            'trained_at': datetime.datetime.utcnow().isoformat(),
+            'trained_by': g.current_user.get('user_id')
         })
+        
+    except ValueError as e:
+        raise ValidationError(f"Invalid numeric value: {str(e)}")
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error(f"Model training failed: {e}")
+        raise ValidationError(f'Model training failed: {e}')
 
 @app.route('/api/analytics/basic', methods=['GET'])
 def get_basic_analytics():
