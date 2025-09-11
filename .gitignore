@@ -1,35 +1,37 @@
-.gitignore
-Commonly ignored files and directories for various languages and tools.
-Build artifacts and temporary files
+# SI-HQ Professional Application .gitignore
+
+# Build artifacts and temporary files
 /build/
 /dist/
 *.log
 *.tmp
 *.temp
 /temp/
+/logs/
 
-Operating System files
+# Operating System files
 .DS_Store # Mac OS
 Thumbs.db # Windows
 
-Node.js and npm
+# Node.js and npm
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-Python
-pycache/
+# Python
+__pycache__/
 *.pyc
 .venv/
 /venv/
 .pytest_cache/
 .mypy_cache/
+*.egg-info/
 
-VS Code
+# VS Code
 .vscode/
 
-IDE-specific files
+# IDE-specific files
 .idea/ # IntelliJ
 .project # Eclipse
 .classpath # Eclipse
@@ -37,12 +39,27 @@ IDE-specific files
 *.swo # Vim swap files
 *.swn # Vim swap files
 
-Environment files
+# Environment files
 .env
 .env.local
+.env.production
 
-Other common patterns
+# Security and credentials
+serviceAccountKey.json
+*.pem
+*.key
+*credentials*
+
+# ML Models and data
+/models/saved_models/
+/data/
+*.pkl
+*.joblib
+
+# Other common patterns
 *.bak
 *.orig
 
-serviceAccountKey.json
+# Production deployment
+/static/dist/
+/static/build/

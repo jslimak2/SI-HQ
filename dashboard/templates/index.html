@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post9 Sports Investing Dashboard</title>
+    <title>SI-HQ: Sports Investment Headquarters</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../static/styles.css">
     <style>
@@ -12,26 +12,26 @@
             min-height: 100vh;
             font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
         }
-        .post9-logo {
+        .sihq-logo {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 1rem;
         }
-        .post9-title {
+        .sihq-title {
             font-size: 3.5rem;
             font-weight: 900;
             color: #fff;
             letter-spacing: 2px;
             text-shadow: 0 2px 8px #0a1a2f;
         }
-        .post9-accent {
-            color: #ff9900;
+        .sihq-accent {
+            color: #00d4ff;
             font-weight: 900;
         }
-        .post9-tagline {
+        .sihq-tagline {
             font-size: 1.25rem;
-            color: #ff9900;
+            color: #00d4ff;
             font-weight: 600;
             text-align: center;
             margin-top: 0.5rem;
@@ -56,7 +56,7 @@
             background: #ff9900;
             color: #0a1a2f;
         }
-        .post9-btn {
+        .sihq-btn {
             background: linear-gradient(90deg, #ff9900 0%, #ffb84d 100%);
             color: #0a1a2f;
             font-weight: 700;
@@ -64,11 +64,11 @@
             box-shadow: 0 2px 8px #ff9900a0;
             transition: transform 0.1s;
         }
-        .post9-btn:hover {
+        .sihq-btn:hover {
             transform: scale(1.05);
             background: linear-gradient(90deg, #ffb84d 0%, #ff9900 100%);
         }
-        .post9-card {
+        .sihq-card {
             border: 2px solid #ff9900;
             box-shadow: 0 2px 12px #ff990080;
         }
@@ -165,11 +165,10 @@
     <div id="loading-spinner" class="spinner hidden"></div>
     <div class="container mx-auto">
         <header class="text-center mb-8">
-            <div class="post9-logo mb-2">
-                <img src="/static/post9-logo.png" alt="Post9 Logo" style="height:64px;">
-                <span class="post9-title"><em>Post</em><span class="post9-accent">9</span></span>
+            <div class="sihq-logo mb-2">
+                <span class="sihq-title">SI-<span class="sihq-accent">HQ</span></span>
             </div>
-            <div class="post9-tagline">Stop Betting. Start Investing.</div>
+            <div class="sihq-tagline">Sports Investment Headquarters</div>
             <p class="text-xl text-gray-300 mt-2">Professional Analytics & Bot Management</p>
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
@@ -220,25 +219,25 @@
                 </div>
                 <div id="stats-breakdown-inline"></div>
             </section>
-            <section class="table-container mb-12 post9-card">
+            <section class="table-container mb-12 sihq-card">
                 <h2 class="text-2xl font-bold mb-4 text-white">Active Bots</h2>
-                <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
+                <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm sihq-card">
                     <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
                 </div>
             </section>
-            <section class="table-container mb-12 post9-card">
+            <section class="table-container mb-12 sihq-card">
                 <h2 class="text-2xl font-bold mb-4 text-white">Bot Manager</h2>
-                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Bot</button>
-                <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
+                <button type="button" class="sihq-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Bot</button>
+                <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm sihq-card">
                     <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
                 </div>
             </section>
-            <section class="table-container post9-card">
+            <section class="table-container sihq-card">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-white">Strategy Manager</h2>
                     <div class="flex gap-3">
-                        <button type="button" class="post9-btn p-3" onclick="showModal('strategy-templates-modal')">📋 Templates</button>
-                        <button type="button" class="post9-btn p-3" onclick="showModal('add-strategy-modal')">+ Custom Strategy</button>
+                        <button type="button" class="sihq-btn p-3" onclick="showModal('strategy-templates-modal')">📋 Templates</button>
+                        <button type="button" class="sihq-btn p-3" onclick="showModal('add-strategy-modal')">+ Custom Strategy</button>
                     </div>
                 </div>
                 
@@ -269,14 +268,14 @@
                     </div>
                 </div>
                 
-                <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
+                <div id="strategies-container" class="overflow-x-auto rounded-lg shadow-sm sihq-card">
                     <p id="strategies-loading" class="text-center text-gray-500">Loading strategies...</p>
                 </div>
             </section>
         </div>
         <!-- Add Bot Modal -->
         <div id="add-bot-modal" class="modal">
-            <div class="modal-content post9-card">
+            <div class="modal-content sihq-card">
                 <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
                 <h3 class="text-xl font-bold mb-4 text-white">Add Bot</h3>
                 <form id="add-bot-form" class="flex flex-col gap-4">
@@ -297,14 +296,14 @@
                         <option value="Spread">Spread</option>
                         <option value="Totals">Totals</option>
                     </select>
-                    <button type="submit" class="post9-btn p-3 mt-2">Add Bot</button>
+                    <button type="submit" class="sihq-btn p-3 mt-2">Add Bot</button>
                 </form>
             </div>
         </div>
         
         <!-- Strategy Templates Modal -->
         <div id="strategy-templates-modal" class="modal">
-            <div class="modal-content post9-card max-w-4xl">
+            <div class="modal-content sihq-card max-w-4xl">
                 <span class="modal-close" onclick="closeModal('strategy-templates-modal')">&times;</span>
                 <h3 class="text-2xl font-bold mb-6 text-white">Strategy Templates</h3>
                 
@@ -371,14 +370,14 @@
                 </div>
                 
                 <div class="mt-6 text-center">
-                    <button onclick="closeModal('strategy-templates-modal')" class="post9-btn px-6 py-2">Close</button>
+                    <button onclick="closeModal('strategy-templates-modal')" class="sihq-btn px-6 py-2">Close</button>
                 </div>
             </div>
         </div>
         
         <!-- Add Strategy Modal -->
         <div id="add-strategy-modal" class="modal">
-            <div class="modal-content post9-card">
+            <div class="modal-content sihq-card">
                 <span class="modal-close" onclick="closeModal('add-strategy-modal')">&times;</span>
                 <h3 class="text-xl font-bold mb-4 text-white">Add Strategy</h3>
                 <form id="add-strategy-form" class="flex flex-col gap-4">
@@ -391,15 +390,15 @@
                         <option value="">Link Recovery Strategy (Optional)</option>
                     </select>
                     <input type="text" name="description" placeholder="Description">
-                    <button type="submit" class="post9-btn p-3 mt-2">Add Strategy</button>
+                    <button type="submit" class="sihq-btn p-3 mt-2">Add Strategy</button>
                 </form>
             </div>
         </div>
-        <div id="investments-page" class="mt-8 post9-card rounded-lg shadow-lg p-6 relative" style="display: none;">
+        <div id="investments-page" class="mt-8 sihq-card rounded-lg shadow-lg p-6 relative" style="display: none;">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-white">Available Investments</h2>
                 <div class="flex items-center gap-4">
-                    <button id="cart-toggle-btn" class="post9-btn px-4 py-2 relative" onclick="toggleBetCart()">
+                    <button id="cart-toggle-btn" class="sihq-btn px-4 py-2 relative" onclick="toggleBetCart()">
                         <span class="inline-block mr-2">🛒</span>Bet Cart
                         <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs px-2 py-1 hidden">0</span>
                     </button>
@@ -410,7 +409,7 @@
             <span id="cache-text" class="text-sm text-gray-300"></span>
             <div id="investments-container" class="mt-6"></div>
             <div id="no-investments-message" class="text-center text-gray-400 mt-8 hidden">No investments available.</div>
-            <button id="refresh-investments-btn" class="post9-btn px-4 py-2 mt-6"><span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments</button>
+            <button id="refresh-investments-btn" class="sihq-btn px-4 py-2 mt-6"><span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments</button>
             
             <!-- Bet Cart Sidebar -->
             <div id="bet-cart-sidebar" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 overflow-hidden">
@@ -443,7 +442,7 @@
                             <div id="cart-total-payout" class="text-xl font-bold text-green-600">$0.00</div>
                         </div>
                         <div class="space-y-2">
-                            <button id="place-bets-btn" onclick="showBetConfirmation()" class="w-full post9-btn py-3" disabled>
+                            <button id="place-bets-btn" onclick="showBetConfirmation()" class="w-full sihq-btn py-3" disabled>
                                 Place Selected Bets
                             </button>
                             <button id="export-excel-btn" onclick="exportToExcel()" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50" disabled>
@@ -460,9 +459,9 @@
             <!-- Cart Overlay -->
             <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="closeBetCart()"></div>
         </div>
-        <div id="account-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+        <div id="account-page" class="mt-8 sihq-card rounded-lg shadow-lg p-6" style="display: none;">
             <h2 class="text-2xl font-bold mb-6 text-white">Account</h2>
-            <div id="api-status-section" class="mb-6 post9-card p-4">
+            <div id="api-status-section" class="mb-6 sihq-card p-4">
                 <h3 class="text-lg font-bold text-white mb-2">API Usage</h3>
                 <div class="flex flex-col gap-2">
                     <div class="flex items-center gap-2">
@@ -476,47 +475,47 @@
                 </div>
             </div>
             <div id="auth-section" class="mb-8">
-                <form id="signin-form-element" class="flex flex-col gap-4 mb-4 post9-card p-4">
+                <form id="signin-form-element" class="flex flex-col gap-4 mb-4 sihq-card p-4">
                     <input type="email" name="email" placeholder="Email" required>
                     <input type="password" name="password" placeholder="Password" required>
-                    <button type="submit" class="post9-btn p-3">Sign In</button>
+                    <button type="submit" class="sihq-btn p-3">Sign In</button>
                 </form>
-                <form id="signup-form-element" class="flex flex-col gap-4 mb-4 post9-card p-4" style="display:none;">
+                <form id="signup-form-element" class="flex flex-col gap-4 mb-4 sihq-card p-4" style="display:none;">
                     <input type="email" name="email" placeholder="Email" required>
                     <input type="password" name="password" placeholder="Password" required>
                     <input type="password" name="confirmPassword" placeholder="Confirm Password" required>
-                    <button type="submit" class="post9-btn p-3">Sign Up</button>
+                    <button type="submit" class="sihq-btn p-3">Sign Up</button>
                 </form>
-                <button id="demo-signin-btn" class="post9-btn p-3">Demo Sign In</button>
+                <button id="demo-signin-btn" class="sihq-btn p-3">Demo Sign In</button>
             </div>
-            <div id="account-management-section" class="mb-8 hidden post9-card p-4">
+            <div id="account-management-section" class="mb-8 hidden sihq-card p-4">
                 <div class="mb-4">
                     <span class="text-lg font-bold text-white">Welcome, <span id="user-email-display">Demo Mode</span></span>
                 </div>
                 <form id="profile-form" class="flex flex-col gap-4 mb-4">
                     <input type="email" id="profile-email" name="email" placeholder="Email">
                     <input type="text" id="profile-display-name" name="displayName" placeholder="Display Name">
-                    <button type="submit" class="post9-btn p-3">Update Profile</button>
+                    <button type="submit" class="sihq-btn p-3">Update Profile</button>
                 </form>
                 <form id="password-form" class="flex flex-col gap-4 mb-4">
                     <input type="password" name="currentPassword" placeholder="Current Password">
                     <input type="password" name="newPassword" placeholder="New Password">
                     <input type="password" name="confirmNewPassword" placeholder="Confirm New Password">
-                    <button type="submit" class="post9-btn p-3">Change Password</button>
+                    <button type="submit" class="sihq-btn p-3">Change Password</button>
                 </form>
-                <button id="logout-btn" class="post9-btn p-3 mb-2">Sign Out</button>
-                <button id="delete-account-btn" class="post9-btn p-3 bg-red-600 text-white">Delete Account</button>
+                <button id="logout-btn" class="sihq-btn p-3 mb-2">Sign Out</button>
+                <button id="delete-account-btn" class="sihq-btn p-3 bg-red-600 text-white">Delete Account</button>
             </div>
         </div>
 
         <!-- Strategy Builder Page -->
-        <div id="strategy-builder-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+        <div id="strategy-builder-page" class="mt-8 sihq-card rounded-lg shadow-lg p-6" style="display: none;">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-white">Visual Strategy Builder</h2>
                 <div class="flex gap-3">
-                    <button onclick="showModal('strategy-templates-modal')" class="post9-btn px-4 py-2">📋 Templates</button>
-                    <button onclick="saveCurrentStrategy()" class="post9-btn px-4 py-2">💾 Save Strategy</button>
-                    <button onclick="showStrategyBuilderHelp()" class="post9-btn px-4 py-2">❓ Help</button>
+                    <button onclick="showModal('strategy-templates-modal')" class="sihq-btn px-4 py-2">📋 Templates</button>
+                    <button onclick="saveCurrentStrategy()" class="sihq-btn px-4 py-2">💾 Save Strategy</button>
+                    <button onclick="showStrategyBuilderHelp()" class="sihq-btn px-4 py-2">❓ Help</button>
                 </div>
             </div>
             
@@ -631,8 +630,8 @@
                     </div>
                     
                     <div class="mt-6">
-                        <button onclick="testStrategy()" class="w-full post9-btn mb-2">🧪 Test Strategy</button>
-                        <button onclick="simulateStrategy()" class="w-full post9-btn">📈 Backtest</button>
+                        <button onclick="testStrategy()" class="w-full sihq-btn mb-2">🧪 Test Strategy</button>
+                        <button onclick="simulateStrategy()" class="w-full sihq-btn">📈 Backtest</button>
                     </div>
                 </div>
             </div>
@@ -647,12 +646,12 @@
         </div>
 
         <!-- Model Gallery Page -->
-        <div id="model-gallery-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+        <div id="model-gallery-page" class="mt-8 sihq-card rounded-lg shadow-lg p-6" style="display: none;">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-white">Model Gallery</h2>
                 <div class="flex gap-3">
-                    <button onclick="showModal('train-custom-model-modal')" class="post9-btn px-4 py-2">Train Custom Model</button>
-                    <button onclick="showModal('model-comparison-modal')" class="post9-btn px-4 py-2">Compare Models</button>
+                    <button onclick="showModal('train-custom-model-modal')" class="sihq-btn px-4 py-2">Train Custom Model</button>
+                    <button onclick="showModal('model-comparison-modal')" class="sihq-btn px-4 py-2">Compare Models</button>
                 </div>
             </div>
             
@@ -689,7 +688,7 @@
                             <option value="low">Low (<60%)</option>
                         </select>
                     </div>
-                    <button onclick="filterModels()" class="post9-btn px-4 py-2 mt-6">Apply Filters</button>
+                    <button onclick="filterModels()" class="sihq-btn px-4 py-2 mt-6">Apply Filters</button>
                 </div>
             </div>
             
@@ -700,12 +699,12 @@
         </div>
 
         <!-- Advanced Analytics Page -->
-        <div id="analytics-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+        <div id="analytics-page" class="mt-8 sihq-card rounded-lg shadow-lg p-6" style="display: none;">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-white">Advanced Analytics</h2>
                 <div class="flex gap-3">
-                    <button onclick="exportAnalytics()" class="post9-btn px-4 py-2">📊 Export Report</button>
-                    <button onclick="showModal('settings-modal')" class="post9-btn px-4 py-2">⚙️ Settings</button>
+                    <button onclick="exportAnalytics()" class="sihq-btn px-4 py-2">📊 Export Report</button>
+                    <button onclick="showModal('settings-modal')" class="sihq-btn px-4 py-2">⚙️ Settings</button>
                 </div>
             </div>
             
@@ -964,7 +963,7 @@
     
     <!-- Stats Breakdown Modal -->
     <div id="stats-breakdown-modal" class="modal">
-        <div class="modal-content post9-card">
+        <div class="modal-content sihq-card">
             <span class="modal-close" onclick="closeModal('stats-breakdown-modal')">&times;</span>
             <h3 id="stats-breakdown-title" class="text-xl font-bold mb-4 text-white">Stat Breakdown</h3>
             <div id="stats-breakdown-content"></div>
@@ -1018,7 +1017,7 @@
                     <button onclick="window.closeModal('bet-confirmation-modal')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
                         Cancel
                     </button>
-                    <button onclick="confirmPlaceBets()" class="post9-btn px-6 py-2">
+                    <button onclick="confirmPlaceBets()" class="sihq-btn px-6 py-2">
                         Confirm & Place Bets
                     </button>
                 </div>
@@ -1216,6 +1215,49 @@
             </div>
         </div>
     </div>
+    
+    <!-- Professional Footer -->
+    <footer class="mt-16 bg-gray-900 text-gray-300 py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 text-white">SI-HQ</h3>
+                    <p class="text-sm">Sports Investment Headquarters - Professional analytics and bot management for serious sports investors.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3 text-white">Platform</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" onclick="showPage('dashboard-page')" class="hover:text-blue-400">Dashboard</a></li>
+                        <li><a href="#" onclick="showPage('model-gallery-page')" class="hover:text-blue-400">ML Models</a></li>
+                        <li><a href="#" onclick="showPage('analytics-page')" class="hover:text-blue-400">Analytics</a></li>
+                        <li><a href="/ml" class="hover:text-blue-400">ML Dashboard</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3 text-white">Support</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-blue-400">Documentation</a></li>
+                        <li><a href="#" class="hover:text-blue-400">API Reference</a></li>
+                        <li><a href="#" class="hover:text-blue-400">Contact Support</a></li>
+                        <li><a href="#" class="hover:text-blue-400">Community</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3 text-white">Legal</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/terms" class="hover:text-blue-400">Terms of Service</a></li>
+                        <li><a href="/privacy" class="hover:text-blue-400">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-blue-400">Risk Disclaimer</a></li>
+                        <li><a href="#" class="hover:text-blue-400">Compliance</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
+                <p>&copy; 2025 SI-HQ. All rights reserved. | 
+                <span class="text-yellow-400">⚠️ Investment involves risk. Past performance does not guarantee future results.</span></p>
+            </div>
+        </div>
+    </footer>
     
     <script type="module" src="../static/scripts/scripts.js"></script>
 </body>
