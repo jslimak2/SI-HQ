@@ -100,6 +100,16 @@ def get_user_collections(user_id):
     }
 
 # --- API Endpoints ---
+@app.route('/terms')
+def terms():
+    """Terms of Service page"""
+    return render_template('terms.html')
+
+@app.route('/privacy')
+def privacy():
+    """Privacy Policy page"""
+    return render_template('privacy.html')
+
 @app.route('/demo')
 def demo():
     """Renders a demo page showing the new bot functionality."""
@@ -110,25 +120,48 @@ def ml_dashboard():
     """Renders the advanced ML dashboard"""
     return render_template('ml_dashboard.html')
 
+@app.errorhandler(404)
+def page_not_found(e):
+    """Handle 404 errors"""
+    return jsonify({'error': 'Page not found', 'success': False}), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    """Handle 500 errors"""
+    app.logger.error(f'Server Error: {e}')
+    return jsonify({'error': 'Internal server error', 'success': False}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle uncaught exceptions"""
+    app.logger.error(f'Unhandled Exception: {e}')
+    return jsonify({'error': 'An unexpected error occurred', 'success': False}), 500
+
 @app.route('/')
 def home():
     """Renders the main dashboard page."""
-    auth_token = None
-    
-    if not demo_mode and firebase_admin._apps:
-        # Create a custom token for anonymous sign-in
-        # For a production app, you'd want to handle user authentication more securely
-        uid = f"anon-user-{random.randint(1000, 9999)}"
-        auth_token = auth.create_custom_token(uid)
-        auth_token_str = auth_token.decode('utf-8') if auth_token else None
-    else:
-        # Demo mode - provide a dummy token
-        auth_token_str = "demo_auth_token"
+    try:
+        auth_token = None
+        
+        if not demo_mode and firebase_admin._apps:
+            # Create a custom token for anonymous sign-in
+            # For a production app, you'd want to handle user authentication more securely
+            uid = f"anon-user-{random.randint(1000, 9999)}"
+            auth_token = auth.create_custom_token(uid)
+            auth_token_str = auth_token.decode('utf-8') if auth_token else None
+        else:
+            # Demo mode - provide a dummy token
+            auth_token_str = "demo_auth_token"
 
-    # Pass the Firebase config and auth token to the template
-    return render_template('index.html',
-                           firebase_config=firebase_config,
-                           auth_token=auth_token_str)
+        # Pass the Firebase config and auth token to the template
+        return render_template('index.html',
+                               firebase_config=firebase_config,
+                               auth_token=auth_token_str)
+    except Exception as e:
+        app.logger.error(f'Error in home route: {e}')
+        return render_template('index.html',
+                               firebase_config=firebase_config,
+                               auth_token="demo_auth_token")
 
 @app.route('/api/firebase-config', methods=['GET'])
 def get_firebase_config():
