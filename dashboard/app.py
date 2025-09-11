@@ -104,6 +104,11 @@ def demo():
     """Renders a demo page showing the new bot functionality."""
     return render_template('demo.html')
 
+@app.route('/ml')
+def ml_dashboard():
+    """Renders the advanced ML dashboard"""
+    return render_template('ml_dashboard.html')
+
 @app.route('/')
 def home():
     """Renders the main dashboard page."""

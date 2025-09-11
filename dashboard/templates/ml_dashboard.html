@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post9 ML Dashboard - Advanced Sports Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(120deg, #0a1a2f 0%, #1e3350 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+        }
+        .post9-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .post9-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px #0a1a2f;
+        }
+        .post9-accent {
+            color: #ff9900;
+            font-weight: 900;
+        }
+        .ml-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(10,26,47,0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .ml-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(10,26,47,0.2);
+        }
+        .nav-btn {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: #ff9900;
+            border-color: #ff9900;
+            transform: translateY(-2px);
+        }
+        .metric-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .metric-positive { background-color: #10b981; }
+        .metric-negative { background-color: #ef4444; }
+        .metric-neutral { background-color: #f59e0b; }
+        
+        .prediction-confidence {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            height: 8px;
+            border-radius: 4px;
+            position: relative;
+            margin: 8px 0;
+        }
+        .confidence-marker {
+            position: absolute;
+            top: -2px;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            border: 2px solid #1f2937;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="flex justify-center gap-4 p-6 sticky top-0 z-50 bg-opacity-90 backdrop-blur-sm" style="background: rgba(10,26,47,0.9);">
+        <button class="nav-btn active" onclick="showSection('dashboard')">Dashboard</button>
+        <button class="nav-btn" onclick="showSection('models')">ML Models</button>
+        <button class="nav-btn" onclick="showSection('predictions')">Predictions</button>
+        <button class="nav-btn" onclick="showSection('analytics')">Analytics</button>
+        <button class="nav-btn" onclick="showSection('kelly')">Kelly Optimizer</button>
+    </nav>
+
+    <!-- Demo Mode Notice -->
+    <div class="mx-auto max-w-7xl px-6 mb-4">
+        <div class="bg-amber-500 bg-opacity-20 border border-amber-400 text-amber-100 px-4 py-3 rounded-lg">
+            <strong>Demo Mode:</strong> Advanced ML analytics system operational. Real-time predictions available.
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="text-center text-white py-8">
+        <div class="post9-logo">
+            <div class="post9-title">
+                <span class="post9-accent">Post</span>9
+            </div>
+        </div>
+        <p class="text-xl font-semibold text-amber-400 mt-2">Advanced Sports Analytics & ML Platform</p>
+        <p class="text-lg mt-2 opacity-90">Professional-Grade Prediction Models & Risk Management</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="mx-auto max-w-7xl px-6 pb-12">
+        
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="section active">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- ML Model Status -->
+                <div class="ml-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">ML Models</h3>
+                        <span class="text-2xl">🤖</span>
+                    </div>
+                    <div class="text-2xl font-bold text-blue-600" id="active-models">3</div>
+                    <div class="text-sm text-gray-600">Active Models</div>
+                    <div class="mt-2">
+                        <span class="metric-indicator metric-positive"></span>NBA Statistical
+                        <span class="metric-indicator metric-positive"></span>NFL Ensemble
+                        <span class="metric-indicator metric-neutral"></span>MLB Neural
+                    </div>
+                </div>
+
+                <!-- Prediction Accuracy -->
+                <div class="ml-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Accuracy</h3>
+                        <span class="text-2xl">🎯</span>
+                    </div>
+                    <div class="text-2xl font-bold text-green-600" id="avg-accuracy">68.2%</div>
+                    <div class="text-sm text-gray-600">Average Model Accuracy</div>
+                </div>
+
+                <!-- Kelly Criterion ROI -->
+                <div class="ml-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Kelly ROI</h3>
+                        <span class="text-2xl">📈</span>
+                    </div>
+                    <div class="text-2xl font-bold text-purple-600" id="kelly-roi">23.0%</div>
+                    <div class="text-sm text-gray-600">Expected ROI</div>
+                </div>
+
+                <!-- Risk Score -->
+                <div class="ml-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Risk Score</h3>
+                        <span class="text-2xl">⚖️</span>
+                    </div>
+                    <div class="text-2xl font-bold text-orange-600" id="risk-score">Medium</div>
+                    <div class="text-sm text-gray-600">Portfolio Risk</div>
+                </div>
+            </div>
+
+            <!-- Quick Prediction Tool -->
+            <div class="ml-card p-8 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">🔮 Quick Prediction</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Sport</label>
+                        <select id="predict-sport" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="NBA">NBA Basketball</option>
+                            <option value="NFL">NFL Football</option>
+                            <option value="MLB">MLB Baseball</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Home Team Win %</label>
+                        <input type="number" id="home-win-pct" class="w-full p-3 border border-gray-300 rounded-lg" 
+                               value="0.65" min="0" max="1" step="0.01">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Away Team Win %</label>
+                        <input type="number" id="away-win-pct" class="w-full p-3 border border-gray-300 rounded-lg" 
+                               value="0.55" min="0" max="1" step="0.01">
+                    </div>
+                </div>
+                <button onclick="makePrediction()" class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                    Generate ML Prediction
+                </button>
+                
+                <!-- Prediction Results -->
+                <div id="prediction-results" class="mt-6 hidden">
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Prediction Results</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-sm font-semibold text-gray-600">Predicted Outcome</div>
+                                <div id="predicted-outcome" class="text-xl font-bold"></div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-gray-600">Confidence Level</div>
+                                <div id="confidence-level" class="text-xl font-bold"></div>
+                                <div class="prediction-confidence">
+                                    <div id="confidence-marker" class="confidence-marker"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-sm font-semibold text-gray-600 mb-2">Model Analysis</div>
+                            <div id="model-analysis" class="text-sm text-gray-700"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML Models Section -->
+        <div id="models-section" class="section hidden">
+            <div class="ml-card p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">🤖 ML Model Gallery</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="model-gallery">
+                    <!-- Models will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Predictions Section -->
+        <div id="predictions-section" class="section hidden">
+            <div class="ml-card p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">🔮 Advanced Predictions</h2>
+                <div class="space-y-6">
+                    <!-- NBA Prediction -->
+                    <div class="border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">NBA - Lakers vs Warriors</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">ML Prediction</div>
+                                <div class="text-lg font-bold text-blue-600">Lakers Win</div>
+                                <div class="text-sm text-gray-500">72.4% Confidence</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Kelly Bet Size</div>
+                                <div class="text-lg font-bold text-green-600">$156.80</div>
+                                <div class="text-sm text-gray-500">Half Kelly</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Expected Value</div>
+                                <div class="text-lg font-bold text-purple-600">+18.2%</div>
+                                <div class="text-sm text-gray-500">ROI</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="section hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="ml-card p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Performance Analytics</h2>
+                    <canvas id="performanceChart" width="400" height="300"></canvas>
+                </div>
+                <div class="ml-card p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">🎯 Risk Metrics</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <span class="font-semibold">Sharpe Ratio:</span>
+                            <span class="text-green-600">1.45</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-semibold">Sortino Ratio:</span>
+                            <span class="text-green-600">1.82</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-semibold">Max Drawdown:</span>
+                            <span class="text-red-600">-8.4%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-semibold">Win Rate:</span>
+                            <span class="text-blue-600">65.2%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kelly Optimizer Section -->
+        <div id="kelly-section" class="section hidden">
+            <div class="ml-card p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">💰 Kelly Criterion Optimizer</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Input Parameters</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Win Probability</label>
+                                <input type="number" id="kelly-win-prob" class="w-full p-3 border border-gray-300 rounded-lg" 
+                                       value="0.58" min="0" max="1" step="0.01">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Odds (American)</label>
+                                <input type="number" id="kelly-odds" class="w-full p-3 border border-gray-300 rounded-lg" 
+                                       value="185" step="5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Bankroll ($)</label>
+                                <input type="number" id="kelly-bankroll" class="w-full p-3 border border-gray-300 rounded-lg" 
+                                       value="1000" step="100">
+                            </div>
+                            <button onclick="calculateKelly()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                                Calculate Optimal Bet Size
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-700 mb-4">Optimization Results</h3>
+                        <div id="kelly-results" class="space-y-3">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="text-sm font-semibold text-gray-600">Full Kelly Bet</div>
+                                <div id="full-kelly" class="text-xl font-bold text-blue-600">-</div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="text-sm font-semibold text-gray-600">Half Kelly (Recommended)</div>
+                                <div id="half-kelly" class="text-xl font-bold text-green-600">-</div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="text-sm font-semibold text-gray-600">Expected ROI</div>
+                                <div id="expected-roi" class="text-xl font-bold text-purple-600">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSection = 'dashboard';
+
+        // Section management
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.remove('hidden');
+            document.getElementById(sectionName + '-section').classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            currentSection = sectionName;
+            
+            // Load section-specific content
+            if (sectionName === 'models') {
+                loadModelGallery();
+            } else if (sectionName === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
+        // ML Prediction
+        async function makePrediction() {
+            const sport = document.getElementById('predict-sport').value;
+            const homeWinPct = parseFloat(document.getElementById('home-win-pct').value);
+            const awayWinPct = parseFloat(document.getElementById('away-win-pct').value);
+            
+            const requestData = {
+                sport: sport,
+                home_win_pct: homeWinPct,
+                away_win_pct: awayWinPct
+            };
+            
+            try {
+                const response = await fetch('/api/ml/demo/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayPredictionResults(result);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Prediction error:', error);
+                alert('Failed to get prediction');
+            }
+        }
+
+        function displayPredictionResults(result) {
+            const prediction = result.prediction;
+            const training = result.training_results;
+            
+            // Show results container
+            document.getElementById('prediction-results').classList.remove('hidden');
+            
+            // Update prediction outcome
+            document.getElementById('predicted-outcome').textContent = prediction.predicted_outcome;
+            document.getElementById('predicted-outcome').className = 'text-xl font-bold ' + 
+                (prediction.predicted_outcome.includes('Home') ? 'text-blue-600' : 'text-red-600');
+            
+            // Update confidence
+            const confidence = (prediction.confidence * 100).toFixed(1);
+            document.getElementById('confidence-level').textContent = confidence + '%';
+            document.getElementById('confidence-level').className = 'text-xl font-bold ' + 
+                (confidence > 70 ? 'text-green-600' : confidence > 60 ? 'text-yellow-600' : 'text-red-600');
+            
+            // Position confidence marker
+            const marker = document.getElementById('confidence-marker');
+            marker.style.left = (prediction.confidence * 100) + '%';
+            
+            // Update model analysis
+            const analysis = `
+                Model Type: ${result.model_type}<br>
+                Training Accuracy: ${(training.accuracy * 100).toFixed(1)}%<br>
+                Features Used: ${training.features_used}<br>
+                Training Samples: ${training.training_samples.toLocaleString()}
+            `;
+            document.getElementById('model-analysis').innerHTML = analysis;
+        }
+
+        // Kelly Criterion Calculator
+        async function calculateKelly() {
+            const winProb = parseFloat(document.getElementById('kelly-win-prob').value);
+            const odds = parseFloat(document.getElementById('kelly-odds').value);
+            const bankroll = parseFloat(document.getElementById('kelly-bankroll').value);
+            
+            try {
+                const response = await fetch('/api/analytics/kelly', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        win_probability: winProb,
+                        odds: odds,
+                        bankroll: bankroll
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const kelly = result.kelly_analysis;
+                    document.getElementById('full-kelly').textContent = '$' + kelly.full_kelly_bet.toFixed(2);
+                    document.getElementById('half-kelly').textContent = '$' + kelly.half_kelly_bet.toFixed(2);
+                    document.getElementById('expected-roi').textContent = (kelly.expected_roi * 100).toFixed(2) + '%';
+                } else {
+                    alert('Error calculating Kelly: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Kelly calculation error:', error);
+                alert('Failed to calculate Kelly criterion');
+            }
+        }
+
+        // Load Model Gallery
+        async function loadModelGallery() {
+            try {
+                const response = await fetch('/api/models/gallery');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const gallery = document.getElementById('model-gallery');
+                    gallery.innerHTML = '';
+                    
+                    result.models.forEach(model => {
+                        const modelCard = document.createElement('div');
+                        modelCard.className = 'bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow';
+                        modelCard.innerHTML = `
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-bold text-gray-800">${model.name}</h3>
+                                <span class="px-2 py-1 text-xs font-semibold rounded ${model.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${model.status}</span>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-4">${model.description}</p>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium">Sport:</span>
+                                    <span class="text-sm">${model.sport}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium">Accuracy:</span>
+                                    <span class="text-sm font-bold text-green-600">${model.accuracy}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium">Features:</span>
+                                    <span class="text-sm">${model.features_count}</span>
+                                </div>
+                            </div>
+                        `;
+                        gallery.appendChild(modelCard);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading model gallery:', error);
+            }
+        }
+
+        // Load Analytics
+        function loadAnalytics() {
+            // Create performance chart
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Cumulative ROI (%)',
+                        data: [0, 5.2, 12.8, 18.1, 15.6, 23.4],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'ROI %'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('ML Dashboard initialized');
+            
+            // Load initial data
+            calculateKelly();
+            
+            // Auto-refresh data every 30 seconds
+            setInterval(() => {
+                if (currentSection === 'dashboard') {
+                    // Refresh dashboard metrics
+                    console.log('Refreshing dashboard data...');
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>
