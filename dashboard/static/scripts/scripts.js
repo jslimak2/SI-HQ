@@ -200,6 +200,12 @@ document.addEventListener('keydown', function(event) {
 
 // Function to fetch and display strategies
 async function fetchStrategies() {
+    if (!firebaseAvailable) {
+        console.log("Firebase not available, loading demo strategies");
+        await loadDemoStrategies();
+        return;
+    }
+    
     showLoading();
     try {
         const q = collection(db, `users/${userId}/strategies`);
@@ -216,7 +222,7 @@ async function fetchStrategies() {
     } catch (e) {
         console.error("Error fetching strategies:", e);
         showMessage("Failed to load strategies. Ensure Firebase is configured correctly.", true);
-        hideLoading();
+        await loadDemoStrategies(); // Fallback to demo data
     }
 }
 
@@ -355,45 +361,335 @@ function displayBots() {
     createBotTable(inactiveBotsContainer, inactiveBots, 'Inactive Bots');
 }
 
+// Load strategies from demo data initially
+async function loadDemoStrategies() {
+    try {
+        const response = await fetch('/static/../data/strategies.json');
+        const demoStrategies = await response.json();
+        strategies = demoStrategies || [];
+        displayStrategies();
+        updateStrategySelects();
+        hideLoading();
+    } catch (error) {
+        console.error("Error loading demo strategies:", error);
+        // Fallback to hardcoded demo strategies
+        strategies = [
+            {
+                "id": 1,
+                "name": "Conservative",
+                "type": "conservative",
+                "description": "Low risk approach with smaller bet sizes and higher confidence requirements",
+                "parameters": {
+                    "min_confidence": 75,
+                    "max_bet_percentage": 2.0,
+                    "max_odds": 2.0
+                }
+            },
+            {
+                "id": 2,
+                "name": "Aggressive",
+                "type": "aggressive", 
+                "description": "Higher risk, higher reward with larger bet sizes and more frequent betting",
+                "parameters": {
+                    "min_confidence": 60,
+                    "max_bet_percentage": 5.0,
+                    "max_odds": 5.0
+                }
+            },
+            {
+                "id": 3,
+                "name": "Loss Recovery",
+                "type": "recovery",
+                "description": "Recover losses with calculated risk management and progressive betting",
+                "parameters": {
+                    "loss_threshold": 10.0,
+                    "max_bet_percentage": 7.0,
+                    "recovery_multiplier": 1.5
+                }
+            },
+            {
+                "id": 4,
+                "name": "+eV Strategy",
+                "type": "expected_value",
+                "description": "Focus on bets with positive expected value. Calculates probability vs odds to find profitable opportunities",
+                "parameters": {
+                    "min_expected_value": 5.0,
+                    "max_bet_percentage": 3.0,
+                    "confidence_threshold": 65,
+                    "max_odds": 3.0,
+                    "kelly_fraction": 0.25
+                },
+                "created_from_template": "positive_ev"
+            }
+        ];
+        displayStrategies();
+        updateStrategySelects();
+        hideLoading();
+    }
+}
+
+// Strategy Builder help function
+window.showStrategyBuilderHelp = function() {
+    const helpContent = `
+        <div class="text-left">
+            <h4 class="font-bold mb-2">How to Build a Strategy:</h4>
+            <ol class="list-decimal list-inside space-y-2 text-sm">
+                <li>Start with an <strong>IF/THEN</strong> block from Logic Blocks</li>
+                <li>Drag <strong>Data Sources</strong> like Weather or Team Stats into conditions</li>
+                <li>Add <strong>Comparison</strong> blocks to set thresholds</li>
+                <li>Use <strong>AND/OR</strong> blocks to combine multiple conditions</li>
+                <li>Add <strong>Actions</strong> like Place Bet or Skip Bet</li>
+                <li>Adjust <strong>Parameters</strong> on the right panel</li>
+                <li>Test your strategy before saving</li>
+            </ol>
+            <h4 class="font-bold mt-4 mb-2">Quick Tips:</h4>
+            <ul class="list-disc list-inside space-y-1 text-sm">
+                <li>Use Templates for proven strategies</li>
+                <li>Keep risk level moderate (3-7) for beginners</li>
+                <li>Set bet size to 2-5% of balance</li>
+                <li>Always backtest before going live</li>
+            </ul>
+        </div>
+    `;
+    
+    showMessage(helpContent, false, 10000); // Show for 10 seconds
+};
+const strategyTemplates = {
+    positive_ev: {
+        name: "+eV Strategy",
+        type: "expected_value",
+        description: "Focuses on bets with positive expected value. Calculates probability vs odds to find profitable opportunities.",
+        parameters: {
+            min_expected_value: 5.0,  // Minimum 5% expected value
+            max_bet_percentage: 3.0,  // 3% of balance per bet
+            confidence_threshold: 65, // 65% confidence minimum
+            max_odds: 3.0,           // Maximum odds of 3.0 (+200)
+            kelly_fraction: 0.25     // Use 25% of Kelly Criterion recommendation
+        },
+        flow_definition: {
+            logic: "IF (Expected Value > 5% AND Confidence > 65% AND Odds <= 3.0) THEN Place Bet (Kelly Criterion * 0.25)",
+            conditions: [
+                { type: "expected_value", operator: ">", value: 5.0 },
+                { type: "confidence", operator: ">", value: 65 },
+                { type: "odds", operator: "<=", value: 3.0 }
+            ],
+            action: { type: "place_bet", sizing: "kelly_fractional", fraction: 0.25 }
+        }
+    },
+    conservative: {
+        name: "Conservative Strategy",
+        type: "conservative",
+        description: "Low risk approach with smaller bet sizes and higher confidence requirements.",
+        parameters: {
+            min_confidence: 75,      // Minimum 75% confidence
+            max_bet_percentage: 2.0, // 2% of balance per bet
+            max_odds: 2.0,          // Maximum odds of 2.0 (-100)
+            min_expected_value: 3.0  // Minimum 3% expected value
+        },
+        flow_definition: {
+            logic: "IF (Confidence > 75% AND Odds <= 2.0 AND Expected Value > 3%) THEN Bet 1-2%",
+            conditions: [
+                { type: "confidence", operator: ">", value: 75 },
+                { type: "odds", operator: "<=", value: 2.0 },
+                { type: "expected_value", operator: ">", value: 3.0 }
+            ],
+            action: { type: "place_bet", sizing: "fixed_percentage", percentage: 2.0 }
+        }
+    },
+    aggressive: {
+        name: "Aggressive Strategy",
+        type: "aggressive",
+        description: "Higher risk, higher reward with larger bet sizes and more frequent betting.",
+        parameters: {
+            min_confidence: 60,      // Lower confidence threshold
+            max_bet_percentage: 5.0, // 5% of balance per bet
+            max_odds: 5.0,          // Higher odds acceptable
+            min_expected_value: 3.0  // 3% expected value minimum
+        },
+        flow_definition: {
+            logic: "IF (Confidence > 60% AND Expected Value > 3%) THEN Bet 3-5%",
+            conditions: [
+                { type: "confidence", operator: ">", value: 60 },
+                { type: "expected_value", operator: ">", value: 3.0 }
+            ],
+            action: { type: "place_bet", sizing: "fixed_percentage", percentage: 5.0 }
+        }
+    },
+    recovery: {
+        name: "Loss Recovery Strategy",
+        type: "recovery",
+        description: "Recover losses with calculated risk management and progressive betting.",
+        parameters: {
+            loss_threshold: 10.0,    // Start recovery when down 10%
+            max_bet_percentage: 7.0, // Up to 7% during recovery
+            recovery_multiplier: 1.5, // Increase bet size by 50%
+            min_confidence: 70       // Higher confidence during recovery
+        },
+        flow_definition: {
+            logic: "IF (Current Balance < Starting Balance - 10% AND Confidence > 70%) THEN Increase Bet Size by 50%",
+            conditions: [
+                { type: "balance_loss", operator: ">", value: 10.0 },
+                { type: "confidence", operator: ">", value: 70 }
+            ],
+            action: { type: "place_bet", sizing: "recovery_progressive", multiplier: 1.5 }
+        }
+    },
+    value_hunting: {
+        name: "Value Hunter Strategy",
+        type: "value_hunting", 
+        description: "Finds undervalued odds across multiple sportsbooks for maximum profit.",
+        parameters: {
+            min_odds_edge: 5.0,      // 5% better odds than market average
+            max_bet_percentage: 3.5, // 3.5% of balance
+            min_confidence: 65,      // 65% confidence minimum
+            sportsbook_minimum: 3    // Check at least 3 sportsbooks
+        },
+        flow_definition: {
+            logic: "IF (Best Odds > Market Average + 5% AND Confidence > 65%) THEN Place Bet",
+            conditions: [
+                { type: "odds_edge", operator: ">", value: 5.0 },
+                { type: "confidence", operator: ">", value: 65 },
+                { type: "sportsbook_count", operator: ">=", value: 3 }
+            ],
+            action: { type: "place_bet", sizing: "fixed_percentage", percentage: 3.5 }
+        }
+    },
+    arbitrage: {
+        name: "Arbitrage Strategy",
+        type: "arbitrage",
+        description: "Risk-free profit by betting both sides across different sportsbooks.",
+        parameters: {
+            min_arbitrage_profit: 1.0, // Minimum 1% profit
+            max_bet_percentage: 10.0,  // Up to 10% for risk-free bets
+            max_exposure: 20.0,        // Maximum 20% total exposure
+            min_sportsbooks: 2         // Require at least 2 sportsbooks
+        },
+        flow_definition: {
+            logic: "IF (Arbitrage Opportunity > 1% AND Have 2+ Sportsbooks) THEN Place Both Bets",
+            conditions: [
+                { type: "arbitrage_profit", operator: ">", value: 1.0 },
+                { type: "sportsbook_count", operator: ">=", value: 2 }
+            ],
+            action: { type: "place_arbitrage", sizing: "calculated_risk_free" }
+        }
+    }
+};
+
+// Create strategy from template
+window.createFromTemplate = function(templateKey) {
+    const template = strategyTemplates[templateKey];
+    if (!template) {
+        console.error('Template not found:', templateKey);
+        return;
+    }
+    
+    showLoading();
+    
+    // Create strategy with template data
+    const strategyData = {
+        name: template.name,
+        type: template.type,
+        description: template.description,
+        parameters: template.parameters,
+        flow_definition: template.flow_definition,
+        created_from_template: templateKey,
+        created_at: new Date().toISOString()
+    };
+    
+    // Add strategy via API
+    fetch('/api/strategies', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            ...strategyData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`${template.name} created successfully!`);
+            closeModal('strategy-templates-modal');
+            // Refresh strategies
+            fetchStrategies();
+        } else {
+            showMessage(`Failed to create strategy: ${data.message}`, true);
+        }
+    })
+    .catch(error => {
+        console.error('Error creating strategy:', error);
+        showMessage('Failed to create strategy from template', true);
+    })
+    .finally(() => {
+        hideLoading();
+    });
+};
+
+// Update displayStrategies function to show more details
 function displayStrategies() {
     const container = strategiesContainer;
     if (strategies.length === 0) {
-        container.innerHTML = `<p class="text-center text-gray-400 py-4">No strategies found. Add one above!</p>`;
+        container.innerHTML = `<p class="text-center text-gray-400 py-4">No strategies found. Create one using templates above!</p>`;
         return;
     }
-    const table = document.createElement('table');
-    table.className = 'min-w-full divide-y divide-gray-200 post9-card';
-    table.innerHTML = `
-        <thead class="post9-card">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Linked Strategy</th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Description</th>
-                <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200 post9-card">
-            ${strategies.map(strategy => {
-                const linkedStrategy = strategies.find(s => s.id === strategy.linked_strategy_id);
-                const linkedStrategyName = linkedStrategy ? linkedStrategy.name : 'None';
-                return `
-                    <tr class="post9-card">
-                        <td class="px-6 py-4 whitespace-nowrap font-semibold">${strategy.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${strategy.type}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${linkedStrategyName}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${strategy.description || 'N/A'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="window.showStrategyDetails('${strategy.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
-                            <button onclick="window.deleteStrategy('${strategy.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('')}
-        </tbody>
-    `;
+    
+    // Enhanced strategy display with cards instead of table
+    const strategiesGrid = document.createElement('div');
+    strategiesGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+    
+    strategiesGrid.innerHTML = strategies.map(strategy => {
+        const linkedStrategy = strategies.find(s => s.id === strategy.linked_strategy_id);
+        const linkedStrategyName = linkedStrategy ? linkedStrategy.name : 'None';
+        
+        // Determine card color based on strategy type
+        let cardColor = 'from-gray-600 to-gray-800';
+        if (strategy.type === 'expected_value') cardColor = 'from-green-500 to-green-700';
+        else if (strategy.type === 'conservative') cardColor = 'from-blue-500 to-blue-700';
+        else if (strategy.type === 'aggressive') cardColor = 'from-orange-500 to-red-600';
+        else if (strategy.type === 'recovery') cardColor = 'from-purple-500 to-purple-700';
+        else if (strategy.type === 'value_hunting') cardColor = 'from-teal-500 to-cyan-600';
+        else if (strategy.type === 'arbitrage') cardColor = 'from-indigo-500 to-purple-600';
+        
+        // Get icon based on type
+        let icon = '📋';
+        if (strategy.type === 'expected_value') icon = '💰';
+        else if (strategy.type === 'conservative') icon = '🛡️';
+        else if (strategy.type === 'aggressive') icon = '🚀';
+        else if (strategy.type === 'recovery') icon = '🔄';
+        else if (strategy.type === 'value_hunting') icon = '🎯';
+        else if (strategy.type === 'arbitrage') icon = '⚖️';
+        
+        return `
+            <div class="bg-gradient-to-br ${cardColor} p-4 rounded-lg text-white relative group">
+                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="window.showStrategyDetails('${strategy.id}')" class="text-white hover:text-gray-200 mx-1 text-sm">✏️</button>
+                    <button onclick="window.deleteStrategy('${strategy.id}')" class="text-white hover:text-red-300 mx-1 text-sm">🗑️</button>
+                </div>
+                
+                <div class="text-2xl mb-2">${icon}</div>
+                <h4 class="text-lg font-bold mb-2">${strategy.name}</h4>
+                <div class="text-sm opacity-90 mb-3">${strategy.description || 'No description'}</div>
+                
+                <div class="text-xs bg-black bg-opacity-30 p-2 rounded mb-3">
+                    <strong>Type:</strong> ${strategy.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    ${linkedStrategyName !== 'None' ? `<br><strong>Recovery:</strong> ${linkedStrategyName}` : ''}
+                </div>
+                
+                ${strategy.parameters ? `
+                    <div class="text-xs text-gray-200">
+                        ${strategy.parameters.max_bet_percentage ? `Max Bet: ${strategy.parameters.max_bet_percentage}%` : ''}
+                        ${strategy.parameters.min_confidence ? `<br>Min Confidence: ${strategy.parameters.min_confidence}%` : ''}
+                        ${strategy.parameters.min_expected_value ? `<br>Min +eV: ${strategy.parameters.min_expected_value}%` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+    
     container.innerHTML = '';
-    container.appendChild(table);
+    container.appendChild(strategiesGrid);
 }
 
 // Update overall stats dashboard
