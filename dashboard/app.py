@@ -1,13 +1,32 @@
 import os
+import sys
 import random
 import datetime
 import time
-import firebase_admin
 import requests
 import numpy as np
 import uuid
-from firebase_admin import credentials, firestore, auth # Added 'auth' here
 from flask import Flask, request, jsonify, render_template, g
+
+# Import firebase_admin optionally
+try:
+    import firebase_admin
+    from firebase_admin import credentials, firestore, auth
+    FIREBASE_AVAILABLE = True
+    print("Firebase components loaded successfully")
+except ImportError as e:
+    print(f"Firebase components not available: {e}")
+    FIREBASE_AVAILABLE = False
+    # Create mock objects for firebase functionality
+    class MockFirestore:
+        def collection(self, name): return self
+        def document(self, id): return self
+        def get(self): return self
+        def to_dict(self): return {}
+        def set(self, data): pass
+        def update(self, data): pass
+        def delete(self): pass
+    firestore = MockFirestore()
 
 # Professional imports
 from config import ConfigManager, setup_logging, validate_config
@@ -100,16 +119,21 @@ for warning in config_warnings:
 # Load the path to the service account key from an environment variable
 demo_mode = False
 try:
-    cred_path = config.database.service_account_path
-    if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
-        logger.info("Running in demo mode - Firebase features will be limited")
+    if not FIREBASE_AVAILABLE:
+        logger.info("Firebase not available, running in demo mode")
         demo_mode = True
         db = None
     else:
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        db = firestore.client()
-        logger.info("Firestore client initialized successfully.")
+        cred_path = config.database.service_account_path
+        if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
+            logger.info("Running in demo mode - Firebase features will be limited")
+            demo_mode = True
+            db = None
+        else:
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            db = firestore.client()
+            logger.info("Firestore client initialized successfully.")
 except Exception as e:
     logger.error(f"Firebase initialization failed, running in demo mode: {e}")
     demo_mode = True
