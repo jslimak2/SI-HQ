@@ -1822,11 +1822,15 @@
         
         async function refreshTrainingQueue() {
             try {
-                const response = await fetch('/api/training/queue', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'demo_token'}`
-                    }
-                });
+                const authToken = localStorage.getItem('auth_token');
+                const headers = {};
+                
+                // Only add Authorization header if we have a real auth token
+                if (authToken && authToken !== 'demo_token') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                const response = await fetch('/api/training/queue', { headers });
                 
                 if (response.ok) {
                     const data = await response.json();
@@ -2127,12 +2131,19 @@
             };
             
             try {
+                const authToken = localStorage.getItem('auth_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                // Only add Authorization header if we have a real auth token
+                if (authToken && authToken !== 'demo_token') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
                 const response = await fetch('/api/training/submit', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'demo_token'}`
-                    },
+                    headers,
                     body: JSON.stringify(jobData)
                 });
                 
@@ -2158,11 +2169,17 @@
             }
             
             try {
+                const authToken = localStorage.getItem('auth_token');
+                const headers = {};
+                
+                // Only add Authorization header if we have a real auth token
+                if (authToken && authToken !== 'demo_token') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
                 const response = await fetch(`/api/training/job/${jobId}/cancel`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'demo_token'}`
-                    }
+                    headers
                 });
                 
                 if (response.ok) {
