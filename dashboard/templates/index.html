@@ -1933,6 +1933,25 @@
     </footer>
     
     <script>
+        // Modal functions
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+        
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Make functions globally available
+        window.showModal = showModal;
+        window.closeModal = closeModal;
+        
         // Training Queue JavaScript Functions
         
         // Global variables for training queue
