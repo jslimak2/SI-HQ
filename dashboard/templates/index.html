@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post9 Sports Investing Dashboard</title>
-    <!-- TailwindCSS CDN - For development only. Replace with compiled CSS in production -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TailwindCSS - Production ready build included in styles.css -->
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../static/styles.css">
     <style>
         body {
@@ -2452,8 +2453,6 @@
         window.showModal = showModal;
         window.closeModal = closeModal;
         window.showPredictiveTab = showPredictiveTab;
-        window.toggleKellyOptions = toggleKellyOptions;
-        window.resetKellyCalculator = resetKellyCalculator;
         
         // Simple message function for Kelly calculator
         window.showMessage = function(message, isError = false) {
@@ -2489,6 +2488,10 @@
             if (results) results.classList.add('hidden');
             toggleKellyOptions();
         };
+        
+        // Assign global functions after they are defined
+        window.toggleKellyOptions = window.toggleKellyOptions;
+        window.resetKellyCalculator = window.resetKellyCalculator;
         
         // Enhanced Kelly Criterion calculator
         window.calculateKellyOptimal = function() {
