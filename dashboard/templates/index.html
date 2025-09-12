@@ -1231,9 +1231,10 @@
             <div id="optimizer-tab-content" class="predictive-tab-content hidden">
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Kelly Criterion Optimizer</h3>
-                    <p class="text-gray-600 mb-4">Calculate optimal bet sizes using the Kelly Criterion for risk management.</p>
+                    <p class="text-gray-600 mb-4">Calculate optimal bet sizes using the Kelly Criterion for risk management with advanced scaling options.</p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Basic Kelly Inputs -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Win Probability (%)</label>
                             <input type="number" id="kelly-win-prob" class="w-full p-2 border border-gray-300 rounded" 
@@ -1251,16 +1252,83 @@
                         </div>
                     </div>
                     
-                    <div class="mt-6">
+                    <!-- Kelly Factor & Betting Strategy -->
+                    <div class="border-t pt-6 mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Betting Strategy</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Strategy Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Strategy Type</label>
+                                <select id="kelly-strategy-type" class="w-full p-2 border border-gray-300 rounded">
+                                    <option value="kelly-fraction">Kelly Fraction</option>
+                                    <option value="flat-rate">Flat Rate</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Kelly Fraction Options -->
+                            <div id="kelly-fraction-options">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Kelly Factor</label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-full" name="kelly-factor" value="1.0" checked class="text-blue-600">
+                                        <label for="kelly-full" class="text-sm">Full Kelly (1.0x)</label>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-half" name="kelly-factor" value="0.5" class="text-blue-600">
+                                        <label for="kelly-half" class="text-sm">Half Kelly (0.5x)</label>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-quarter" name="kelly-factor" value="0.25" class="text-blue-600">
+                                        <label for="kelly-quarter" class="text-sm">Quarter Kelly (0.25x)</label>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-custom" name="kelly-factor" value="custom" class="text-blue-600">
+                                        <label for="kelly-custom" class="text-sm">Custom:</label>
+                                        <input type="number" id="kelly-custom-value" step="0.1" min="0.1" max="2.0" value="0.75" 
+                                               class="w-20 p-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Flat Rate Options -->
+                            <div id="flat-rate-options" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Flat Rate Amount</label>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">Fixed Dollar Amount</label>
+                                        <input type="number" id="flat-amount" min="1" value="50" 
+                                               class="w-full p-2 border border-gray-300 rounded">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">OR Fixed Percentage of Bankroll</label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="number" id="flat-percentage" min="0.1" max="100" step="0.1" value="2.0" 
+                                                   class="w-20 p-2 border border-gray-300 rounded">
+                                            <span class="text-sm text-gray-600">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
                         <button onclick="calculateKellyOptimal()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors">
                             Calculate Optimal Bet
+                        </button>
+                        <button onclick="resetKellyCalculator()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors">
+                            Reset
                         </button>
                     </div>
                     
                     <div id="kelly-results" class="mt-6 hidden p-4 bg-gray-50 rounded-lg">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="text-center">
-                                <div class="text-sm font-semibold text-gray-600">Optimal Bet Size</div>
+                                <div class="text-sm font-semibold text-gray-600">Full Kelly Bet</div>
+                                <div id="kelly-full-amount" class="text-lg font-bold text-gray-800">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Recommended Bet</div>
                                 <div id="kelly-bet-amount" class="text-xl font-bold text-green-600">-</div>
                             </div>
                             <div class="text-center">
@@ -1271,6 +1339,9 @@
                                 <div class="text-sm font-semibold text-gray-600">Expected Growth</div>
                                 <div id="kelly-growth" class="text-xl font-bold text-purple-600">-</div>
                             </div>
+                        </div>
+                        <div id="kelly-strategy-info" class="mt-4 p-3 bg-blue-50 rounded text-sm text-blue-800">
+                            <!-- Strategy explanation will be shown here -->
                         </div>
                     </div>
                 </div>
@@ -1948,9 +2019,156 @@
             }
         }
         
+        // Predictive Analytics tab function
+        function showPredictiveTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.predictive-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.predictive-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const tabContent = document.getElementById(tabName + '-tab-content');
+            if (tabContent) {
+                tabContent.classList.remove('hidden');
+            }
+            
+            // Add active class to selected tab
+            const tabBtn = document.getElementById(tabName + '-tab');
+            if (tabBtn) {
+                tabBtn.classList.add('active');
+            }
+        }
+        
         // Make functions globally available
         window.showModal = showModal;
         window.closeModal = closeModal;
+        window.showPredictiveTab = showPredictiveTab;
+        window.toggleKellyOptions = toggleKellyOptions;
+        window.resetKellyCalculator = resetKellyCalculator;
+        
+        // Simple message function for Kelly calculator
+        window.showMessage = function(message, isError = false) {
+            alert(message);
+        };
+        
+        // Toggle between Kelly fraction and flat rate options
+        window.toggleKellyOptions = function() {
+            const strategyType = document.getElementById('kelly-strategy-type').value;
+            const kellyOptions = document.getElementById('kelly-fraction-options');
+            const flatOptions = document.getElementById('flat-rate-options');
+            
+            if (strategyType === 'kelly-fraction') {
+                kellyOptions.classList.remove('hidden');
+                flatOptions.classList.add('hidden');
+            } else {
+                kellyOptions.classList.add('hidden');
+                flatOptions.classList.remove('hidden');
+            }
+        };
+        
+        // Reset Kelly calculator to defaults
+        window.resetKellyCalculator = function() {
+            document.getElementById('kelly-win-prob').value = '55.0';
+            document.getElementById('kelly-odds').value = '2.00';
+            document.getElementById('kelly-bankroll').value = '1000';
+            document.getElementById('kelly-strategy-type').value = 'kelly-fraction';
+            document.getElementById('kelly-full').checked = true;
+            document.getElementById('kelly-custom-value').value = '0.75';
+            document.getElementById('flat-amount').value = '50';
+            document.getElementById('flat-percentage').value = '2.0';
+            const results = document.getElementById('kelly-results');
+            if (results) results.classList.add('hidden');
+            toggleKellyOptions();
+        };
+        
+        // Enhanced Kelly Criterion calculator
+        window.calculateKellyOptimal = function() {
+            const winProb = parseFloat(document.getElementById('kelly-win-prob').value) / 100;
+            const odds = parseFloat(document.getElementById('kelly-odds').value);
+            const bankroll = parseFloat(document.getElementById('kelly-bankroll').value);
+            
+            if (!winProb || !odds || !bankroll) {
+                showMessage('Please fill in all Kelly calculator fields', true);
+                return;
+            }
+            
+            // Kelly formula: f* = (bp - q) / b
+            // where b = odds-1, p = win probability, q = 1-p
+            const b = odds - 1;
+            const p = winProb;
+            const q = 1 - p;
+            const kellyFraction = (b * p - q) / b;
+            
+            // Calculate full Kelly bet
+            const fullKellyBet = Math.max(0, kellyFraction * bankroll);
+            const fullKellyPercentage = Math.max(0, kellyFraction * 100);
+            
+            // Get strategy type and calculate recommended bet
+            const strategyType = document.getElementById('kelly-strategy-type').value;
+            let recommendedBet, recommendedPercentage, strategyInfo;
+            
+            if (strategyType === 'kelly-fraction') {
+                // Get Kelly factor
+                let kellyFactor = 1.0;
+                const selectedFactor = document.querySelector('input[name="kelly-factor"]:checked');
+                
+                if (selectedFactor) {
+                    if (selectedFactor.value === 'custom') {
+                        kellyFactor = parseFloat(document.getElementById('kelly-custom-value').value) || 1.0;
+                    } else {
+                        kellyFactor = parseFloat(selectedFactor.value);
+                    }
+                }
+                
+                recommendedBet = fullKellyBet * kellyFactor;
+                recommendedPercentage = fullKellyPercentage * kellyFactor;
+                
+                if (kellyFactor === 1.0) {
+                    strategyInfo = 'Using Full Kelly: Maximum growth rate but higher volatility.';
+                } else if (kellyFactor === 0.5) {
+                    strategyInfo = 'Using Half Kelly: Reduced volatility with ~75% of full Kelly growth rate.';
+                } else if (kellyFactor === 0.25) {
+                    strategyInfo = 'Using Quarter Kelly: Conservative approach with low volatility.';
+                } else {
+                    strategyInfo = `Using ${kellyFactor}x Kelly: Custom factor balancing growth and risk.`;
+                }
+            } else {
+                // Flat rate strategy
+                const flatAmount = parseFloat(document.getElementById('flat-amount').value) || 50;
+                const flatPercentage = parseFloat(document.getElementById('flat-percentage').value) || 2.0;
+                
+                // Use the smaller of flat amount or percentage-based amount
+                const percentageAmount = bankroll * (flatPercentage / 100);
+                recommendedBet = Math.min(flatAmount, percentageAmount);
+                recommendedPercentage = (recommendedBet / bankroll) * 100;
+                
+                strategyInfo = `Flat Rate: Using fixed $${flatAmount} or ${flatPercentage}% of bankroll (whichever is smaller).`;
+            }
+            
+            // Calculate expected growth for recommended bet
+            const adjustedFraction = recommendedBet / bankroll;
+            const expectedGrowth = (p * Math.log(1 + b * adjustedFraction) + q * Math.log(1 - adjustedFraction)) * 100;
+            
+            // Display results
+            const fullAmountEl = document.getElementById('kelly-full-amount');
+            const betAmountEl = document.getElementById('kelly-bet-amount');
+            const percentageEl = document.getElementById('kelly-percentage');
+            const growthEl = document.getElementById('kelly-growth');
+            const infoEl = document.getElementById('kelly-strategy-info');
+            const resultsEl = document.getElementById('kelly-results');
+            
+            if (fullAmountEl) fullAmountEl.textContent = `$${fullKellyBet.toFixed(2)}`;
+            if (betAmountEl) betAmountEl.textContent = `$${recommendedBet.toFixed(2)}`;
+            if (percentageEl) percentageEl.textContent = `${recommendedPercentage.toFixed(2)}%`;
+            if (growthEl) growthEl.textContent = `${expectedGrowth.toFixed(2)}%`;
+            if (infoEl) infoEl.textContent = strategyInfo;
+            if (resultsEl) resultsEl.classList.remove('hidden');
+        };
         
         // Training Queue JavaScript Functions
         
@@ -2528,6 +2746,20 @@
             // Set up demo auth token for API access
             if (!localStorage.getItem('auth_token')) {
                 localStorage.setItem('auth_token', 'demo_token');
+            }
+            
+            // Set up Kelly calculator event listeners
+            const strategyTypeSelect = document.getElementById('kelly-strategy-type');
+            if (strategyTypeSelect) {
+                strategyTypeSelect.addEventListener('change', toggleKellyOptions);
+            }
+            
+            const kellyCustomInput = document.getElementById('kelly-custom-value');
+            if (kellyCustomInput) {
+                kellyCustomInput.addEventListener('change', function() {
+                    const customRadio = document.getElementById('kelly-custom');
+                    if (customRadio) customRadio.checked = true;
+                });
             }
             
             // Try to get real data first, fallback to demo if needed
