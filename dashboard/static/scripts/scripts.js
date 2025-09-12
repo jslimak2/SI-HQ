@@ -177,12 +177,22 @@ function hideLoading() {
 
 // Function to show a modal
 window.showModal = function(modalId) {
-    document.getElementById(modalId).style.display = 'flex';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.error(`Modal with id '${modalId}' not found`);
+    }
 };
 
 // Function to close a modal
 window.closeModal = function(modalId) {
-    document.getElementById(modalId).style.display = 'none';
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    } else {
+        console.error(`Modal with id '${modalId}' not found`);
+    }
 };
 
 // Add Escape key functionality for closing modals
@@ -800,9 +810,20 @@ window.showStrategyDetails = function(strategyId) {
         for (const key in strategy.parameters) {
             const param = strategy.parameters[key];
             const inputGroup = document.createElement('div');
+            
+            // Handle both old format (direct values) and new format (objects with type/value)
+            let paramValue, paramType;
+            if (typeof param === 'object' && param.hasOwnProperty('value')) {
+                paramValue = param.value;
+                paramType = param.type || 'number';
+            } else {
+                paramValue = param;
+                paramType = typeof param === 'number' ? 'number' : 'text';
+            }
+            
             inputGroup.innerHTML = `
-                <label for="param-${key}" class="block text-sm font-medium text-gray-700">${key.replace(/_/g, ' ')}</label>
-                <input type="${param.type}" id="param-${key}" name="${key}" value="${param.value}" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                <label for="param-${key}" class="block text-sm font-medium text-gray-700">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</label>
+                <input type="${paramType}" id="param-${key}" name="${key}" value="${paramValue}" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
             `;
             parametersContainer.appendChild(inputGroup);
         }
@@ -4266,6 +4287,8 @@ window.showPredictiveTab = showPredictiveTab;
 window.makePrediction = makePrediction;
 window.makePredictionWithModel = makePredictionWithModel;
 window.calculateKellyOptimal = calculateKellyOptimal;
+window.toggleKellyOptions = toggleKellyOptions;
+window.resetKellyCalculator = resetKellyCalculator;
 window.startModelTraining = startModelTraining;
 window.refreshPredictiveModels = refreshPredictiveModels;
 
