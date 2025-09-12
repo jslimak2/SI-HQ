@@ -10,6 +10,37 @@ from enum import Enum
 import uuid
 
 
+def detect_gpu_count_and_names():
+    """Detect the actual number of GPUs and their names"""
+    gpu_count = 0
+    gpu_names = []
+    
+    # Try PyTorch first
+    try:
+        import torch
+        if torch.cuda.is_available():
+            gpu_count = torch.cuda.device_count()
+            gpu_names = [torch.cuda.get_device_name(i) for i in range(gpu_count)]
+            if gpu_count > 0:
+                return gpu_count, gpu_names
+    except ImportError:
+        pass
+    
+    # Try TensorFlow if PyTorch fails
+    try:
+        import tensorflow as tf
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        gpu_count = len(gpus)
+        if gpu_count > 0:
+            gpu_names = [gpu.name.split('/')[-1] for gpu in gpus]
+            return gpu_count, gpu_names
+    except ImportError:
+        pass
+    
+    # Fallback: assume 1 CPU-only "GPU" for simulation
+    return 1, ["CPU (Simulated GPU)"]
+
+
 class TrainingStatus(Enum):
     QUEUED = "queued"
     RUNNING = "running"
@@ -67,8 +98,9 @@ class TrainingJob:
 class GPUResource:
     """Represents a GPU resource"""
     
-    def __init__(self, gpu_id: int, memory_gb: float = 8.0):
+    def __init__(self, gpu_id: int, memory_gb: float = 8.0, name: str = "Unknown GPU"):
         self.gpu_id = gpu_id
+        self.name = name
         self.memory_gb = memory_gb
         self.available = True
         self.current_job_id = None
@@ -78,6 +110,7 @@ class GPUResource:
     def to_dict(self) -> Dict[str, Any]:
         return {
             'gpu_id': self.gpu_id,
+            'name': self.name,
             'memory_gb': self.memory_gb,
             'available': self.available,
             'current_job_id': self.current_job_id,
@@ -89,15 +122,25 @@ class GPUResource:
 class TrainingQueueManager:
     """Manages the training queue and GPU resource allocation"""
     
-    def __init__(self, num_gpus: int = 2):
+    def __init__(self, num_gpus: int = None):
         self.jobs: Dict[str, TrainingJob] = {}
         self.queue: List[str] = []  # Job IDs in queue order
         self.running_jobs: Dict[str, str] = {}  # job_id -> gpu_id mapping
         
-        # Initialize GPU resources
+        # Detect actual GPU count and names if not specified
+        if num_gpus is None:
+            actual_gpu_count, gpu_names = detect_gpu_count_and_names()
+            num_gpus = actual_gpu_count
+        else:
+            # If num_gpus is specified, generate generic names
+            gpu_names = [f"GPU {i}" for i in range(num_gpus)]
+        
+        # Initialize GPU resources with actual detected GPUs
         self.gpus: Dict[int, GPUResource] = {}
         for i in range(num_gpus):
-            self.gpus[i] = GPUResource(i, memory_gb=8.0 if i == 0 else 6.0)
+            gpu_name = gpu_names[i] if i < len(gpu_names) else f"GPU {i}"
+            memory_gb = 8.0 if i == 0 else 6.0  # Keep existing memory logic
+            self.gpus[i] = GPUResource(i, memory_gb=memory_gb, name=gpu_name)
         
         self.max_concurrent_jobs = num_gpus
         self._running = True
@@ -319,4 +362,4 @@ class TrainingQueueManager:
 
 
 # Global training queue manager instance
-training_queue = TrainingQueueManager(num_gpus=2)
+training_queue = TrainingQueueManager()  # Auto-detect GPU count

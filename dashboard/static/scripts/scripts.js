@@ -4130,16 +4130,93 @@ function calculateKellyOptimal() {
     const q = 1 - p;
     const kellyFraction = (b * p - q) / b;
     
-    const optimalBet = Math.max(0, kellyFraction * bankroll);
-    const percentage = Math.max(0, kellyFraction * 100);
-    const expectedGrowth = (p * Math.log(1 + b * kellyFraction) + q * Math.log(1 - kellyFraction)) * 100;
+    // Calculate full Kelly bet
+    const fullKellyBet = Math.max(0, kellyFraction * bankroll);
+    const fullKellyPercentage = Math.max(0, kellyFraction * 100);
+    
+    // Get strategy type and calculate recommended bet
+    const strategyType = document.getElementById('kelly-strategy-type').value;
+    let recommendedBet, recommendedPercentage, strategyInfo;
+    
+    if (strategyType === 'kelly-fraction') {
+        // Get Kelly factor
+        let kellyFactor = 1.0;
+        const selectedFactor = document.querySelector('input[name="kelly-factor"]:checked');
+        
+        if (selectedFactor) {
+            if (selectedFactor.value === 'custom') {
+                kellyFactor = parseFloat(document.getElementById('kelly-custom-value').value) || 1.0;
+            } else {
+                kellyFactor = parseFloat(selectedFactor.value);
+            }
+        }
+        
+        recommendedBet = fullKellyBet * kellyFactor;
+        recommendedPercentage = fullKellyPercentage * kellyFactor;
+        
+        if (kellyFactor === 1.0) {
+            strategyInfo = 'Using Full Kelly: Maximum growth rate but higher volatility.';
+        } else if (kellyFactor === 0.5) {
+            strategyInfo = 'Using Half Kelly: Reduced volatility with ~75% of full Kelly growth rate.';
+        } else if (kellyFactor === 0.25) {
+            strategyInfo = 'Using Quarter Kelly: Conservative approach with low volatility.';
+        } else {
+            strategyInfo = `Using ${kellyFactor}x Kelly: Custom factor balancing growth and risk.`;
+        }
+    } else {
+        // Flat rate strategy
+        const flatAmount = parseFloat(document.getElementById('flat-amount').value) || 50;
+        const flatPercentage = parseFloat(document.getElementById('flat-percentage').value) || 2.0;
+        
+        // Use the smaller of flat amount or percentage-based amount
+        const percentageAmount = bankroll * (flatPercentage / 100);
+        recommendedBet = Math.min(flatAmount, percentageAmount);
+        recommendedPercentage = (recommendedBet / bankroll) * 100;
+        
+        strategyInfo = `Flat Rate: Using fixed $${flatAmount} or ${flatPercentage}% of bankroll (whichever is smaller).`;
+    }
+    
+    // Calculate expected growth for recommended bet
+    const adjustedFraction = recommendedBet / bankroll;
+    const expectedGrowth = (p * Math.log(1 + b * adjustedFraction) + q * Math.log(1 - adjustedFraction)) * 100;
     
     // Display results
-    document.getElementById('kelly-bet-amount').textContent = `$${optimalBet.toFixed(2)}`;
-    document.getElementById('kelly-percentage').textContent = `${percentage.toFixed(2)}%`;
+    document.getElementById('kelly-full-amount').textContent = `$${fullKellyBet.toFixed(2)}`;
+    document.getElementById('kelly-bet-amount').textContent = `$${recommendedBet.toFixed(2)}`;
+    document.getElementById('kelly-percentage').textContent = `${recommendedPercentage.toFixed(2)}%`;
     document.getElementById('kelly-growth').textContent = `${expectedGrowth.toFixed(2)}%`;
+    document.getElementById('kelly-strategy-info').textContent = strategyInfo;
     
     document.getElementById('kelly-results').classList.remove('hidden');
+}
+
+// Toggle between Kelly fraction and flat rate options
+function toggleKellyOptions() {
+    const strategyType = document.getElementById('kelly-strategy-type').value;
+    const kellyOptions = document.getElementById('kelly-fraction-options');
+    const flatOptions = document.getElementById('flat-rate-options');
+    
+    if (strategyType === 'kelly-fraction') {
+        kellyOptions.classList.remove('hidden');
+        flatOptions.classList.add('hidden');
+    } else {
+        kellyOptions.classList.add('hidden');
+        flatOptions.classList.remove('hidden');
+    }
+}
+
+// Reset Kelly calculator to defaults
+function resetKellyCalculator() {
+    document.getElementById('kelly-win-prob').value = '55.0';
+    document.getElementById('kelly-odds').value = '2.00';
+    document.getElementById('kelly-bankroll').value = '1000';
+    document.getElementById('kelly-strategy-type').value = 'kelly-fraction';
+    document.getElementById('kelly-full').checked = true;
+    document.getElementById('kelly-custom-value').value = '0.75';
+    document.getElementById('flat-amount').value = '50';
+    document.getElementById('flat-percentage').value = '2.0';
+    document.getElementById('kelly-results').classList.add('hidden');
+    toggleKellyOptions();
 }
 
 // Start model training

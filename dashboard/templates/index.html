@@ -316,7 +316,7 @@
                 <span class="post9-title">Post<span class="post9-accent">9</span></span>
             </div>
             <div class="post9-tagline">Stop Betting. Start Investing.</div>
-            <p class="text-xl text-gray-300 mt-2">Professional Analytics & Bot Management</p>
+            <p class="text-xl text-gray-300 mt-2">Professional Analytics & Automated Investor Management</p>
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
         <div id="dashboard-page">
@@ -341,13 +341,13 @@
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🚀</span>
-                        <span class="stats-label">Best Bot</span>
+                        <span class="stats-label">Best Investor</span>
                         <span id="best-bot-name" class="stats-value">-</span>
                         <span id="best-bot-profit" class="stats-trend"></span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">⚠️</span>
-                        <span class="stats-label">Worst Bot</span>
+                        <span class="stats-label">Worst Investor</span>
                         <span id="worst-bot-name" class="stats-value">-</span>
                         <span id="worst-bot-profit" class="stats-trend negative"></span>
                     </div>
@@ -367,16 +367,16 @@
                 <div id="stats-breakdown-inline"></div>
             </section>
             <section class="table-container mb-12 post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Active Bots</h2>
+                <h2 class="text-2xl font-bold mb-4 text-white">Active Investors</h2>
                 <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
+                    <p id="active-bots-loading" class="text-center text-gray-500">Loading active investors...</p>
                 </div>
             </section>
             <section class="table-container mb-12 post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Bot Manager</h2>
-                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Bot</button>
+                <h2 class="text-2xl font-bold mb-4 text-white">Investor Manager</h2>
+                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Investor</button>
                 <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
+                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive investors...</p>
                 </div>
             </section>
             <section class="table-container post9-card">
@@ -420,13 +420,13 @@
                 </div>
             </section>
         </div>
-        <!-- Add Bot Modal -->
+        <!-- Add Investor Modal -->
         <div id="add-bot-modal" class="modal">
             <div class="modal-content post9-card">
                 <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
-                <h3 class="text-xl font-bold mb-4 text-white">Add Bot</h3>
+                <h3 class="text-xl font-bold mb-4 text-white">Add Automated Investor</h3>
                 <form id="add-bot-form" class="flex flex-col gap-4">
-                    <input type="text" name="name" placeholder="Bot Name" required>
+                    <input type="text" name="name" placeholder="Investor Name" required>
                     
                     <!-- Step 1: Model Selection (Primary) -->
                     <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
@@ -474,7 +474,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Bot</button>
+                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Investor</button>
                 </form>
             </div>
         </div>
@@ -1231,9 +1231,10 @@
             <div id="optimizer-tab-content" class="predictive-tab-content hidden">
                 <div class="bg-white p-6 rounded-lg shadow">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Kelly Criterion Optimizer</h3>
-                    <p class="text-gray-600 mb-4">Calculate optimal bet sizes using the Kelly Criterion for risk management.</p>
+                    <p class="text-gray-600 mb-4">Calculate optimal bet sizes using the Kelly Criterion for risk management with advanced scaling options.</p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Basic Kelly Inputs -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Win Probability (%)</label>
                             <input type="number" id="kelly-win-prob" class="w-full p-2 border border-gray-300 rounded" 
@@ -1251,16 +1252,83 @@
                         </div>
                     </div>
                     
-                    <div class="mt-6">
+                    <!-- Kelly Factor & Betting Strategy -->
+                    <div class="border-t pt-6 mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Betting Strategy</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Strategy Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Strategy Type</label>
+                                <select id="kelly-strategy-type" class="w-full p-2 border border-gray-300 rounded">
+                                    <option value="kelly-fraction">Kelly Fraction</option>
+                                    <option value="flat-rate">Flat Rate</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Kelly Fraction Options -->
+                            <div id="kelly-fraction-options">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Kelly Factor</label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-full" name="kelly-factor" value="1.0" checked class="text-blue-600">
+                                        <label for="kelly-full" class="text-sm">Full Kelly (1.0x)</label>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-half" name="kelly-factor" value="0.5" class="text-blue-600">
+                                        <label for="kelly-half" class="text-sm">Half Kelly (0.5x)</label>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-quarter" name="kelly-factor" value="0.25" class="text-blue-600">
+                                        <label for="kelly-quarter" class="text-sm">Quarter Kelly (0.25x)</label>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <input type="radio" id="kelly-custom" name="kelly-factor" value="custom" class="text-blue-600">
+                                        <label for="kelly-custom" class="text-sm">Custom:</label>
+                                        <input type="number" id="kelly-custom-value" step="0.1" min="0.1" max="2.0" value="0.75" 
+                                               class="w-20 p-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Flat Rate Options -->
+                            <div id="flat-rate-options" class="hidden">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Flat Rate Amount</label>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">Fixed Dollar Amount</label>
+                                        <input type="number" id="flat-amount" min="1" value="50" 
+                                               class="w-full p-2 border border-gray-300 rounded">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">OR Fixed Percentage of Bankroll</label>
+                                        <div class="flex items-center space-x-2">
+                                            <input type="number" id="flat-percentage" min="0.1" max="100" step="0.1" value="2.0" 
+                                                   class="w-20 p-2 border border-gray-300 rounded">
+                                            <span class="text-sm text-gray-600">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
                         <button onclick="calculateKellyOptimal()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors">
                             Calculate Optimal Bet
+                        </button>
+                        <button onclick="resetKellyCalculator()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors">
+                            Reset
                         </button>
                     </div>
                     
                     <div id="kelly-results" class="mt-6 hidden p-4 bg-gray-50 rounded-lg">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="text-center">
-                                <div class="text-sm font-semibold text-gray-600">Optimal Bet Size</div>
+                                <div class="text-sm font-semibold text-gray-600">Full Kelly Bet</div>
+                                <div id="kelly-full-amount" class="text-lg font-bold text-gray-800">-</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm font-semibold text-gray-600">Recommended Bet</div>
                                 <div id="kelly-bet-amount" class="text-xl font-bold text-green-600">-</div>
                             </div>
                             <div class="text-center">
@@ -1271,6 +1339,9 @@
                                 <div class="text-sm font-semibold text-gray-600">Expected Growth</div>
                                 <div id="kelly-growth" class="text-xl font-bold text-purple-600">-</div>
                             </div>
+                        </div>
+                        <div id="kelly-strategy-info" class="mt-4 p-3 bg-blue-50 rounded text-sm text-blue-800">
+                            <!-- Strategy explanation will be shown here -->
                         </div>
                     </div>
                 </div>
@@ -1322,7 +1393,7 @@
     <div id="bot-details-modal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="window.closeModal('bot-details-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Edit Bot: <span id="modal-bot-name"></span></h2>
+            <h2 class="text-2xl font-bold mb-4">Edit Investor: <span id="modal-bot-name"></span></h2>
             <form id="edit-bot-form" class="space-y-4">
                 <input type="hidden" id="modal-bot-id">
                 <div>
@@ -1428,7 +1499,7 @@
     <div id="bot-log-modal" class="modal">
         <div class="modal-content max-w-2xl">
             <span class="modal-close" onclick="window.closeModal('bot-log-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Bot Log for <span id="log-bot-name"></span></h2>
+            <h2 class="text-2xl font-bold mb-4">Investor Log for <span id="log-bot-name"></span></h2>
             <div class="overflow-y-auto max-h-96 bg-gray-100 p-4 rounded-md text-sm font-mono whitespace-pre-wrap">
                 <pre id="bot-log-content"></pre>
             </div>
@@ -1877,13 +1948,25 @@
         </div>
     </div>
     
+    <!-- Job Details Modal -->
+    <div id="job-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('job-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Training Job Details</h3>
+            
+            <div id="job-details-content" class="space-y-6">
+                <!-- Job details will be populated here -->
+            </div>
+        </div>
+    </div>
+    
     <!-- Professional Footer -->
     <footer class="mt-16 bg-gray-900 text-gray-300 py-8">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <h3 class="text-xl font-bold mb-4 text-white">Post9</h3>
-                    <p class="text-sm">Sports Investment Headquarters - Professional analytics and bot management for serious sports investors.</p>
+                    <p class="text-sm">Sports Investment Headquarters - Professional analytics and automated investor management for serious sports investors.</p>
                 </div>
                 <div>
                     <h4 class="font-semibold mb-3 text-white">Platform</h4>
@@ -1921,6 +2004,172 @@
     </footer>
     
     <script>
+        // Modal functions
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+        
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Predictive Analytics tab function
+        function showPredictiveTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.predictive-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.predictive-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const tabContent = document.getElementById(tabName + '-tab-content');
+            if (tabContent) {
+                tabContent.classList.remove('hidden');
+            }
+            
+            // Add active class to selected tab
+            const tabBtn = document.getElementById(tabName + '-tab');
+            if (tabBtn) {
+                tabBtn.classList.add('active');
+            }
+        }
+        
+        // Make functions globally available
+        window.showModal = showModal;
+        window.closeModal = closeModal;
+        window.showPredictiveTab = showPredictiveTab;
+        window.toggleKellyOptions = toggleKellyOptions;
+        window.resetKellyCalculator = resetKellyCalculator;
+        
+        // Simple message function for Kelly calculator
+        window.showMessage = function(message, isError = false) {
+            alert(message);
+        };
+        
+        // Toggle between Kelly fraction and flat rate options
+        window.toggleKellyOptions = function() {
+            const strategyType = document.getElementById('kelly-strategy-type').value;
+            const kellyOptions = document.getElementById('kelly-fraction-options');
+            const flatOptions = document.getElementById('flat-rate-options');
+            
+            if (strategyType === 'kelly-fraction') {
+                kellyOptions.classList.remove('hidden');
+                flatOptions.classList.add('hidden');
+            } else {
+                kellyOptions.classList.add('hidden');
+                flatOptions.classList.remove('hidden');
+            }
+        };
+        
+        // Reset Kelly calculator to defaults
+        window.resetKellyCalculator = function() {
+            document.getElementById('kelly-win-prob').value = '55.0';
+            document.getElementById('kelly-odds').value = '2.00';
+            document.getElementById('kelly-bankroll').value = '1000';
+            document.getElementById('kelly-strategy-type').value = 'kelly-fraction';
+            document.getElementById('kelly-full').checked = true;
+            document.getElementById('kelly-custom-value').value = '0.75';
+            document.getElementById('flat-amount').value = '50';
+            document.getElementById('flat-percentage').value = '2.0';
+            const results = document.getElementById('kelly-results');
+            if (results) results.classList.add('hidden');
+            toggleKellyOptions();
+        };
+        
+        // Enhanced Kelly Criterion calculator
+        window.calculateKellyOptimal = function() {
+            const winProb = parseFloat(document.getElementById('kelly-win-prob').value) / 100;
+            const odds = parseFloat(document.getElementById('kelly-odds').value);
+            const bankroll = parseFloat(document.getElementById('kelly-bankroll').value);
+            
+            if (!winProb || !odds || !bankroll) {
+                showMessage('Please fill in all Kelly calculator fields', true);
+                return;
+            }
+            
+            // Kelly formula: f* = (bp - q) / b
+            // where b = odds-1, p = win probability, q = 1-p
+            const b = odds - 1;
+            const p = winProb;
+            const q = 1 - p;
+            const kellyFraction = (b * p - q) / b;
+            
+            // Calculate full Kelly bet
+            const fullKellyBet = Math.max(0, kellyFraction * bankroll);
+            const fullKellyPercentage = Math.max(0, kellyFraction * 100);
+            
+            // Get strategy type and calculate recommended bet
+            const strategyType = document.getElementById('kelly-strategy-type').value;
+            let recommendedBet, recommendedPercentage, strategyInfo;
+            
+            if (strategyType === 'kelly-fraction') {
+                // Get Kelly factor
+                let kellyFactor = 1.0;
+                const selectedFactor = document.querySelector('input[name="kelly-factor"]:checked');
+                
+                if (selectedFactor) {
+                    if (selectedFactor.value === 'custom') {
+                        kellyFactor = parseFloat(document.getElementById('kelly-custom-value').value) || 1.0;
+                    } else {
+                        kellyFactor = parseFloat(selectedFactor.value);
+                    }
+                }
+                
+                recommendedBet = fullKellyBet * kellyFactor;
+                recommendedPercentage = fullKellyPercentage * kellyFactor;
+                
+                if (kellyFactor === 1.0) {
+                    strategyInfo = 'Using Full Kelly: Maximum growth rate but higher volatility.';
+                } else if (kellyFactor === 0.5) {
+                    strategyInfo = 'Using Half Kelly: Reduced volatility with ~75% of full Kelly growth rate.';
+                } else if (kellyFactor === 0.25) {
+                    strategyInfo = 'Using Quarter Kelly: Conservative approach with low volatility.';
+                } else {
+                    strategyInfo = `Using ${kellyFactor}x Kelly: Custom factor balancing growth and risk.`;
+                }
+            } else {
+                // Flat rate strategy
+                const flatAmount = parseFloat(document.getElementById('flat-amount').value) || 50;
+                const flatPercentage = parseFloat(document.getElementById('flat-percentage').value) || 2.0;
+                
+                // Use the smaller of flat amount or percentage-based amount
+                const percentageAmount = bankroll * (flatPercentage / 100);
+                recommendedBet = Math.min(flatAmount, percentageAmount);
+                recommendedPercentage = (recommendedBet / bankroll) * 100;
+                
+                strategyInfo = `Flat Rate: Using fixed $${flatAmount} or ${flatPercentage}% of bankroll (whichever is smaller).`;
+            }
+            
+            // Calculate expected growth for recommended bet
+            const adjustedFraction = recommendedBet / bankroll;
+            const expectedGrowth = (p * Math.log(1 + b * adjustedFraction) + q * Math.log(1 - adjustedFraction)) * 100;
+            
+            // Display results
+            const fullAmountEl = document.getElementById('kelly-full-amount');
+            const betAmountEl = document.getElementById('kelly-bet-amount');
+            const percentageEl = document.getElementById('kelly-percentage');
+            const growthEl = document.getElementById('kelly-growth');
+            const infoEl = document.getElementById('kelly-strategy-info');
+            const resultsEl = document.getElementById('kelly-results');
+            
+            if (fullAmountEl) fullAmountEl.textContent = `$${fullKellyBet.toFixed(2)}`;
+            if (betAmountEl) betAmountEl.textContent = `$${recommendedBet.toFixed(2)}`;
+            if (percentageEl) percentageEl.textContent = `${recommendedPercentage.toFixed(2)}%`;
+            if (growthEl) growthEl.textContent = `${expectedGrowth.toFixed(2)}%`;
+            if (infoEl) infoEl.textContent = strategyInfo;
+            if (resultsEl) resultsEl.classList.remove('hidden');
+        };
+        
         // Training Queue JavaScript Functions
         
         // Global variables for training queue
@@ -2214,7 +2463,10 @@
             container.innerHTML = trainingQueueData.gpu_resources.map(gpu => `
                 <div class="training-job-card ${gpu.available ? 'available' : 'busy'}">
                     <div class="flex justify-between items-start mb-4">
-                        <h4 class="text-lg font-semibold text-white">GPU ${gpu.gpu_id}</h4>
+                        <div>
+                            <h4 class="text-lg font-semibold text-white">GPU ${gpu.gpu_id}</h4>
+                            <p class="text-sm text-gray-300">${gpu.name || 'Unknown GPU'}</p>
+                        </div>
                         <span class="px-2 py-1 ${gpu.available ? 'bg-green-500' : 'bg-red-500'} text-white text-xs rounded">
                             ${gpu.available ? 'Available' : 'Busy'}
                         </span>
@@ -2330,9 +2582,149 @@
             }
         }
         
-        function viewJobDetails(jobId) {
-            // For now, just show an alert. In real implementation, would open a detailed modal
-            alert(`Viewing details for job: ${jobId}`);
+        async function viewJobDetails(jobId) {
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                const headers = {};
+                
+                // Only add Authorization header if we have a real auth token
+                if (authToken && authToken !== 'demo_token') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                const response = await fetch(`/api/training/job/${jobId}`, { headers });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const job = data.job;
+                    
+                    // Populate job details modal
+                    const content = document.getElementById('job-details-content');
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Job Information -->
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-white">Job Information</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Job ID:</span>
+                                        <span class="text-white font-mono">${job.job_id}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Model ID:</span>
+                                        <span class="text-white">${job.model_id}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Model Type:</span>
+                                        <span class="text-white">${job.model_type}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Sport:</span>
+                                        <span class="text-white">${job.sport}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Status:</span>
+                                        <span class="px-2 py-1 rounded text-xs ${getStatusColor(job.status)}">${job.status}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Progress:</span>
+                                        <span class="text-white">${job.progress}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Training Configuration -->
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-white">Training Configuration</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Epochs:</span>
+                                        <span class="text-white">${job.current_epoch || 0} / ${job.total_epochs}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Batch Size:</span>
+                                        <span class="text-white">${job.training_config?.batch_size || 'N/A'}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Learning Rate:</span>
+                                        <span class="text-white">${job.training_config?.learning_rate || 'N/A'}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">GPU ID:</span>
+                                        <span class="text-white">${job.gpu_id !== null ? job.gpu_id : 'Not assigned'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timestamps -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-white">Timeline</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-300">Created:</span>
+                                    <div class="text-white">${new Date(job.created_at).toLocaleString()}</div>
+                                </div>
+                                ${job.started_at ? `
+                                <div>
+                                    <span class="text-gray-300">Started:</span>
+                                    <div class="text-white">${new Date(job.started_at).toLocaleString()}</div>
+                                </div>
+                                ` : ''}
+                                ${job.completed_at ? `
+                                <div>
+                                    <span class="text-gray-300">Completed:</span>
+                                    <div class="text-white">${new Date(job.completed_at).toLocaleString()}</div>
+                                </div>
+                                ` : ''}
+                                ${job.estimated_completion ? `
+                                <div>
+                                    <span class="text-gray-300">Estimated Completion:</span>
+                                    <div class="text-white">${new Date(job.estimated_completion).toLocaleString()}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Training Logs -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-white">Training Logs</h4>
+                            <div class="bg-gray-900 p-4 rounded-lg max-h-60 overflow-y-auto">
+                                <pre class="text-sm text-gray-300 whitespace-pre-wrap">${job.logs ? job.logs.join('\\n') : 'No logs available'}</pre>
+                            </div>
+                        </div>
+                        
+                        ${job.error_message ? `
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-red-400">Error Information</h4>
+                            <div class="bg-red-900 bg-opacity-20 border border-red-500 p-4 rounded-lg">
+                                <pre class="text-sm text-red-300 whitespace-pre-wrap">${job.error_message}</pre>
+                            </div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    // Show the modal
+                    showModal('job-details-modal');
+                } else {
+                    console.error('Failed to fetch job details');
+                    alert('Failed to load job details. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error fetching job details:', error);
+                alert('Error loading job details. Please try again.');
+            }
+        }
+        
+        function getStatusColor(status) {
+            switch(status) {
+                case 'running': return 'bg-blue-500 text-white';
+                case 'completed': return 'bg-green-500 text-white';
+                case 'failed': return 'bg-red-500 text-white';
+                case 'cancelled': return 'bg-gray-500 text-white';
+                case 'queued': return 'bg-yellow-500 text-black';
+                default: return 'bg-gray-500 text-white';
+            }
         }
         
         function deployModel(modelId) {
@@ -2351,9 +2743,31 @@
                 });
             }
             
-            // Initialize with demo data
-            generateDemoTrainingData();
-            updateTrainingQueueUI();
+            // Set up demo auth token for API access
+            if (!localStorage.getItem('auth_token')) {
+                localStorage.setItem('auth_token', 'demo_token');
+            }
+            
+            // Set up Kelly calculator event listeners
+            const strategyTypeSelect = document.getElementById('kelly-strategy-type');
+            if (strategyTypeSelect) {
+                strategyTypeSelect.addEventListener('change', toggleKellyOptions);
+            }
+            
+            const kellyCustomInput = document.getElementById('kelly-custom-value');
+            if (kellyCustomInput) {
+                kellyCustomInput.addEventListener('change', function() {
+                    const customRadio = document.getElementById('kelly-custom');
+                    if (customRadio) customRadio.checked = true;
+                });
+            }
+            
+            // Try to get real data first, fallback to demo if needed
+            refreshTrainingQueue().catch(() => {
+                console.log('Failed to fetch real data, using demo data');
+                generateDemoTrainingData();
+                updateTrainingQueueUI();
+            });
             
             // Auto-refresh every 30 seconds
             setInterval(refreshTrainingQueue, 30000);
