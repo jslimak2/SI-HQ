@@ -154,10 +154,75 @@
         .predictive-tab-content.hidden {
             display: none;
         }
+        
+        /* Training Queue Styles */
+        .training-tab-btn {
+            background: transparent;
+            color: #9CA3AF;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .training-tab-btn.active, .training-tab-btn:hover {
+            background: #374151;
+            color: #fff;
+        }
+        
+        .training-tab-content {
+            background: rgba(255,255,255,0.05);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+        
+        .training-job-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border-left: 4px solid #10B981;
+            transition: transform 0.2s;
+        }
+        
+        .training-job-card:hover {
+            transform: translateX(4px);
+        }
+        
+        .training-job-card.running {
+            border-left-color: #3B82F6;
+        }
+        
+        .training-job-card.completed {
+            border-left-color: #10B981;
+        }
+        
+        .training-job-card.failed {
+            border-left-color: #EF4444;
+        }
+        
+        .training-job-card.queued {
+            border-left-color: #F59E0B;
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            height: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #10B981, #34D399);
+            height: 100%;
+            border-radius: 1rem;
+            transition: width 0.3s;
+        }
     </style>
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'predictive-analytics-page', 'analytics-page', 'account-page'];
+            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'training-queue-page', 'predictive-analytics-page', 'analytics-page', 'account-page'];
             pages.forEach(id => {
                 const pageElement = document.getElementById(id);
                 if (pageElement) {
@@ -186,6 +251,7 @@
         <button onclick="showPage('investments-page')" class="nav-btn">Available Investments</button>
         <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button>
         <button onclick="showPage('model-gallery-page')" class="nav-btn">Model Gallery</button>
+        <button onclick="showPage('training-queue-page')" class="nav-btn">🔥 Training Queue</button>
         <button onclick="showPage('predictive-analytics-page')" class="nav-btn">🔮 Predictive Analytics</button>
         <button onclick="showPage('analytics-page')" class="nav-btn">Advanced Analytics</button>
         <a href="/scores" class="nav-btn">🏆 Scores & Standings</a>
@@ -725,6 +791,79 @@
             <!-- Model Grid -->
             <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Models will be populated here -->
+            </div>
+        </div>
+
+        <!-- Training Queue Page -->
+        <div id="training-queue-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">🔥 Training Queue & GPU Resources</h2>
+                <div class="flex gap-3">
+                    <button onclick="refreshTrainingQueue()" class="post9-btn px-4 py-2">🔄 Refresh</button>
+                    <button onclick="showModal('submit-training-modal')" class="post9-btn px-4 py-2">🚀 Submit Training Job</button>
+                </div>
+            </div>
+
+            <!-- GPU Resource Status -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div class="bg-gradient-to-br from-green-500 to-green-700 p-4 rounded-lg text-white">
+                    <div class="text-2xl font-bold" id="available-gpus">2</div>
+                    <div class="text-sm opacity-90">Available GPUs</div>
+                    <div class="text-xs opacity-75">Ready for training</div>
+                </div>
+                <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg text-white">
+                    <div class="text-2xl font-bold" id="gpu-utilization">85%</div>
+                    <div class="text-sm opacity-90">GPU Utilization</div>
+                    <div class="text-xs opacity-75">Average across all GPUs</div>
+                </div>
+                <div class="bg-gradient-to-br from-orange-500 to-orange-700 p-4 rounded-lg text-white">
+                    <div class="text-2xl font-bold" id="active-training-jobs">3</div>
+                    <div class="text-sm opacity-90">Active Jobs</div>
+                    <div class="text-xs opacity-75">Currently training</div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-4 rounded-lg text-white">
+                    <div class="text-2xl font-bold" id="queued-jobs">5</div>
+                    <div class="text-sm opacity-90">Queued Jobs</div>
+                    <div class="text-xs opacity-75">Waiting to start</div>
+                </div>
+            </div>
+
+            <!-- Training Queue Tabs -->
+            <div class="mb-6">
+                <nav class="flex space-x-1 bg-gray-800 rounded-lg p-1">
+                    <button onclick="showTrainingTab('active')" id="active-tab" class="training-tab-btn active">Active Jobs</button>
+                    <button onclick="showTrainingTab('queued')" id="queued-tab" class="training-tab-btn">Queue</button>
+                    <button onclick="showTrainingTab('completed')" id="completed-tab" class="training-tab-btn">Completed</button>
+                    <button onclick="showTrainingTab('gpu-stats')" id="gpu-stats-tab" class="training-tab-btn">GPU Stats</button>
+                </nav>
+            </div>
+
+            <!-- Active Training Jobs -->
+            <div id="active-training-tab" class="training-tab-content">
+                <div class="space-y-4" id="active-jobs-container">
+                    <!-- Active jobs will be populated here -->
+                </div>
+            </div>
+
+            <!-- Queued Jobs -->
+            <div id="queued-training-tab" class="training-tab-content" style="display: none;">
+                <div class="space-y-4" id="queued-jobs-container">
+                    <!-- Queued jobs will be populated here -->
+                </div>
+            </div>
+
+            <!-- Completed Jobs -->
+            <div id="completed-training-tab" class="training-tab-content" style="display: none;">
+                <div class="space-y-4" id="completed-jobs-container">
+                    <!-- Completed jobs will be populated here -->
+                </div>
+            </div>
+
+            <!-- GPU Statistics -->
+            <div id="gpu-stats-training-tab" class="training-tab-content" style="display: none;">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="gpu-stats-container">
+                    <!-- GPU stats will be populated here -->
+                </div>
             </div>
         </div>
 
@@ -1508,6 +1647,95 @@
                     </button>
                     <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                         Start Training
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Submit Training Job Modal -->
+    <div id="submit-training-modal" class="modal">
+        <div class="modal-content post9-card max-w-2xl">
+            <span class="modal-close" onclick="closeModal('submit-training-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">🚀 Submit Training Job</h3>
+            
+            <form id="submit-training-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Sport</label>
+                        <select name="sport" required class="w-full p-3 border border-gray-300 rounded-lg">
+                            <option value="">Select Sport</option>
+                            <option value="NBA">NBA</option>
+                            <option value="NFL">NFL</option>
+                            <option value="MLB">MLB</option>
+                            <option value="NCAAF">NCAAF</option>
+                            <option value="NCAAB">NCAAB</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Model Type</label>
+                        <select name="model_type" required class="w-full p-3 border border-gray-300 rounded-lg">
+                            <option value="">Select Model Type</option>
+                            <option value="lstm_weather">LSTM + Weather</option>
+                            <option value="ensemble">Ensemble</option>
+                            <option value="neural">Neural Network</option>
+                            <option value="statistical">Statistical</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-white mb-2">Model Name</label>
+                    <input type="text" name="model_id" required 
+                           placeholder="e.g., nba_ensemble_v2" 
+                           class="w-full p-3 border border-gray-300 rounded-lg">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Epochs</label>
+                        <input type="number" name="epochs" value="50" min="10" max="200" 
+                               class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Batch Size</label>
+                        <select name="batch_size" class="w-full p-3 border border-gray-300 rounded-lg">
+                            <option value="16">16</option>
+                            <option value="32" selected>32</option>
+                            <option value="64">64</option>
+                            <option value="128">128</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-white mb-2">Learning Rate</label>
+                        <select name="learning_rate" class="w-full p-3 border border-gray-300 rounded-lg">
+                            <option value="0.0001">0.0001</option>
+                            <option value="0.001" selected>0.001</option>
+                            <option value="0.01">0.01</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-800 mb-2">Training Information</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Estimated training time: 15-45 minutes depending on model complexity</li>
+                        <li>• Jobs are queued and processed based on GPU availability</li>
+                        <li>• You'll receive notifications when training completes</li>
+                        <li>• Model performance metrics will be automatically tracked</li>
+                    </ul>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="flex-1 post9-btn py-3">
+                        🚀 Submit Training Job
+                    </button>
+                    <button type="button" onclick="closeModal('submit-training-modal')" 
+                            class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                        Cancel
                     </button>
                 </div>
             </form>
