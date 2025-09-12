@@ -1877,6 +1877,18 @@
         </div>
     </div>
     
+    <!-- Job Details Modal -->
+    <div id="job-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('job-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Training Job Details</h3>
+            
+            <div id="job-details-content" class="space-y-6">
+                <!-- Job details will be populated here -->
+            </div>
+        </div>
+    </div>
+    
     <!-- Professional Footer -->
     <footer class="mt-16 bg-gray-900 text-gray-300 py-8">
         <div class="container mx-auto px-4">
@@ -2214,7 +2226,10 @@
             container.innerHTML = trainingQueueData.gpu_resources.map(gpu => `
                 <div class="training-job-card ${gpu.available ? 'available' : 'busy'}">
                     <div class="flex justify-between items-start mb-4">
-                        <h4 class="text-lg font-semibold text-white">GPU ${gpu.gpu_id}</h4>
+                        <div>
+                            <h4 class="text-lg font-semibold text-white">GPU ${gpu.gpu_id}</h4>
+                            <p class="text-sm text-gray-300">${gpu.name || 'Unknown GPU'}</p>
+                        </div>
                         <span class="px-2 py-1 ${gpu.available ? 'bg-green-500' : 'bg-red-500'} text-white text-xs rounded">
                             ${gpu.available ? 'Available' : 'Busy'}
                         </span>
@@ -2330,9 +2345,149 @@
             }
         }
         
-        function viewJobDetails(jobId) {
-            // For now, just show an alert. In real implementation, would open a detailed modal
-            alert(`Viewing details for job: ${jobId}`);
+        async function viewJobDetails(jobId) {
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                const headers = {};
+                
+                // Only add Authorization header if we have a real auth token
+                if (authToken && authToken !== 'demo_token') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                const response = await fetch(`/api/training/job/${jobId}`, { headers });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const job = data.job;
+                    
+                    // Populate job details modal
+                    const content = document.getElementById('job-details-content');
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Job Information -->
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-white">Job Information</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Job ID:</span>
+                                        <span class="text-white font-mono">${job.job_id}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Model ID:</span>
+                                        <span class="text-white">${job.model_id}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Model Type:</span>
+                                        <span class="text-white">${job.model_type}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Sport:</span>
+                                        <span class="text-white">${job.sport}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Status:</span>
+                                        <span class="px-2 py-1 rounded text-xs ${getStatusColor(job.status)}">${job.status}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Progress:</span>
+                                        <span class="text-white">${job.progress}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Training Configuration -->
+                            <div class="space-y-4">
+                                <h4 class="text-lg font-semibold text-white">Training Configuration</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Epochs:</span>
+                                        <span class="text-white">${job.current_epoch || 0} / ${job.total_epochs}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Batch Size:</span>
+                                        <span class="text-white">${job.training_config?.batch_size || 'N/A'}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">Learning Rate:</span>
+                                        <span class="text-white">${job.training_config?.learning_rate || 'N/A'}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">GPU ID:</span>
+                                        <span class="text-white">${job.gpu_id !== null ? job.gpu_id : 'Not assigned'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timestamps -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-white">Timeline</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-300">Created:</span>
+                                    <div class="text-white">${new Date(job.created_at).toLocaleString()}</div>
+                                </div>
+                                ${job.started_at ? `
+                                <div>
+                                    <span class="text-gray-300">Started:</span>
+                                    <div class="text-white">${new Date(job.started_at).toLocaleString()}</div>
+                                </div>
+                                ` : ''}
+                                ${job.completed_at ? `
+                                <div>
+                                    <span class="text-gray-300">Completed:</span>
+                                    <div class="text-white">${new Date(job.completed_at).toLocaleString()}</div>
+                                </div>
+                                ` : ''}
+                                ${job.estimated_completion ? `
+                                <div>
+                                    <span class="text-gray-300">Estimated Completion:</span>
+                                    <div class="text-white">${new Date(job.estimated_completion).toLocaleString()}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Training Logs -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-white">Training Logs</h4>
+                            <div class="bg-gray-900 p-4 rounded-lg max-h-60 overflow-y-auto">
+                                <pre class="text-sm text-gray-300 whitespace-pre-wrap">${job.logs ? job.logs.join('\\n') : 'No logs available'}</pre>
+                            </div>
+                        </div>
+                        
+                        ${job.error_message ? `
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-red-400">Error Information</h4>
+                            <div class="bg-red-900 bg-opacity-20 border border-red-500 p-4 rounded-lg">
+                                <pre class="text-sm text-red-300 whitespace-pre-wrap">${job.error_message}</pre>
+                            </div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    // Show the modal
+                    showModal('job-details-modal');
+                } else {
+                    console.error('Failed to fetch job details');
+                    alert('Failed to load job details. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error fetching job details:', error);
+                alert('Error loading job details. Please try again.');
+            }
+        }
+        
+        function getStatusColor(status) {
+            switch(status) {
+                case 'running': return 'bg-blue-500 text-white';
+                case 'completed': return 'bg-green-500 text-white';
+                case 'failed': return 'bg-red-500 text-white';
+                case 'cancelled': return 'bg-gray-500 text-white';
+                case 'queued': return 'bg-yellow-500 text-black';
+                default: return 'bg-gray-500 text-white';
+            }
         }
         
         function deployModel(modelId) {
@@ -2351,9 +2506,17 @@
                 });
             }
             
-            // Initialize with demo data
-            generateDemoTrainingData();
-            updateTrainingQueueUI();
+            // Set up demo auth token for API access
+            if (!localStorage.getItem('auth_token')) {
+                localStorage.setItem('auth_token', 'demo_token');
+            }
+            
+            // Try to get real data first, fallback to demo if needed
+            refreshTrainingQueue().catch(() => {
+                console.log('Failed to fetch real data, using demo data');
+                generateDemoTrainingData();
+                updateTrainingQueueUI();
+            });
             
             // Auto-refresh every 30 seconds
             setInterval(refreshTrainingQueue, 30000);
