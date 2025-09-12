@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Scores & Standings - Post9</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(120deg, #0a1a2f 0%, #1e3350 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+        }
+        .post9-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .post9-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px #0a1a2f;
+        }
+        .post9-accent {
+            color: #ff9900;
+            font-weight: 900;
+        }
+        .nav-btn {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            background: none;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-btn:hover {
+            background: #ff9900;
+            color: #0a1a2f;
+        }
+        .nav-btn.active {
+            background: #ff9900;
+            color: #0a1a2f;
+        }
+        .content-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px rgba(10,26,47,0.12);
+        }
+        .score-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 153, 0, 0.3);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .score-card:hover {
+            transform: translateY(-2px);
+            border-color: #ff9900;
+        }
+        .standings-table {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+        }
+        .sport-tab {
+            padding: 0.5rem 1rem;
+            margin: 0 0.25rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sport-tab:hover {
+            background: rgba(255, 153, 0, 0.2);
+            border-color: #ff9900;
+        }
+        .sport-tab.active {
+            background: #ff9900;
+            color: #0a1a2f;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen p-4">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="post9-logo mb-4">
+                <div class="text-6xl">🏆</div>
+                <div>
+                    <h1 class="post9-title">
+                        Post<span class="post9-accent">9</span>
+                    </h1>
+                    <p class="post9-tagline">Recent Scores & Division Standings</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex space-x-4 mb-6 flex-wrap justify-center">
+            <a href="/" class="nav-btn">← Back to Dashboard</a>
+            <button onclick="location.reload()" class="nav-btn">🔄 Refresh</button>
+        </nav>
+
+        <!-- Sport Filters -->
+        <div class="flex justify-center mb-6">
+            <div class="flex space-x-2 p-2 bg-rgba(255,255,255,0.1) rounded-xl backdrop-blur-md">
+                <button onclick="filterBySport('all')" class="sport-tab active" id="tab-all">All Sports</button>
+                <button onclick="filterBySport('NFL')" class="sport-tab" id="tab-NFL">NFL</button>
+                <button onclick="filterBySport('NBA')" class="sport-tab" id="tab-NBA">NBA</button>
+                <button onclick="filterBySport('MLB')" class="sport-tab" id="tab-MLB">MLB</button>
+                <button onclick="filterBySport('NHL')" class="sport-tab" id="tab-NHL">NHL</button>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="max-w-7xl mx-auto">
+            <!-- Recent Scores Section -->
+            <div class="content-card p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="text-3xl mr-2">📊</span>
+                    Recent Scores
+                    <span id="scores-loading" class="ml-4 text-sm text-gray-500">Loading...</span>
+                </h2>
+                
+                <!-- Days Filter -->
+                <div class="mb-4">
+                    <select id="daysFilter" onchange="loadScores()" class="bg-white border border-gray-300 rounded px-3 py-2">
+                        <option value="3">Last 3 days</option>
+                        <option value="7" selected>Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                </div>
+                
+                <div id="scores-container" class="grid gap-4">
+                    <!-- Scores will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Division Standings Section -->
+            <div class="content-card p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="text-3xl mr-2">🏆</span>
+                    Division Standings
+                    <span id="standings-loading" class="ml-4 text-sm text-gray-500">Loading...</span>
+                </h2>
+                
+                <div id="standings-container">
+                    <!-- Standings will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSport = 'all';
+        let scoresData = [];
+        let standingsData = {};
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadScores();
+            loadStandings();
+        });
+
+        function filterBySport(sport) {
+            currentSport = sport;
+            
+            // Update active tab
+            document.querySelectorAll('.sport-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(`tab-${sport}`).classList.add('active');
+            
+            // Reload data with filter
+            loadScores();
+            loadStandings();
+        }
+
+        async function loadScores() {
+            try {
+                document.getElementById('scores-loading').textContent = 'Loading...';
+                const days = document.getElementById('daysFilter').value;
+                const sportParam = currentSport === 'all' ? '' : `&sport=${currentSport}`;
+                
+                const response = await fetch(`/api/recent-scores?days=${days}${sportParam}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    scoresData = data.scores;
+                    renderScores();
+                    document.getElementById('scores-loading').textContent = `${scoresData.length} games`;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Error loading scores:', error);
+                document.getElementById('scores-loading').textContent = 'Error loading scores';
+                document.getElementById('scores-container').innerHTML = `
+                    <div class="text-center text-red-600 p-4">
+                        <p>Failed to load recent scores: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadStandings() {
+            try {
+                document.getElementById('standings-loading').textContent = 'Loading...';
+                const sportParam = currentSport === 'all' ? '' : `?sport=${currentSport}`;
+                
+                const response = await fetch(`/api/standings${sportParam}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    standingsData = data.standings;
+                    renderStandings();
+                    
+                    // Count total divisions
+                    let divisionCount = 0;
+                    Object.values(standingsData).forEach(sport => {
+                        divisionCount += Object.keys(sport).length;
+                    });
+                    
+                    document.getElementById('standings-loading').textContent = `${divisionCount} divisions`;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Error loading standings:', error);
+                document.getElementById('standings-loading').textContent = 'Error loading standings';
+                document.getElementById('standings-container').innerHTML = `
+                    <div class="text-center text-red-600 p-4">
+                        <p>Failed to load standings: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderScores() {
+            const container = document.getElementById('scores-container');
+            
+            if (scoresData.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 p-8">
+                        <p>No recent scores found for the selected criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group scores by date
+            const scoresByDate = {};
+            scoresData.forEach(score => {
+                if (!scoresByDate[score.date]) {
+                    scoresByDate[score.date] = [];
+                }
+                scoresByDate[score.date].push(score);
+            });
+
+            let html = '';
+            Object.keys(scoresByDate).sort().reverse().forEach(date => {
+                const dateScores = scoresByDate[date];
+                const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                html += `
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-3 border-b border-gray-200 pb-2">
+                            ${formattedDate}
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                `;
+
+                dateScores.forEach(score => {
+                    const isHomeWinner = score.winner === score.home_team;
+                    html += `
+                        <div class="score-card p-4 text-white">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-semibold px-2 py-1 bg-orange-500 rounded-full">
+                                    ${score.sport}
+                                </span>
+                                <span class="text-xs text-gray-300">${score.game_time}</span>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center ${isHomeWinner ? 'font-bold' : ''}">
+                                    <span class="truncate">${score.home_team}</span>
+                                    <span class="text-xl ml-2">${score.home_score}</span>
+                                </div>
+                                <div class="flex justify-between items-center ${!isHomeWinner ? 'font-bold' : ''}">
+                                    <span class="truncate">${score.away_team}</span>
+                                    <span class="text-xl ml-2">${score.away_score}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2 text-center">
+                                <span class="text-xs bg-gray-600 px-2 py-1 rounded">${score.status}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderStandings() {
+            const container = document.getElementById('standings-container');
+            
+            if (Object.keys(standingsData).length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 p-8">
+                        <p>No standings data found for the selected sport.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            
+            Object.keys(standingsData).forEach(sport => {
+                const sportStandings = standingsData[sport];
+                
+                html += `
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-2xl mr-2">🏈🏀⚾🏒</span>
+                            ${sport} Standings
+                        </h3>
+                        
+                        <div class="grid gap-6 md:grid-cols-2">
+                `;
+                
+                Object.keys(sportStandings).forEach(division => {
+                    const teams = sportStandings[division];
+                    
+                    html += `
+                        <div class="standings-table p-4">
+                            <h4 class="font-semibold text-white mb-3 text-center border-b border-gray-600 pb-2">
+                                ${division}
+                            </h4>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-white">
+                                    <thead>
+                                        <tr class="border-b border-gray-600">
+                                            <th class="text-left py-2">Team</th>
+                                            <th class="text-center py-2">W</th>
+                                            <th class="text-center py-2">L</th>
+                                            <th class="text-center py-2">PCT</th>
+                                            <th class="text-center py-2">GB</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    teams.forEach((team, index) => {
+                        const rowClass = index === 0 ? 'font-bold text-orange-300' : '';
+                        html += `
+                            <tr class="border-b border-gray-700 ${rowClass}">
+                                <td class="py-2">${team.team}</td>
+                                <td class="text-center py-2">${team.wins}</td>
+                                <td class="text-center py-2">${team.losses}</td>
+                                <td class="text-center py-2">${team.win_percentage}</td>
+                                <td class="text-center py-2">${team.games_behind}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
