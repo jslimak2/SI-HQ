@@ -4184,9 +4184,206 @@ function displayMLPredictionResults(result) {
 
 // Model Details Modal
 function viewModelDetails(modelId) {
-    // For now, show a simple alert with model info
-    // In a real implementation, this would open a detailed modal
-    alert(`Model Details for ${modelId}\n\nThis would show comprehensive model information including:\n- Training history\n- Feature importance\n- Performance over time\n- Model architecture\n- Recent predictions`);
+    // Generate model details data
+    const modelDetails = generateModelDetailsData(modelId);
+    
+    const content = document.getElementById('model-details-content');
+    content.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Model Information -->
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-white">Model Information</h4>
+                <div class="bg-gray-800 p-4 rounded-lg space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Model ID:</span>
+                        <span class="text-white font-mono">${modelDetails.id}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Name:</span>
+                        <span class="text-white">${modelDetails.name}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Architecture:</span>
+                        <span class="text-white">${modelDetails.architecture}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Sport:</span>
+                        <span class="text-white">${modelDetails.sport}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Status:</span>
+                        <span class="px-2 py-1 rounded text-xs ${getModelStatusColor(modelDetails.status)}">${modelDetails.status}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Created:</span>
+                        <span class="text-white">${new Date(modelDetails.created_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Metrics -->
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-white">Performance Metrics</h4>
+                <div class="bg-gray-800 p-4 rounded-lg space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Accuracy:</span>
+                        <span class="text-green-400 font-bold">${modelDetails.accuracy}%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Total Predictions:</span>
+                        <span class="text-white">${modelDetails.predictions}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">ROI:</span>
+                        <span class="${modelDetails.roi >= 0 ? 'text-green-400' : 'text-red-400'} font-bold">${modelDetails.roi > 0 ? '+' : ''}${modelDetails.roi}%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Sharpe Ratio:</span>
+                        <span class="text-white">${modelDetails.sharpe_ratio}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Max Drawdown:</span>
+                        <span class="text-red-400">${modelDetails.max_drawdown}%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Win Rate:</span>
+                        <span class="text-white">${modelDetails.win_rate}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Training Details -->
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">Training Configuration</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                    <div class="text-sm text-gray-300 mb-1">Training Epochs</div>
+                    <div class="text-xl font-bold text-white">${modelDetails.training.epochs}</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                    <div class="text-sm text-gray-300 mb-1">Batch Size</div>
+                    <div class="text-xl font-bold text-white">${modelDetails.training.batch_size}</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                    <div class="text-sm text-gray-300 mb-1">Learning Rate</div>
+                    <div class="text-xl font-bold text-white">${modelDetails.training.learning_rate}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feature Importance -->
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">Top Features</h4>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${modelDetails.features.map((feature, index) => `
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300">${feature.name}</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-20 bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: ${feature.importance}%"></div>
+                                </div>
+                                <span class="text-white text-sm">${feature.importance}%</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Performance -->
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">Recent Predictions</h4>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div class="space-y-3">
+                    ${modelDetails.recent_predictions.map(pred => `
+                        <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                            <div>
+                                <div class="text-white font-medium">${pred.game}</div>
+                                <div class="text-gray-400 text-sm">${pred.prediction} (${pred.confidence}% confidence)</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="${pred.result === 'Win' ? 'text-green-400' : pred.result === 'Loss' ? 'text-red-400' : 'text-gray-400'} font-medium">
+                                    ${pred.result}
+                                </div>
+                                <div class="text-gray-400 text-sm">${pred.date}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showModal('model-details-modal');
+}
+
+function generateModelDetailsData(modelId) {
+    // Generate realistic model details
+    const architectures = ['LSTM with Weather', 'Ensemble', 'Deep Neural Network', 'Statistical'];
+    const sports = ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB'];
+    const statuses = ['active', 'training', 'inactive'];
+    
+    return {
+        id: modelId,
+        name: `${sports[Math.floor(Math.random() * sports.length)]} ${architectures[Math.floor(Math.random() * architectures.length)]} v${Math.floor(Math.random() * 5) + 1}`,
+        architecture: architectures[Math.floor(Math.random() * architectures.length)],
+        sport: sports[Math.floor(Math.random() * sports.length)],
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
+        accuracy: (65 + Math.random() * 20).toFixed(1),
+        predictions: Math.floor(Math.random() * 5000 + 500),
+        roi: (Math.random() * 20 - 5).toFixed(1),
+        sharpe_ratio: (0.8 + Math.random() * 1.5).toFixed(2),
+        max_drawdown: (Math.random() * 25).toFixed(1),
+        win_rate: (55 + Math.random() * 20).toFixed(1),
+        training: {
+            epochs: Math.floor(Math.random() * 100 + 50),
+            batch_size: [16, 32, 64, 128][Math.floor(Math.random() * 4)],
+            learning_rate: [0.0001, 0.001, 0.01, 0.1][Math.floor(Math.random() * 4)]
+        },
+        features: [
+            { name: 'Team Offensive Rating', importance: (80 + Math.random() * 20).toFixed(0) },
+            { name: 'Defensive Efficiency', importance: (75 + Math.random() * 15).toFixed(0) },
+            { name: 'Rest Days', importance: (60 + Math.random() * 20).toFixed(0) },
+            { name: 'Home/Away', importance: (55 + Math.random() * 15).toFixed(0) },
+            { name: 'Weather Conditions', importance: (45 + Math.random() * 25).toFixed(0) },
+            { name: 'Injury Report', importance: (40 + Math.random() * 20).toFixed(0) }
+        ],
+        recent_predictions: [
+            {
+                game: 'Lakers vs Warriors',
+                prediction: 'Lakers +3.5',
+                confidence: (75 + Math.random() * 20).toFixed(0),
+                result: ['Win', 'Loss', 'Pending'][Math.floor(Math.random() * 3)],
+                date: '2 days ago'
+            },
+            {
+                game: 'Chiefs vs Bills',
+                prediction: 'Under 47.5',
+                confidence: (70 + Math.random() * 25).toFixed(0),
+                result: ['Win', 'Loss', 'Pending'][Math.floor(Math.random() * 3)],
+                date: '4 days ago'
+            },
+            {
+                game: 'Celtics vs Heat',
+                prediction: 'Celtics ML',
+                confidence: (80 + Math.random() * 15).toFixed(0),
+                result: ['Win', 'Loss', 'Pending'][Math.floor(Math.random() * 3)],
+                date: '1 week ago'
+            }
+        ]
+    };
+}
+
+function getModelStatusColor(status) {
+    switch(status) {
+        case 'active': return 'bg-green-600 text-white';
+        case 'training': return 'bg-yellow-600 text-white';
+        case 'inactive': return 'bg-gray-600 text-white';
+        default: return 'bg-gray-600 text-white';
+    }
 }
 
 // Utility function for time formatting
@@ -4657,6 +4854,39 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof loadBots === 'function') {
                 setTimeout(loadBots, 500);
             }
+        });
+    }
+});
+
+// Add form handler for custom model training
+document.addEventListener('DOMContentLoaded', function() {
+    const customModelForm = document.getElementById('custom-model-form');
+    if (customModelForm) {
+        customModelForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const modelData = Object.fromEntries(formData.entries());
+            
+            // Get selected features
+            const features = Array.from(document.querySelectorAll('input[name="features"]:checked'))
+                .map(input => input.value);
+            modelData.features = features;
+            
+            // Validate required fields
+            if (!modelData.custom_model_name || !modelData.custom_sport || !modelData.custom_model_type) {
+                showMessage('Please fill in all required fields', true);
+                return;
+            }
+            
+            showMessage(`Starting custom model training: ${modelData.custom_model_name}...`, false);
+            closeModal('train-custom-model-modal');
+            
+            // Here you would typically send the data to the server
+            console.log('Custom model training started:', modelData);
+            
+            // Reset form
+            customModelForm.reset();
         });
     }
 });

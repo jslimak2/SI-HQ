@@ -2024,6 +2024,262 @@
         </div>
     </div>
     
+    <!-- Model Comparison Modal -->
+    <div id="model-comparison-modal" class="modal">
+        <div class="modal-content post9-card max-w-6xl">
+            <span class="modal-close" onclick="closeModal('model-comparison-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Model Performance Comparison</h3>
+            
+            <div class="space-y-6">
+                <!-- Model Selection -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Select First Model</label>
+                        <select id="comparison-model-1" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                            <option value="">Choose a model...</option>
+                            <option value="nba_ensemble_v1">NBA Ensemble v1</option>
+                            <option value="nfl_lstm_weather_v2">NFL LSTM Weather v2</option>
+                            <option value="mlb_statistical_v1">MLB Statistical v1</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Second Model</label>
+                        <select id="comparison-model-2" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                            <option value="">Choose a model...</option>
+                            <option value="nba_ensemble_v2">NBA Ensemble v2</option>
+                            <option value="nfl_neural_v1">NFL Neural v1</option>
+                            <option value="mlb_ensemble_v1">MLB Ensemble v1</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Comparison Results -->
+                <div id="model-comparison-results" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold text-white mb-4">Model 1 Performance</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Accuracy:</span>
+                                <span class="text-green-400 font-bold">72.3%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">ROI:</span>
+                                <span class="text-green-400 font-bold">+8.7%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Sharpe Ratio:</span>
+                                <span class="text-white">1.42</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Max Drawdown:</span>
+                                <span class="text-red-400">-12.4%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Bets:</span>
+                                <span class="text-white">1,847</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold text-white mb-4">Model 2 Performance</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Accuracy:</span>
+                                <span class="text-green-400 font-bold">69.8%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">ROI:</span>
+                                <span class="text-green-400 font-bold">+6.2%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Sharpe Ratio:</span>
+                                <span class="text-white">1.18</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Max Drawdown:</span>
+                                <span class="text-red-400">-9.8%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Bets:</span>
+                                <span class="text-white">2,134</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Chart Placeholder -->
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h4 class="text-lg font-semibold text-white mb-4">Performance Over Time</h4>
+                    <div class="h-64 flex items-center justify-center text-gray-400">
+                        <div class="text-center">
+                            <div class="text-4xl mb-2">📊</div>
+                            <div>Performance comparison chart will be displayed here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Train Custom Model Modal -->
+    <div id="train-custom-model-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('train-custom-model-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Train Custom Model</h3>
+            
+            <form id="custom-model-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Basic Model Configuration -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">Model Configuration</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Model Name</label>
+                            <input type="text" name="custom_model_name" required 
+                                   class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white"
+                                   placeholder="e.g., NBA_Custom_v1">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Sport</label>
+                            <select name="custom_sport" required class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="">Select Sport</option>
+                                <option value="NBA">NBA</option>
+                                <option value="NFL">NFL</option>
+                                <option value="MLB">MLB</option>
+                                <option value="NCAAF">NCAAF</option>
+                                <option value="NCAAB">NCAAB</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Model Architecture</label>
+                            <select name="custom_model_type" required class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="">Select Architecture</option>
+                                <option value="lstm_weather">LSTM with Weather Data</option>
+                                <option value="ensemble">Ensemble Model</option>
+                                <option value="neural">Deep Neural Network</option>
+                                <option value="statistical">Statistical Model</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Training Data Period</label>
+                            <select name="training_period" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="1year">Last 1 Year</option>
+                                <option value="2year">Last 2 Years</option>
+                                <option value="3year">Last 3 Years</option>
+                                <option value="5year">Last 5 Years</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Parameters -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">Training Parameters</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Epochs</label>
+                            <input type="number" name="custom_epochs" min="10" max="200" value="50" 
+                                   class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Batch Size</label>
+                            <select name="custom_batch_size" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="16">16</option>
+                                <option value="32" selected>32</option>
+                                <option value="64">64</option>
+                                <option value="128">128</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Learning Rate</label>
+                            <select name="custom_learning_rate" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="0.0001">0.0001</option>
+                                <option value="0.001" selected>0.001</option>
+                                <option value="0.01">0.01</option>
+                                <option value="0.1">0.1</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Validation Split</label>
+                            <select name="validation_split" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="0.1">10%</option>
+                                <option value="0.2" selected>20%</option>
+                                <option value="0.3">30%</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature Selection -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-semibold text-white">Feature Selection</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="team_stats" checked class="mr-2">
+                            Team Statistics
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="player_stats" checked class="mr-2">
+                            Player Statistics
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="weather" class="mr-2">
+                            Weather Data
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="injuries" checked class="mr-2">
+                            Injury Reports
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="historical" checked class="mr-2">
+                            Historical Matchups
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="betting_lines" class="mr-2">
+                            Betting Line Movement
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="public_betting" class="mr-2">
+                            Public Betting %
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="advanced_metrics" class="mr-2">
+                            Advanced Metrics
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('train-custom-model-modal')" 
+                            class="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="post9-btn px-6 py-3">
+                        Start Training
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Model Details Modal -->
+    <div id="model-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-5xl">
+            <span class="modal-close" onclick="closeModal('model-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Model Details</h3>
+            
+            <div id="model-details-content" class="space-y-6">
+                <!-- Model details will be populated here -->
+            </div>
+        </div>
+    </div>
+    
     <!-- Professional Footer -->
     <footer class="mt-16 bg-gray-900 text-gray-300 py-8">
         <div class="container mx-auto px-4">
