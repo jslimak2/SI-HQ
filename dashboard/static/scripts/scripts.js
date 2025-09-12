@@ -4183,9 +4183,29 @@ function displayMLPredictionResults(result) {
 }
 
 // Model Details Modal
-function viewModelDetails(modelId) {
-    // Generate model details data
+async function viewModelDetails(modelId) {
+    try {
+        // Try to fetch real model details from API
+        const response = await fetch(`/api/models/${modelId}/details`);
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                displayModelDetails(result.model);
+                showModal('model-details-modal');
+                return;
+            }
+        }
+    } catch (error) {
+        console.log('Model details API not available, using demo data');
+    }
+    
+    // Fallback to generated demo data
     const modelDetails = generateModelDetailsData(modelId);
+    displayModelDetails(modelDetails);
+    showModal('model-details-modal');
+}
+
+function displayModelDetails(modelDetails) {
     
     const content = document.getElementById('model-details-content');
     content.innerHTML = `
@@ -4315,8 +4335,6 @@ function viewModelDetails(modelId) {
             </div>
         </div>
     `;
-    
-    showModal('model-details-modal');
 }
 
 function generateModelDetailsData(modelId) {
@@ -4954,4 +4972,3 @@ function checkFormCompletion() {
 // Make functions globally available
 window.onModelSelected = onModelSelected;
 window.checkFormCompletion = checkFormCompletion;
-}
