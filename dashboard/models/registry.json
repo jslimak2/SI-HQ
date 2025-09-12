@@ -55,5 +55,24 @@
     "training_config": {},
     "file_path": null,
     "file_checksum": null
+  },
+  "nba_statistical_1757707024": {
+    "model_id": "nba_statistical_1757707024",
+    "name": "Test NBA Model",
+    "sport": "NBA",
+    "model_type": "statistical",
+    "version": "1.0.3",
+    "status": "ready",
+    "created_at": "2025-09-12T19:57:04.429059",
+    "created_by": "test_user",
+    "description": "Test model for professional features",
+    "performance_metrics": {
+      "accuracy": 72.5,
+      "precision": 71.2
+    },
+    "hyperparameters": {},
+    "training_config": {},
+    "file_path": null,
+    "file_checksum": null
   }
 }
