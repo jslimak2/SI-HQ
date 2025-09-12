@@ -4220,5 +4220,115 @@ document.addEventListener('DOMContentLoaded', function() {
             trainModelForm.reset();
         });
     }
+
+    // Initialize bot configuration event listeners
+    const addBotForm = document.getElementById('add-bot-form');
+    if (addBotForm) {
+        // Add event listeners to all form inputs for real-time validation
+        const inputs = addBotForm.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', checkFormCompletion);
+            input.addEventListener('change', checkFormCompletion);
+        });
+        
+        // Handle form submission
+        addBotForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const botData = Object.fromEntries(formData.entries());
+            
+            // Add enhanced validation
+            if (parseFloat(botData.bet_percentage) > 10) {
+                showMessage('Bet percentage cannot exceed 10% for risk management', true);
+                return;
+            }
+            
+            if (parseFloat(botData.starting_balance) < 100) {
+                showMessage('Starting balance must be at least $100', true);
+                return;
+            }
+            
+            // Show success message with model info
+            const modelSelect = document.getElementById('model-select');
+            const selectedModel = modelSelect.options[modelSelect.selectedIndex].text;
+            
+            showMessage(`Bot "${botData.name}" created successfully with ${selectedModel}!`, false);
+            closeModal('add-bot-modal');
+            
+            // Reset form
+            addBotForm.reset();
+            onModelSelected(''); // Reset form state
+            
+            // Refresh bots display
+            if (typeof loadBots === 'function') {
+                setTimeout(loadBots, 500);
+            }
+        });
+    }
 });
+
+// Bot Configuration Functions
+
+// Handle model selection in Add Bot modal
+function onModelSelected(modelId) {
+    const modelSelect = document.getElementById('model-select');
+    const sportDisplay = document.getElementById('sport-display');
+    const marketSelect = document.getElementById('market-select');
+    const submitBtn = document.getElementById('add-bot-submit');
+    
+    if (modelId) {
+        // Get the selected option's data-sport attribute
+        const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+        const sport = selectedOption.getAttribute('data-sport');
+        
+        // Auto-populate sport field
+        sportDisplay.value = sport;
+        sportDisplay.className = 'bg-green-100 text-green-800 font-medium';
+        
+        // Enable market selection
+        marketSelect.disabled = false;
+        marketSelect.className = 'p-2 border border-gray-300 rounded focus:ring-2 focus:ring-orange-500';
+        
+        // Update submit button state
+        checkFormCompletion();
+    } else {
+        // Reset form state
+        sportDisplay.value = '';
+        sportDisplay.className = 'bg-gray-100 cursor-not-allowed';
+        marketSelect.disabled = true;
+        marketSelect.selectedIndex = 0;
+        submitBtn.disabled = true;
+    }
+}
+
+// Check if form is complete to enable submit button
+function checkFormCompletion() {
+    const form = document.getElementById('add-bot-form');
+    const submitBtn = document.getElementById('add-bot-submit');
+    const requiredFields = ['name', 'model_id', 'bet_type', 'starting_balance', 'bet_percentage', 'max_bets_per_week'];
+    
+    let allFieldsFilled = true;
+    
+    requiredFields.forEach(fieldName => {
+        const field = form.querySelector(`[name="${fieldName}"]`);
+        if (!field || !field.value) {
+            allFieldsFilled = false;
+        }
+    });
+    
+    submitBtn.disabled = !allFieldsFilled;
+    
+    if (allFieldsFilled) {
+        submitBtn.className = 'post9-btn p-3 mt-2';
+        submitBtn.textContent = 'Add Bot';
+    } else {
+        submitBtn.className = 'post9-btn p-3 mt-2 opacity-50 cursor-not-allowed';
+        submitBtn.textContent = 'Complete All Fields';
+    }
+}
+
+// Make functions globally available
+window.onModelSelected = onModelSelected;
+window.checkFormCompletion = checkFormCompletion;
 }

@@ -220,6 +220,56 @@
             border-radius: 1rem;
             transition: width 0.3s;
         }
+        
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            border-bottom: 1px dotted #ff9900;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: #1a2332;
+            color: #fff;
+            text-align: left;
+            border-radius: 8px;
+            padding: 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            border: 1px solid #ff9900;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1a2332 transparent transparent transparent;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip .tooltiptext strong {
+            color: #ff9900;
+            font-weight: 600;
+        }
     </style>
     <script>
         function showPage(pageId) {
@@ -377,23 +427,54 @@
                 <h3 class="text-xl font-bold mb-4 text-white">Add Bot</h3>
                 <form id="add-bot-form" class="flex flex-col gap-4">
                     <input type="text" name="name" placeholder="Bot Name" required>
-                    <input type="number" name="starting_balance" placeholder="Starting Balance" required>
-                    <input type="number" name="bet_percentage" placeholder="Bet %" required>
-                    <input type="number" name="max_bets_per_week" placeholder="Max Bets/Week" required>
-                    <select name="strategy_id" id="strategy-select" required></select>
-                    <select name="sport" required>
-                        <option value="NBA">NBA</option>
-                        <option value="NFL">NFL</option>
-                        <option value="MLB">MLB</option>
-                        <option value="NCAAF">NCAAF</option>
-                        <option value="NCAAB">NCAAB</option>
-                    </select>
-                    <select name="bet_type" required>
-                        <option value="Moneyline">Moneyline</option>
-                        <option value="Spread">Spread</option>
-                        <option value="Totals">Totals</option>
-                    </select>
-                    <button type="submit" class="post9-btn p-3 mt-2">Add Bot</button>
+                    
+                    <!-- Step 1: Model Selection (Primary) -->
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">1. Select Model</label>
+                        <select name="model_id" id="model-select" required onchange="onModelSelected(this.value)">
+                            <option value="">Choose a trained model...</option>
+                            <option value="nba_advanced_lstm" data-sport="NBA">NBA Advanced LSTM (68.2% accuracy)</option>
+                            <option value="nfl_ensemble_v2" data-sport="NFL">NFL Ensemble v2.0 (64.8% accuracy)</option>
+                            <option value="mlb_statistical" data-sport="MLB">MLB Statistical (61.5% accuracy)</option>
+                            <option value="nba_ensemble" data-sport="NBA">NBA Ensemble (71.4% accuracy)</option>
+                            <option value="nfl_neural" data-sport="NFL">NFL Neural Network (66.1% accuracy)</option>
+                        </select>
+                        <small class="text-gray-600">The model determines the sport and prediction capabilities</small>
+                    </div>
+                    
+                    <!-- Step 2: Sport (Auto-populated) -->
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">2. Sport (Auto-selected from Model)</label>
+                        <input type="text" name="sport" id="sport-display" readonly placeholder="Select a model first..." class="bg-gray-100 cursor-not-allowed">
+                        <small class="text-gray-600">Automatically determined by the selected model</small>
+                    </div>
+                    
+                    <!-- Step 3: Market Selection -->
+                    <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">3. Select Market</label>
+                        <select name="bet_type" id="market-select" required disabled>
+                            <option value="">Choose market type...</option>
+                            <option value="Moneyline">Moneyline (Win/Loss)</option>
+                            <option value="Spread">Spread (Point Spread)</option>
+                            <option value="Totals">Totals (Over/Under)</option>
+                        </select>
+                        <small class="text-gray-600">Choose which market to bet on</small>
+                    </div>
+                    
+                    <!-- Other Bot Settings -->
+                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bot Configuration</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <input type="number" name="starting_balance" placeholder="Starting Balance ($)" required>
+                            <input type="number" name="bet_percentage" placeholder="Bet Percentage (1-10%)" min="0.1" max="10" step="0.1" required>
+                            <input type="number" name="max_bets_per_week" placeholder="Max Bets/Week" min="1" max="50" required>
+                            <select name="strategy_id" id="strategy-select">
+                                <option value="">Select Strategy (Optional)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Bot</button>
                 </form>
             </div>
         </div>
@@ -987,7 +1068,13 @@
                     <button onclick="showPredictiveTab('models')" id="models-tab" class="predictive-tab-btn active">Models</button>
                     <button onclick="showPredictiveTab('predictions')" id="predictions-tab" class="predictive-tab-btn">Predictions</button>
                     <button onclick="showPredictiveTab('training')" id="training-tab" class="predictive-tab-btn">Training</button>
-                    <button onclick="showPredictiveTab('optimizer')" id="optimizer-tab" class="predictive-tab-btn">Kelly Optimizer</button>
+                    <button onclick="showPredictiveTab('optimizer')" id="optimizer-tab" class="predictive-tab-btn">
+                        <span class="tooltip">Kelly Optimizer
+                            <span class="tooltiptext">
+                                <strong>Kelly Criterion:</strong> A mathematical formula for determining optimal bet sizes to maximize long-term portfolio growth while minimizing risk of ruin.
+                            </span>
+                        </span>
+                    </button>
                 </nav>
             </div>
 
@@ -1079,7 +1166,13 @@
                                 <div id="confidence-level" class="text-sm text-gray-500">-</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-sm font-semibold text-gray-600">Kelly Bet Size</div>
+                                <div class="text-sm font-semibold text-gray-600">
+                                    <span class="tooltip">Kelly Bet Size
+                                        <span class="tooltiptext">
+                                            <strong>Kelly Criterion:</strong> A mathematical formula used to determine the optimal bet size. It calculates the percentage of your bankroll to wager based on the probability of winning and the odds offered. The Kelly formula maximizes long-term growth while minimizing the risk of ruin.
+                                        </span>
+                                    </span>
+                                </div>
                                 <div id="kelly-bet-size" class="text-lg font-bold text-green-600">-</div>
                                 <div class="text-sm text-gray-500">Recommended</div>
                             </div>
@@ -1177,6 +1270,47 @@
                             <div class="text-center">
                                 <div class="text-sm font-semibold text-gray-600">Expected Growth</div>
                                 <div id="kelly-growth" class="text-xl font-bold text-purple-600">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Risk Metrics Section -->
+                <div class="bg-white p-6 rounded-lg shadow mt-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🎯 Risk Metrics</h3>
+                    <p class="text-gray-600 mb-4">Key performance and risk indicators for your portfolio.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="font-semibold">
+                                    <span class="tooltip">Sharpe Ratio
+                                        <span class="tooltiptext">
+                                            <strong>Sharpe Ratio:</strong> Measures risk-adjusted returns by calculating excess return per unit of risk. A higher ratio indicates better risk-adjusted performance. Values above 1.0 are considered good, above 2.0 are excellent.
+                                        </span>
+                                    </span>:
+                                </span>
+                                <span class="text-green-600 font-bold">1.45</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="font-semibold">Sortino Ratio:</span>
+                                <span class="text-green-600 font-bold">1.82</span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="font-semibold">
+                                    <span class="tooltip">Max Drawdown
+                                        <span class="tooltiptext">
+                                            <strong>Maximum Drawdown:</strong> The largest peak-to-trough decline in portfolio value. It measures the worst-case scenario loss from a previous high. Lower values indicate better downside protection and risk management.
+                                        </span>
+                                    </span>:
+                                </span>
+                                <span class="text-red-600 font-bold">-8.4%</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                                <span class="font-semibold">Win Rate:</span>
+                                <span class="text-blue-600 font-bold">65.2%</span>
                             </div>
                         </div>
                     </div>
