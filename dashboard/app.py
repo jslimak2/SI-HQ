@@ -1728,6 +1728,15 @@ def get_performance_analytics():
         
         # Generate demo analytics data
         analytics_data = {
+            'ml_performance': {
+                'total_profit': 1247.50,
+                'total_predictions': 89,
+                'overall_accuracy': 68.4,
+                'roi': 12.3,
+                'sharpe_ratio': 1.45,
+                'max_drawdown': -234.80,
+                'avg_bet_size': 45.60
+            },
             'summary_metrics': {
                 'total_profit': 1247.50,
                 'total_bets': 89,
@@ -1754,13 +1763,30 @@ def get_performance_analytics():
                     'sunday': {'profit': 111.9, 'win_rate': 63.0}
                 }
             },
+            'recent_alerts': [
+                {
+                    'type': 'warning',
+                    'message': 'NFL Model Performance Drop - accuracy dropped below 65% in last 10 predictions',
+                    'timestamp': (datetime.datetime.now() - datetime.timedelta(hours=2)).isoformat()
+                },
+                {
+                    'type': 'danger', 
+                    'message': 'Losing Streak Detected - current losing streak of 5 consecutive bets',
+                    'timestamp': (datetime.datetime.now() - datetime.timedelta(hours=4)).isoformat()
+                },
+                {
+                    'type': 'success',
+                    'message': 'High Value Bet Found - Lakers vs Warriors with 12% edge detected',
+                    'timestamp': (datetime.datetime.now() - datetime.timedelta(minutes=12)).isoformat()
+                }
+            ],
             'alerts': [
                 {
                     'id': 'alert_1',
                     'type': 'warning',
                     'title': 'NFL Model Performance Drop',
                     'message': 'NFL model accuracy dropped below 65% in last 10 predictions',
-                    'timestamp': '2024-01-20T14:30:00Z',
+                    'timestamp': (datetime.datetime.now() - datetime.timedelta(hours=2)).isoformat(),
                     'severity': 'medium'
                 },
                 {
@@ -1768,7 +1794,7 @@ def get_performance_analytics():
                     'type': 'danger',
                     'title': 'Losing Streak Detected',
                     'message': 'Current losing streak of 5 consecutive bets',
-                    'timestamp': '2024-01-20T10:15:00Z',
+                    'timestamp': (datetime.datetime.now() - datetime.timedelta(hours=4)).isoformat(),
                     'severity': 'high'
                 }
             ]
@@ -2603,6 +2629,82 @@ def get_model_performance(model_id):
         return jsonify({
             'success': True,
             'performance': performance,
+            'model_id': model_id
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/models/<model_id>/details', methods=['GET'])
+def get_model_details(model_id):
+    """Get detailed model information"""
+    try:
+        if not ML_AVAILABLE:
+            # Return demo model details
+            from datetime import datetime, timedelta
+            return jsonify({
+                'success': True,
+                'model': {
+                    'id': model_id,
+                    'name': f'Demo Model {model_id}',
+                    'architecture': 'LSTM with Weather Data',
+                    'sport': 'NBA',
+                    'status': 'active',
+                    'created_at': (datetime.now() - timedelta(days=30)).isoformat(),
+                    'accuracy': 68.2,
+                    'predictions': 2847,
+                    'roi': 12.3,
+                    'sharpe_ratio': 1.45,
+                    'max_drawdown': 8.4,
+                    'win_rate': 67.5,
+                    'training': {
+                        'epochs': 75,
+                        'batch_size': 32,
+                        'learning_rate': 0.001
+                    },
+                    'features': [
+                        {'name': 'Team Offensive Rating', 'importance': 85},
+                        {'name': 'Defensive Efficiency', 'importance': 78},
+                        {'name': 'Rest Days', 'importance': 72},
+                        {'name': 'Home/Away', 'importance': 65},
+                        {'name': 'Weather Conditions', 'importance': 58},
+                        {'name': 'Injury Report', 'importance': 52}
+                    ],
+                    'recent_predictions': [
+                        {
+                            'game': 'Lakers vs Warriors',
+                            'prediction': 'Lakers +3.5',
+                            'confidence': 82,
+                            'result': 'Win',
+                            'date': '2 days ago'
+                        },
+                        {
+                            'game': 'Chiefs vs Bills',
+                            'prediction': 'Under 47.5',
+                            'confidence': 76,
+                            'result': 'Loss',
+                            'date': '4 days ago'
+                        },
+                        {
+                            'game': 'Celtics vs Heat',
+                            'prediction': 'Celtics ML',
+                            'confidence': 89,
+                            'result': 'Win',
+                            'date': '1 week ago'
+                        }
+                    ]
+                },
+                'demo_mode': True
+            }), 200
+        
+        model_info = model_manager.get_model_info(model_id)
+        
+        if 'error' in model_info:
+            return jsonify({'success': False, 'error': model_info['error']}), 400
+        
+        return jsonify({
+            'success': True,
+            'model': model_info,
             'model_id': model_id
         }), 200
         
