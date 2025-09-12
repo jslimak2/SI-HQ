@@ -316,7 +316,7 @@
                 <span class="post9-title">Post<span class="post9-accent">9</span></span>
             </div>
             <div class="post9-tagline">Stop Betting. Start Investing.</div>
-            <p class="text-xl text-gray-300 mt-2">Professional Analytics & Bot Management</p>
+            <p class="text-xl text-gray-300 mt-2">Professional Analytics & Automated Investor Management</p>
             <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
         <div id="dashboard-page">
@@ -341,13 +341,13 @@
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🚀</span>
-                        <span class="stats-label">Best Bot</span>
+                        <span class="stats-label">Best Investor</span>
                         <span id="best-bot-name" class="stats-value">-</span>
                         <span id="best-bot-profit" class="stats-trend"></span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">⚠️</span>
-                        <span class="stats-label">Worst Bot</span>
+                        <span class="stats-label">Worst Investor</span>
                         <span id="worst-bot-name" class="stats-value">-</span>
                         <span id="worst-bot-profit" class="stats-trend negative"></span>
                     </div>
@@ -367,16 +367,16 @@
                 <div id="stats-breakdown-inline"></div>
             </section>
             <section class="table-container mb-12 post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Active Bots</h2>
+                <h2 class="text-2xl font-bold mb-4 text-white">Active Investors</h2>
                 <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="active-bots-loading" class="text-center text-gray-500">Loading active bots...</p>
+                    <p id="active-bots-loading" class="text-center text-gray-500">Loading active investors...</p>
                 </div>
             </section>
             <section class="table-container mb-12 post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Bot Manager</h2>
-                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Bot</button>
+                <h2 class="text-2xl font-bold mb-4 text-white">Investor Manager</h2>
+                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Investor</button>
                 <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive bots...</p>
+                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive investors...</p>
                 </div>
             </section>
             <section class="table-container post9-card">
@@ -420,13 +420,13 @@
                 </div>
             </section>
         </div>
-        <!-- Add Bot Modal -->
+        <!-- Add Investor Modal -->
         <div id="add-bot-modal" class="modal">
             <div class="modal-content post9-card">
                 <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
-                <h3 class="text-xl font-bold mb-4 text-white">Add Bot</h3>
+                <h3 class="text-xl font-bold mb-4 text-white">Add Automated Investor</h3>
                 <form id="add-bot-form" class="flex flex-col gap-4">
-                    <input type="text" name="name" placeholder="Bot Name" required>
+                    <input type="text" name="name" placeholder="Investor Name" required>
                     
                     <!-- Step 1: Model Selection (Primary) -->
                     <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
@@ -474,7 +474,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Bot</button>
+                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Investor</button>
                 </form>
             </div>
         </div>
@@ -1393,7 +1393,7 @@
     <div id="bot-details-modal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="window.closeModal('bot-details-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Edit Bot: <span id="modal-bot-name"></span></h2>
+            <h2 class="text-2xl font-bold mb-4">Edit Investor: <span id="modal-bot-name"></span></h2>
             <form id="edit-bot-form" class="space-y-4">
                 <input type="hidden" id="modal-bot-id">
                 <div>
@@ -1499,7 +1499,7 @@
     <div id="bot-log-modal" class="modal">
         <div class="modal-content max-w-2xl">
             <span class="modal-close" onclick="window.closeModal('bot-log-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Bot Log for <span id="log-bot-name"></span></h2>
+            <h2 class="text-2xl font-bold mb-4">Investor Log for <span id="log-bot-name"></span></h2>
             <div class="overflow-y-auto max-h-96 bg-gray-100 p-4 rounded-md text-sm font-mono whitespace-pre-wrap">
                 <pre id="bot-log-content"></pre>
             </div>
@@ -1966,7 +1966,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <h3 class="text-xl font-bold mb-4 text-white">Post9</h3>
-                    <p class="text-sm">Sports Investment Headquarters - Professional analytics and bot management for serious sports investors.</p>
+                    <p class="text-sm">Sports Investment Headquarters - Professional analytics and automated investor management for serious sports investors.</p>
                 </div>
                 <div>
                     <h4 class="font-semibold mb-3 text-white">Platform</h4>
