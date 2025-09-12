@@ -2105,6 +2105,7 @@ def set_user_preferences():
         # Register preferences
         user_data = dict(data)
         user_data.pop('user_id', None)  # Remove user_id from preferences data
+        user_data.pop('email', None)  # Remove email from preferences data since it's passed separately
         
         preferences = engagement_system.register_user_preferences(
             user_id=user_id,

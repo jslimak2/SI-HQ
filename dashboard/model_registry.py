@@ -66,6 +66,12 @@ class ModelRegistry:
             try:
                 with open(self.metadata_file, 'r') as f:
                     registry_data = json.load(f)
+                    
+                    # Convert string status back to enum when loading
+                    for model_data in registry_data.values():
+                        if isinstance(model_data.get('status'), str):
+                            model_data['status'] = ModelStatus(model_data['status'])
+                    
                     self.models = {
                         model_id: ModelMetadata(**model_data) 
                         for model_id, model_data in registry_data.items()
