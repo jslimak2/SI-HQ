@@ -294,6 +294,96 @@ def health_check():
     except Exception as e:
         return create_error_response(e)
 
+@app.route('/api/system/status')
+def system_status():
+    """Comprehensive system status for admin screen"""
+    try:
+        # Core system components
+        system_status = {
+            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'overall_mode': 'demo' if demo_mode else 'production',
+            'features': {
+                'database': {
+                    'name': 'Firebase Firestore',
+                    'status': 'production' if not demo_mode and db else 'demo',
+                    'available': FIREBASE_AVAILABLE,
+                    'description': 'Real database connection' if not demo_mode and db else 'Mock/fake data for testing'
+                },
+                'ml_training': {
+                    'name': 'Machine Learning Training',
+                    'status': 'production' if ML_AVAILABLE else 'demo',
+                    'available': ML_AVAILABLE,
+                    'description': 'Full ML training capabilities' if ML_AVAILABLE else 'Limited ML functionality'
+                },
+                'training_queue': {
+                    'name': 'Training Queue System',
+                    'status': 'production' if TRAINING_QUEUE_AVAILABLE else 'demo',
+                    'available': TRAINING_QUEUE_AVAILABLE,
+                    'description': 'Real GPU training queue' if TRAINING_QUEUE_AVAILABLE else 'Demo training queue'
+                },
+                'performance_matrix': {
+                    'name': 'Performance Analytics',
+                    'status': 'production' if PERFORMANCE_MATRIX_AVAILABLE else 'demo',
+                    'available': PERFORMANCE_MATRIX_AVAILABLE,
+                    'description': 'Advanced performance metrics' if PERFORMANCE_MATRIX_AVAILABLE else 'Basic performance tracking'
+                },
+                'sport_models': {
+                    'name': 'Sports Prediction Models',
+                    'status': 'production' if SPORT_MODELS_AVAILABLE else 'demo',
+                    'available': SPORT_MODELS_AVAILABLE,
+                    'description': 'Real sports prediction models' if SPORT_MODELS_AVAILABLE else 'Demo prediction models'
+                },
+                'backtesting': {
+                    'name': 'Backtesting Engine',
+                    'status': 'production' if BACKTESTING_AVAILABLE else 'demo',
+                    'available': BACKTESTING_AVAILABLE,
+                    'description': 'Full backtesting capabilities' if BACKTESTING_AVAILABLE else 'Limited backtesting'
+                },
+                'data_pipeline': {
+                    'name': 'Data Pipeline',
+                    'status': 'production' if DATA_PIPELINE_AVAILABLE else 'demo',
+                    'available': DATA_PIPELINE_AVAILABLE,
+                    'description': 'Real-time data processing' if DATA_PIPELINE_AVAILABLE else 'Mock data processing'
+                },
+                'sports_api': {
+                    'name': 'Sports Data API',
+                    'status': 'production' if external_api_key and 'demo' not in external_api_key else 'demo',
+                    'available': bool(external_api_key and 'demo' not in external_api_key),
+                    'description': 'Live sports data feed' if external_api_key and 'demo' not in external_api_key else 'Mock sports data'
+                }
+            },
+            'warnings': [],
+            'summary': {
+                'total_features': 8,
+                'production_features': 0,
+                'demo_features': 0
+            }
+        }
+        
+        # Count production vs demo features
+        for feature_key, feature_info in system_status['features'].items():
+            if feature_info['status'] == 'production':
+                system_status['summary']['production_features'] += 1
+            else:
+                system_status['summary']['demo_features'] += 1
+        
+        # Add warnings for demo features
+        if demo_mode:
+            system_status['warnings'].append('System is running in DEMO MODE - no real data or transactions')
+        
+        if not external_api_key:
+            system_status['warnings'].append('Sports API key not configured - using mock data')
+            
+        if system_status['summary']['demo_features'] > 0:
+            system_status['warnings'].append(f'{system_status["summary"]["demo_features"]} features running in demo mode')
+        
+        return jsonify({
+            'success': True,
+            'system_status': system_status
+        })
+    except Exception as e:
+        return create_error_response(e)
+
 @app.route('/terms')
 def terms():
     """Terms of Service page"""
