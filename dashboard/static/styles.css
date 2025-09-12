@@ -40,6 +40,7 @@ body {
 .dashboard-header h1, .post9-title {
     font-size: 3.5rem;
     font-weight: 900;
+    font-style: italic;
     color: #fff;
     letter-spacing: 2px;
     text-shadow: 0 2px 8px #0a1a2f;
