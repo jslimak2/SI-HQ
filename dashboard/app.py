@@ -15,17 +15,38 @@ try:
     FIREBASE_AVAILABLE = True
     print("Firebase components loaded successfully")
 except ImportError as e:
-    print(f"Firebase components not available: {e}")
+    print(f"🟡 WARNING: Firebase components not available: {e}")
+    print(f"🟡 WARNING: Running in MOCK MODE - no real database connections!")
     FIREBASE_AVAILABLE = False
-    # Create mock objects for firebase functionality
+    # ⚠️  MOCK FIRESTORE - NOT REAL DATABASE ⚠️
+    # This mock class provides fake Firebase functionality for demo/testing purposes
     class MockFirestore:
-        def collection(self, name): return self
-        def document(self, id): return self
-        def get(self): return self
-        def to_dict(self): return {}
-        def set(self, data): pass
-        def update(self, data): pass
-        def delete(self): pass
+        """
+        🚨 MOCK FIRESTORE CLASS - NOT REAL DATABASE 🚨
+        This class simulates Firebase Firestore operations but does NOT persist data.
+        All operations are fake and return empty/default values.
+        """
+        def collection(self, name): 
+            print(f"🟡 MOCK: Accessing collection '{name}' (no real data)")
+            return self
+        def document(self, id): 
+            print(f"🟡 MOCK: Accessing document '{id}' (no real data)")
+            return self
+        def get(self): 
+            print(f"🟡 MOCK: Getting document (returning empty data)")
+            return self
+        def to_dict(self): 
+            print(f"🟡 MOCK: Converting to dict (returning empty dict)")
+            return {}
+        def set(self, data): 
+            print(f"🟡 MOCK: Setting data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
+            pass
+        def update(self, data): 
+            print(f"🟡 MOCK: Updating data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
+            pass
+        def delete(self): 
+            print(f"🟡 MOCK: Deleting document (nothing actually deleted)")
+            pass
     firestore = MockFirestore()
 
 # Professional imports
@@ -120,24 +141,37 @@ for warning in config_warnings:
 demo_mode = False
 try:
     if not FIREBASE_AVAILABLE:
-        logger.info("Firebase not available, running in demo mode")
+        print("🟡 WARNING: Running in DEMO MODE - Firebase not available")
+        print("🟡 WARNING: All data operations will use MOCK/FAKE data")
+        logger.warning("🚨 DEMO MODE: Firebase not available, running with mock data")
         demo_mode = True
         db = None
     else:
         cred_path = config.database.service_account_path
         if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
-            logger.info("Running in demo mode - Firebase features will be limited")
+            print("🟡 WARNING: Running in DEMO MODE - Firebase features will be limited")
+            print("🟡 WARNING: Using demo service account or no valid credentials")
+            logger.warning("🚨 DEMO MODE: Invalid or demo credentials detected")
             demo_mode = True
             db = None
         else:
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
             db = firestore.client()
-            logger.info("Firestore client initialized successfully.")
+            logger.info("✅ PRODUCTION MODE: Firestore client initialized successfully")
+            print("✅ PRODUCTION MODE: Real database connection established")
 except Exception as e:
-    logger.error(f"Firebase initialization failed, running in demo mode: {e}")
+    print("🔴 ERROR: Firebase initialization failed - falling back to DEMO MODE")
+    logger.error(f"🚨 DEMO MODE: Firebase initialization failed, running with mock data: {e}")
     demo_mode = True
     db = None
+
+# Additional demo mode warnings
+if demo_mode:
+    print("🚨" + "="*60 + "🚨")
+    print("🚨 RUNNING IN DEMO MODE - NOT PRODUCTION DATA 🚨")
+    print("🚨 All investments, bots, and analytics are FAKE 🚨") 
+    print("🚨" + "="*60 + "🚨")
 
 app = Flask(__name__)
 app.secret_key = config.secret_key
@@ -246,9 +280,9 @@ def health_check():
             'version': '1.0.0',
             'environment': config.environment.value,
             'services': {
-                'database': 'demo' if demo_mode else 'connected',
+                'database': '🚨 DEMO MODE - MOCK DATA' if demo_mode else 'connected',
                 'ml_models': 'available' if ML_AVAILABLE else 'limited',
-                'external_api': 'demo' if not external_api_key or 'demo' in external_api_key else 'connected'
+                'external_api': '🚨 DEMO MODE - FAKE API' if not external_api_key or 'demo' in external_api_key else 'connected'
             },
             'error_stats': error_monitor.get_error_stats()
         }
@@ -314,15 +348,19 @@ def home():
             # Demo mode - provide a dummy token
             auth_token_str = "demo_auth_token"
 
-        # Pass the Firebase config and auth token to the template
+        # Pass the Firebase config, auth token, and demo mode indicator to the template
         return render_template('index.html',
                                firebase_config=firebase_config,
-                               auth_token=auth_token_str)
+                               auth_token=auth_token_str,
+                               demo_mode=demo_mode,
+                               demo_warning="🚨 DEMO MODE - All data is MOCK/FAKE for testing purposes 🚨" if demo_mode else None)
     except Exception as e:
         app.logger.error(f'Error in home route: {e}')
         return render_template('index.html',
                                firebase_config=firebase_config,
-                               auth_token="demo_auth_token")
+                               auth_token="demo_auth_token",
+                               demo_mode=True,
+                               demo_warning="🚨 DEMO MODE - All data is MOCK/FAKE for testing purposes 🚨")
 
 @app.route('/api/firebase-config', methods=['GET'])
 def get_firebase_config():
@@ -1063,8 +1101,31 @@ def get_available_investments():
         print(f"An unexpected error occurred: {e}")
         return jsonify({'success': False, 'message': f'An unexpected error occurred: {e}'}), 500
 
+# ████████████████████████████████████████████████████████████████████████████████
+# 🚨                           MOCK/DEMO DATA SECTION                         🚨
+# ████████████████████████████████████████████████████████████████████████████████
+# 
+# ⚠️  WARNING: ALL FUNCTIONS BELOW GENERATE FAKE DATA FOR DEMO PURPOSES ONLY ⚠️
+#
+# These functions create mock/fake data when:
+# - Firebase is not available
+# - Running in demo mode  
+# - External APIs are not configured
+# 
+# 🚫 NONE OF THE DATA GENERATED HERE IS REAL 🚫
+# - No real money, investments, or bets
+# - No real sports data or predictions  
+# - No real user accounts or authentication
+#
+# ████████████████████████████████████████████████████████████████████████████████
+
 def generate_demo_investments():
-    """Generate demo investment data for testing"""
+    """
+    🚨 FAKE DATA GENERATOR 🚨
+    Generate demo investment data for testing - NOT REAL INVESTMENTS
+    All data returned is mock/fake for demonstration purposes only
+    """
+    print("🟡 GENERATING FAKE INVESTMENT DATA for demo purposes")
     import random
     from datetime import datetime, timedelta
     
@@ -1309,7 +1370,12 @@ def get_bot_recommendations():
         return jsonify({'success': False, 'message': f'Failed to get recommendations: {str(e)}'}), 500
 
 def generate_demo_bot_recommendations():
-    """Generate demo bot recommendations for testing"""
+    """
+    🚨 FAKE BOT RECOMMENDATIONS GENERATOR 🚨
+    Generate demo bot recommendations for testing - NOT REAL BOTS OR MONEY
+    All bots, balances, and recommendations are fake for demonstration only
+    """
+    print("🟡 GENERATING FAKE BOT RECOMMENDATIONS for demo purposes")
     import random
     
     # Demo bots with different characteristics
