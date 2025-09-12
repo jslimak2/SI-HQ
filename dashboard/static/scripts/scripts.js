@@ -813,12 +813,17 @@ window.showStrategyDetails = function(strategyId) {
             
             // Handle both old format (direct values) and new format (objects with type/value)
             let paramValue, paramType;
-            if (typeof param === 'object' && param.hasOwnProperty('value')) {
+            if (param !== null && typeof param === 'object' && param.hasOwnProperty('value')) {
                 paramValue = param.value;
                 paramType = param.type || 'number';
             } else {
                 paramValue = param;
                 paramType = typeof param === 'number' ? 'number' : 'text';
+            }
+            
+            // Ensure paramValue is not undefined or null to prevent "undefined" display
+            if (paramValue === undefined || paramValue === null) {
+                paramValue = paramType === 'number' ? 0 : '';
             }
             
             inputGroup.innerHTML = `
