@@ -297,6 +297,20 @@
     </script>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-8">
+    <!-- Demo Mode Warning Banner -->
+    {% if demo_mode %}
+    <div class="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-center py-2 px-4 font-bold shadow-lg">
+        <div class="flex items-center justify-center space-x-2">
+            <span class="text-yellow-200">⚠️</span>
+            <span>{{ demo_warning }}</span>
+            <span class="text-yellow-200">⚠️</span>
+        </div>
+        <div class="text-sm mt-1 text-red-200">
+            No real money, bots, or investments - This is demonstration mode only
+        </div>
+    </div>
+    <div class="h-20"></div> <!-- Spacer for fixed banner -->
+    {% endif %}
     <nav class="flex space-x-4 mb-6 flex-wrap">
         <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
         <button onclick="showPage('investments-page')" class="nav-btn">Available Investments</button>
