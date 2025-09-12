@@ -309,7 +309,7 @@ def get_overall_stats():
 @handle_errors
 @require_authentication
 @rate_limit(requests_per_hour=100)
-@sanitize_request_data(required_fields=['name', 'initial_balance'], optional_fields=['bet_percentage', 'max_bets_per_week', 'sport'])
+@sanitize_request_data(required_fields=['name', 'initial_balance'], optional_fields=['bet_percentage', 'max_bets_per_week', 'sport', 'model_id'])
 def add_bot():
     """Adds a new bot to the Firestore database with professional validation."""
     if not db:
@@ -335,6 +335,41 @@ def add_bot():
         new_bot_ref = bots_collection.document()
         bot_id = new_bot_ref.id
         
+        # Auto-detect sport from model if model_id is provided
+        detected_sport = data.get('sport', 'NBA')  # Default sport
+        model_id = data.get('model_id')
+        sport_auto_detected = False
+        sport_detection_source = None
+        
+        if model_id:
+            # Get model metadata to extract sport information
+            model_metadata = model_registry.get_model_metadata(model_id)
+            
+            if model_metadata:
+                detected_sport = model_metadata.sport
+                sport_auto_detected = True
+                sport_detection_source = 'model_metadata'
+                logger.info(f"Auto-detected sport '{detected_sport}' from model {model_id} during bot creation")
+            else:
+                # Fallback: try to extract sport from model_id pattern
+                model_parts = model_id.lower().split('_')
+                sport_mapping = {
+                    'nfl': 'NFL',
+                    'nba': 'NBA', 
+                    'mlb': 'MLB',
+                    'nhl': 'NHL',
+                    'ncaaf': 'NCAAF',
+                    'ncaab': 'NCAAB'
+                }
+                
+                for part in model_parts:
+                    if part in sport_mapping:
+                        detected_sport = sport_mapping[part]
+                        sport_auto_detected = True
+                        sport_detection_source = 'model_id_pattern'
+                        logger.info(f"Auto-detected sport '{detected_sport}' from model ID pattern during bot creation")
+                        break
+        
         initial_bot_data = {
             'id': bot_id,
             'name': data.get('name'),
@@ -343,11 +378,14 @@ def add_bot():
             'initial_balance': initial_balance,
             'bet_percentage': bet_percentage,
             'max_bets_per_week': max_bets_per_week,
-            'sport': data.get('sport', 'NBA'),
+            'sport': detected_sport,
+            'sport_auto_detected': sport_auto_detected,
+            'sport_detection_source': sport_detection_source,
             'bet_type': data.get('bet_type', 'Moneyline'),
             'status': 'stopped',
             'strategy_id': data.get('strategy_id', None),
             'linked_strategy_id': data.get('linked_strategy_id', None),
+            'assigned_model_id': model_id,
             'total_profit': 0.0,
             'total_bets': 0,
             'total_wins': 0,
@@ -2495,7 +2533,7 @@ def create_model_based_strategy():
 
 @app.route('/api/bots/<bot_id>/assign-model', methods=['POST'])
 def assign_model_to_bot():
-    """Assign a trained model to a bot for recommendations"""
+    """Assign a trained model to a bot for recommendations and auto-detect sport"""
     try:
         data = request.json
         bot_id = data.get('bot_id')
@@ -2508,6 +2546,32 @@ def assign_model_to_bot():
         if not db:
             return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
         
+        # Get model metadata to extract sport information
+        model_metadata = model_registry.get_model_metadata(model_id)
+        detected_sport = None
+        
+        if model_metadata:
+            detected_sport = model_metadata.sport
+            logger.info(f"Auto-detected sport '{detected_sport}' from model {model_id}")
+        else:
+            # Fallback: try to extract sport from model_id if it follows naming convention
+            # e.g., "nfl_ensemble_123456" or "nba_lstm_789012"
+            model_parts = model_id.lower().split('_')
+            sport_mapping = {
+                'nfl': 'NFL',
+                'nba': 'NBA', 
+                'mlb': 'MLB',
+                'nhl': 'NHL',
+                'ncaaf': 'NCAAF',
+                'ncaab': 'NCAAB'
+            }
+            
+            for part in model_parts:
+                if part in sport_mapping:
+                    detected_sport = sport_mapping[part]
+                    logger.info(f"Auto-detected sport '{detected_sport}' from model ID pattern")
+                    break
+        
         # Update bot configuration to use the model
         bot_ref = bots_collection.document(bot_id)
         bot_doc = bot_ref.get()
@@ -2515,20 +2579,36 @@ def assign_model_to_bot():
         if not bot_doc.exists:
             return jsonify({'success': False, 'message': 'Bot not found'}), 404
         
-        bot_ref.update({
+        # Prepare update data
+        update_data = {
             'assigned_model_id': model_id,
             'model_assigned_at': datetime.datetime.now().isoformat(),
             'last_updated': datetime.datetime.now().isoformat()
-        })
+        }
+        
+        # Auto-update sport if detected
+        if detected_sport:
+            update_data['sport'] = detected_sport
+            update_data['sport_auto_detected'] = True
+            update_data['sport_detected_from'] = 'model_metadata' if model_metadata else 'model_id_pattern'
+        
+        bot_ref.update(update_data)
+        
+        response_message = f'Model {model_id} assigned to bot {bot_id}'
+        if detected_sport:
+            response_message += f' and sport auto-detected as {detected_sport}'
         
         return jsonify({
             'success': True,
-            'message': f'Model {model_id} assigned to bot {bot_id}',
+            'message': response_message,
             'bot_id': bot_id,
-            'model_id': model_id
+            'model_id': model_id,
+            'auto_detected_sport': detected_sport,
+            'sport_detection_source': 'model_metadata' if model_metadata else ('model_id_pattern' if detected_sport else None)
         }), 200
         
     except Exception as e:
+        logger.error(f"Failed to assign model to bot: {e}")
         return jsonify({'success': False, 'message': f'Failed to assign model: {e}'}), 500
 
 @app.route('/api/bots/<bot_id>/model-recommendations', methods=['GET'])
@@ -2628,5 +2708,223 @@ def get_bot_model_recommendations(bot_id):
     except Exception as e:
         return jsonify({'success': False, 'message': f'Failed to get recommendations: {e}'}), 500
 
+@app.route('/api/recent-scores', methods=['GET'])
+def get_recent_scores():
+    """Get recent scores for all sports"""
+    try:
+        sport = request.args.get('sport', 'all')
+        days = int(request.args.get('days', 7))  # Last 7 days by default
+        
+        # Generate demo recent scores data
+        recent_scores = generate_demo_recent_scores(sport, days)
+        
+        return jsonify({
+            'success': True,
+            'scores': recent_scores,
+            'sport_filter': sport,
+            'days_back': days,
+            'generated_at': datetime.datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get recent scores: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get scores: {e}'}), 500
+
+@app.route('/api/standings', methods=['GET'])
+def get_division_standings():
+    """Get division standings for all sports"""
+    try:
+        sport = request.args.get('sport', 'all')
+        
+        # Generate demo standings data
+        standings = generate_demo_standings(sport)
+        
+        return jsonify({
+            'success': True,
+            'standings': standings,
+            'sport_filter': sport,
+            'generated_at': datetime.datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get standings: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get standings: {e}'}), 500
+
+def generate_demo_recent_scores(sport_filter='all', days_back=7):
+    """Generate demo recent scores data"""
+    import random
+    from datetime import datetime, timedelta
+    
+    scores = []
+    sports_data = {
+        'NFL': {
+            'teams': ['Chiefs', 'Bills', 'Cowboys', 'Eagles', 'Patriots', '49ers', 'Packers', 'Ravens'],
+            'score_range': (10, 35)
+        },
+        'NBA': {
+            'teams': ['Lakers', 'Warriors', 'Celtics', 'Heat', 'Bulls', 'Knicks', 'Nets', 'Sixers'],
+            'score_range': (85, 125)
+        },
+        'MLB': {
+            'teams': ['Yankees', 'Red Sox', 'Dodgers', 'Giants', 'Astros', 'Angels', 'Mets', 'Cubs'],
+            'score_range': (2, 12)
+        },
+        'NHL': {
+            'teams': ['Rangers', 'Bruins', 'Kings', 'Sharks', 'Blackhawks', 'Red Wings', 'Flyers', 'Penguins'],
+            'score_range': (1, 6)
+        }
+    }
+    
+    # Determine which sports to include
+    if sport_filter != 'all' and sport_filter in sports_data:
+        sports_to_include = [sport_filter]
+    else:
+        sports_to_include = list(sports_data.keys())
+    
+    # Generate scores for each day
+    for day_offset in range(days_back):
+        game_date = datetime.now() - timedelta(days=day_offset)
+        
+        for sport in sports_to_include:
+            sport_info = sports_data[sport]
+            teams = sport_info['teams']
+            score_min, score_max = sport_info['score_range']
+            
+            # Generate 2-4 games per sport per day
+            num_games = random.randint(2, 4)
+            
+            for _ in range(num_games):
+                home_team = random.choice(teams)
+                away_team = random.choice([t for t in teams if t != home_team])
+                
+                home_score = random.randint(score_min, score_max)
+                away_score = random.randint(score_min, score_max)
+                
+                # Ensure home team has slight advantage (60% win rate)
+                if random.random() < 0.6:
+                    if home_score <= away_score:
+                        home_score = away_score + random.randint(1, 3)
+                
+                scores.append({
+                    'id': f"{sport.lower()}_{game_date.strftime('%Y%m%d')}_{home_team}_{away_team}",
+                    'sport': sport,
+                    'date': game_date.strftime('%Y-%m-%d'),
+                    'home_team': home_team,
+                    'away_team': away_team,
+                    'home_score': home_score,
+                    'away_score': away_score,
+                    'winner': home_team if home_score > away_score else away_team,
+                    'game_time': game_date.strftime('%I:%M %p'),
+                    'status': 'Final'
+                })
+    
+    # Sort by date (most recent first)
+    scores.sort(key=lambda x: x['date'], reverse=True)
+    
+    return scores
+
+def generate_demo_standings(sport_filter='all'):
+    """Generate demo division standings data"""
+    import random
+    
+    standings = {}
+    
+    sports_divisions = {
+        'NFL': {
+            'AFC East': ['Bills', 'Patriots', 'Jets', 'Dolphins'],
+            'AFC North': ['Ravens', 'Steelers', 'Browns', 'Bengals'],
+            'AFC South': ['Titans', 'Colts', 'Texans', 'Jaguars'],
+            'AFC West': ['Chiefs', 'Chargers', 'Raiders', 'Broncos'],
+            'NFC East': ['Eagles', 'Cowboys', 'Giants', 'Commanders'],
+            'NFC North': ['Packers', 'Vikings', 'Bears', 'Lions'],
+            'NFC South': ['Saints', 'Falcons', 'Panthers', 'Buccaneers'],
+            'NFC West': ['49ers', 'Seahawks', 'Rams', 'Cardinals']
+        },
+        'NBA': {
+            'Atlantic': ['Celtics', 'Nets', 'Knicks', 'Sixers', 'Raptors'],
+            'Central': ['Bucks', 'Bulls', 'Cavaliers', 'Pistons', 'Pacers'],
+            'Southeast': ['Heat', 'Hawks', 'Hornets', 'Magic', 'Wizards'],
+            'Northwest': ['Nuggets', 'Timberwolves', 'Thunder', 'Blazers', 'Jazz'],
+            'Pacific': ['Warriors', 'Lakers', 'Clippers', 'Suns', 'Kings'],
+            'Southwest': ['Mavericks', 'Rockets', 'Grizzlies', 'Pelicans', 'Spurs']
+        },
+        'MLB': {
+            'AL East': ['Yankees', 'Red Sox', 'Blue Jays', 'Rays', 'Orioles'],
+            'AL Central': ['Twins', 'Guardians', 'White Sox', 'Tigers', 'Royals'],
+            'AL West': ['Astros', 'Angels', 'Mariners', 'Rangers', 'Athletics'],
+            'NL East': ['Braves', 'Mets', 'Phillies', 'Marlins', 'Nationals'],
+            'NL Central': ['Brewers', 'Cardinals', 'Cubs', 'Reds', 'Pirates'],
+            'NL West': ['Dodgers', 'Padres', 'Giants', 'Rockies', 'Diamondbacks']
+        }
+    }
+    
+    # Determine which sports to include
+    if sport_filter != 'all' and sport_filter in sports_divisions:
+        sports_to_include = [sport_filter]
+    else:
+        sports_to_include = list(sports_divisions.keys())
+    
+    for sport in sports_to_include:
+        standings[sport] = {}
+        
+        for division, teams in sports_divisions[sport].items():
+            division_standings = []
+            
+            for i, team in enumerate(teams):
+                # Generate realistic records
+                if sport == 'NFL':
+                    games_played = random.randint(14, 17)
+                    wins = random.randint(max(0, games_played - 15), games_played)
+                elif sport == 'NBA':
+                    games_played = random.randint(75, 82)
+                    wins = random.randint(max(0, games_played - 60), min(games_played, 65))
+                else:  # MLB
+                    games_played = random.randint(155, 162)
+                    wins = random.randint(max(0, games_played - 100), min(games_played, 110))
+                
+                losses = games_played - wins
+                win_pct = wins / games_played if games_played > 0 else 0
+                
+                # Games behind calculation (simplified)
+                gb = i * random.uniform(0.5, 3.0) if i > 0 else 0
+                
+                division_standings.append({
+                    'team': team,
+                    'wins': wins,
+                    'losses': losses,
+                    'win_percentage': round(win_pct, 3),
+                    'games_behind': round(gb, 1) if gb > 0 else '-',
+                    'games_played': games_played,
+                    'position': i + 1
+                })
+            
+            # Sort by win percentage
+            division_standings.sort(key=lambda x: x['win_percentage'], reverse=True)
+            
+            # Update positions and games behind after sorting
+            for idx, team_data in enumerate(division_standings):
+                team_data['position'] = idx + 1
+                if idx == 0:
+                    team_data['games_behind'] = '-'
+                else:
+                    # Calculate actual games behind leader
+                    leader_wins = division_standings[0]['wins']
+                    leader_losses = division_standings[0]['losses']
+                    team_wins = team_data['wins']
+                    team_losses = team_data['losses']
+                    
+                    gb = ((leader_wins - team_wins) + (team_losses - leader_losses)) / 2
+                    team_data['games_behind'] = round(gb, 1) if gb > 0 else '-'
+            
+            standings[sport][division] = division_standings
+    
+    return standings
+
+@app.route('/scores')
+def scores_page():
+    """Render the scores and standings page"""
+    return render_template('scores.html')
+
+# Add the imports at the top if not already present
 if __name__ == '__main__':
     app.run(debug=True)
