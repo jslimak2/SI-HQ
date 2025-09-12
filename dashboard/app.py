@@ -78,6 +78,15 @@ except ImportError as e:
     print(f"Backtesting engine not available: {e}")
     BACKTESTING_AVAILABLE = False
 
+# Import data pipeline
+try:
+    from data_pipeline import data_pipeline
+    DATA_PIPELINE_AVAILABLE = True
+    print("Data pipeline loaded successfully")
+except ImportError as e:
+    print(f"Data pipeline not available: {e}")
+    DATA_PIPELINE_AVAILABLE = False
+
 # Load environment variables from .env file
 config = ConfigManager.load_config()
 logger = setup_logging(config)
@@ -3657,32 +3666,11 @@ def compare_betting_strategies():
 @require_authentication
 def get_data_pipeline_status():
     """Get current data pipeline status"""
+    if not DATA_PIPELINE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Data pipeline not available'}), 500
+    
     try:
-        # Simulate data pipeline status
-        pipeline_status = {
-            'data_sources': {
-                'nba_api': {'status': 'active', 'last_update': datetime.now().isoformat(), 'records': 2450},
-                'nfl_api': {'status': 'active', 'last_update': datetime.now().isoformat(), 'records': 1230},
-                'mlb_api': {'status': 'active', 'last_update': datetime.now().isoformat(), 'records': 3680},
-                'weather_api': {'status': 'active', 'last_update': datetime.now().isoformat(), 'records': 890},
-                'odds_api': {'status': 'active', 'last_update': datetime.now().isoformat(), 'records': 15670}
-            },
-            'processing_stages': {
-                'data_ingestion': {'status': 'completed', 'duration_seconds': 45, 'records_processed': 8920},
-                'data_cleaning': {'status': 'completed', 'duration_seconds': 23, 'records_cleaned': 8895},
-                'feature_engineering': {'status': 'completed', 'duration_seconds': 67, 'features_created': 45},
-                'data_validation': {'status': 'completed', 'duration_seconds': 12, 'validation_score': 0.95}
-            },
-            'data_quality': {
-                'completeness': 0.97,
-                'accuracy': 0.94,
-                'consistency': 0.96,
-                'timeliness': 0.99,
-                'overall_quality': 0.965
-            },
-            'next_scheduled_run': (datetime.now() + timedelta(hours=1)).isoformat(),
-            'pipeline_version': '2.1.0'
-        }
+        pipeline_status = data_pipeline.get_pipeline_status()
         
         return jsonify({
             'success': True,
@@ -3692,6 +3680,36 @@ def get_data_pipeline_status():
     except Exception as e:
         logger.error(f"Failed to get pipeline status: {e}")
         raise ValidationError(f'Failed to get pipeline status: {e}')
+
+@app.route('/api/data/pipeline/run', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(optional_fields=['sport'])
+def run_data_pipeline():
+    """Run the complete data pipeline"""
+    if not DATA_PIPELINE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Data pipeline not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        sport = data.get('sport')
+        
+        if sport and sport.upper() not in ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']:
+            raise ValidationError("Invalid sport specified")
+        
+        # Run the pipeline
+        pipeline_result = data_pipeline.run_full_pipeline(sport)
+        
+        logger.info(f"Data pipeline executed for sport: {sport or 'all'}")
+        
+        return jsonify({
+            'success': True,
+            'pipeline_result': pipeline_result
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to run data pipeline: {e}")
+        raise ValidationError(f'Failed to run data pipeline: {e}')
 
 @app.route('/api/data/preprocessing/config', methods=['GET'])
 @handle_errors
