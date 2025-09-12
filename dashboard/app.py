@@ -48,6 +48,45 @@ except ImportError as e:
         ML_AVAILABLE = False
         BASIC_ML_ONLY = False
 
+# Import training queue management
+try:
+    from training_queue import training_queue
+    TRAINING_QUEUE_AVAILABLE = True
+    print("Training queue system loaded successfully")
+except ImportError as e:
+    print(f"Training queue not available: {e}")
+    TRAINING_QUEUE_AVAILABLE = False
+
+# Import performance matrix and sport models
+try:
+    from performance_matrix import performance_matrix
+    from sport_models import SportsModelFactory, Sport, ModelType
+    PERFORMANCE_MATRIX_AVAILABLE = True
+    SPORT_MODELS_AVAILABLE = True
+    print("Performance matrix and sport models loaded successfully")
+except ImportError as e:
+    print(f"Performance matrix or sport models not available: {e}")
+    PERFORMANCE_MATRIX_AVAILABLE = False
+    SPORT_MODELS_AVAILABLE = False
+
+# Import backtesting engine
+try:
+    from backtesting import backtesting_engine, BacktestConfig, BettingStrategy
+    BACKTESTING_AVAILABLE = True
+    print("Backtesting engine loaded successfully")
+except ImportError as e:
+    print(f"Backtesting engine not available: {e}")
+    BACKTESTING_AVAILABLE = False
+
+# Import data pipeline
+try:
+    from data_pipeline import data_pipeline
+    DATA_PIPELINE_AVAILABLE = True
+    print("Data pipeline loaded successfully")
+except ImportError as e:
+    print(f"Data pipeline not available: {e}")
+    DATA_PIPELINE_AVAILABLE = False
+
 # Load environment variables from .env file
 config = ConfigManager.load_config()
 logger = setup_logging(config)
@@ -2924,6 +2963,926 @@ def generate_demo_standings(sport_filter='all'):
 def scores_page():
     """Render the scores and standings page"""
     return render_template('scores.html')
+
+# --- TRAINING QUEUE ENDPOINTS ---
+
+@app.route('/api/training/queue', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_training_queue():
+    """Get current training queue status"""
+    if not TRAINING_QUEUE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+    
+    try:
+        queue_status = training_queue.get_queue_status()
+        
+        return jsonify({
+            'success': True,
+            'queue': queue_status
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get training queue: {e}")
+        raise ValidationError(f'Failed to get training queue: {e}')
+
+@app.route('/api/training/submit', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['model_id', 'model_type', 'sport'], optional_fields=['epochs', 'batch_size', 'learning_rate'])
+def submit_training_job():
+    """Submit a new training job to the queue"""
+    if not TRAINING_QUEUE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
+        
+        # Validate inputs
+        model_id = data.get('model_id')
+        model_type = data.get('model_type')
+        sport = data.get('sport')
+        
+        if sport not in ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']:
+            raise ValidationError("Invalid sport", field='sport')
+        
+        if model_type not in ['lstm_weather', 'ensemble', 'neural', 'statistical']:
+            raise ValidationError("Invalid model type", field='model_type')
+        
+        # Build training configuration
+        training_config = {
+            'epochs': int(data.get('epochs', 50)),
+            'batch_size': int(data.get('batch_size', 32)),
+            'learning_rate': float(data.get('learning_rate', 0.001)),
+            'model_name': f"{sport}_{model_type}_{model_id}",
+            'optimizer': data.get('optimizer', 'adam'),
+            'validation_split': data.get('validation_split', 0.2)
+        }
+        
+        # Validate configuration
+        if training_config['epochs'] < 1 or training_config['epochs'] > 200:
+            raise ValidationError("Epochs must be between 1 and 200", field='epochs')
+        
+        if training_config['batch_size'] < 1 or training_config['batch_size'] > 256:
+            raise ValidationError("Batch size must be between 1 and 256", field='batch_size')
+        
+        # Submit job to queue
+        job_id = training_queue.submit_job(
+            model_id=model_id,
+            model_type=model_type,
+            sport=sport,
+            user_id=user_id,
+            training_config=training_config
+        )
+        
+        logger.info(f"Training job {job_id} submitted by user {user_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Training job submitted successfully',
+            'job_id': job_id,
+            'queue_position': len(training_queue.queue)
+        }), 201
+        
+    except ValueError as e:
+        raise ValidationError(f"Invalid numeric value: {str(e)}")
+    except Exception as e:
+        logger.error(f"Failed to submit training job: {e}")
+        raise ValidationError(f'Failed to submit training job: {e}')
+
+@app.route('/api/training/job/<job_id>', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_training_job_status(job_id):
+    """Get status of a specific training job"""
+    if not TRAINING_QUEUE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+    
+    try:
+        job_status = training_queue.get_job_status(job_id)
+        
+        if not job_status:
+            raise ResourceNotFoundError('Training Job', job_id)
+        
+        return jsonify({
+            'success': True,
+            'job': job_status
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get job status: {e}")
+        raise ValidationError(f'Failed to get job status: {e}')
+
+@app.route('/api/training/job/<job_id>/cancel', methods=['POST'])
+@handle_errors
+@require_authentication
+def cancel_training_job(job_id):
+    """Cancel a training job"""
+    if not TRAINING_QUEUE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+    
+    try:
+        success = training_queue.cancel_job(job_id)
+        
+        if not success:
+            raise ResourceNotFoundError('Training Job', job_id)
+        
+        logger.info(f"Training job {job_id} cancelled")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Training job cancelled successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to cancel job: {e}")
+        raise ValidationError(f'Failed to cancel job: {e}')
+
+@app.route('/api/training/user-jobs', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_user_training_jobs():
+    """Get all training jobs for the current user"""
+    if not TRAINING_QUEUE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+    
+    try:
+        user_id = g.current_user.get('user_id')
+        user_jobs = training_queue.get_user_jobs(user_id)
+        
+        return jsonify({
+            'success': True,
+            'jobs': user_jobs,
+            'total_jobs': len(user_jobs)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get user jobs: {e}")
+        raise ValidationError(f'Failed to get user jobs: {e}')
+
+@app.route('/api/training/gpu-stats', methods=['GET'])
+@handle_errors  
+@require_authentication
+def get_gpu_stats():
+    """Get current GPU resource statistics"""
+    if not TRAINING_QUEUE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+    
+    try:
+        queue_status = training_queue.get_queue_status()
+        gpu_stats = queue_status['gpu_resources']
+        
+        # Calculate aggregated stats
+        total_memory = sum(gpu['memory_gb'] for gpu in gpu_stats)
+        used_memory = sum(gpu['memory_used_gb'] for gpu in gpu_stats)
+        avg_utilization = sum(gpu['utilization_percent'] for gpu in gpu_stats) / len(gpu_stats) if gpu_stats else 0
+        
+        return jsonify({
+            'success': True,
+            'gpu_stats': {
+                'individual_gpus': gpu_stats,
+                'total_gpus': len(gpu_stats),
+                'available_gpus': queue_status['available_gpus'],
+                'total_memory_gb': total_memory,
+                'used_memory_gb': used_memory,
+                'memory_utilization_percent': (used_memory / total_memory) * 100 if total_memory > 0 else 0,
+                'average_gpu_utilization': avg_utilization,
+                'active_training_jobs': queue_status['active_jobs']
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get GPU stats: {e}")
+        raise ValidationError(f'Failed to get GPU stats: {e}')
+
+# --- PERFORMANCE MATRIX ENDPOINTS ---
+
+@app.route('/api/performance/matrix', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_performance_matrix():
+    """Get model performance comparison matrix"""
+    if not PERFORMANCE_MATRIX_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Performance matrix not available'}), 500
+    
+    try:
+        sport = request.args.get('sport')
+        model_type = request.args.get('model_type')
+        days_back = int(request.args.get('days_back', 30))
+        
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        # Get performance matrix as DataFrame
+        matrix_df = performance_matrix.get_performance_matrix(sport, model_type, days_back)
+        
+        if matrix_df.empty:
+            return jsonify({
+                'success': True,
+                'matrix': [],
+                'message': 'No performance data found for the specified criteria'
+            })
+        
+        # Convert DataFrame to list of dictionaries
+        matrix_data = matrix_df.to_dict('records')
+        
+        # Get summary statistics
+        summary = {
+            'total_models': len(matrix_df),
+            'avg_accuracy': float(matrix_df['Accuracy'].mean()),
+            'best_accuracy': float(matrix_df['Accuracy'].max()),
+            'avg_roi': float(matrix_df['ROI %'].mean()),
+            'best_roi': float(matrix_df['ROI %'].max()),
+            'sports_covered': list(matrix_df['Sport'].unique()),
+            'model_types_covered': list(matrix_df['Model Type'].unique())
+        }
+        
+        return jsonify({
+            'success': True,
+            'matrix': matrix_data,
+            'summary': summary,
+            'filters_applied': {
+                'sport': sport,
+                'model_type': model_type,
+                'days_back': days_back
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get performance matrix: {e}")
+        raise ValidationError(f'Failed to get performance matrix: {e}')
+
+@app.route('/api/performance/compare', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['model_ids'])
+def compare_models():
+    """Compare specific models side by side"""
+    if not PERFORMANCE_MATRIX_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Performance matrix not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        model_ids = data.get('model_ids', [])
+        
+        if not model_ids or len(model_ids) < 2:
+            raise ValidationError("At least 2 model IDs required for comparison")
+        
+        if len(model_ids) > 10:
+            raise ValidationError("Maximum 10 models can be compared at once")
+        
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        comparison_data = performance_matrix.get_model_comparison(model_ids)
+        
+        return jsonify({
+            'success': True,
+            'comparison': comparison_data,
+            'models_found': len(comparison_data),
+            'models_requested': len(model_ids)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to compare models: {e}")
+        raise ValidationError(f'Failed to compare models: {e}')
+
+@app.route('/api/performance/leaderboard/<sport>', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_sport_leaderboard(sport):
+    """Get performance leaderboard for a specific sport"""
+    if not PERFORMANCE_MATRIX_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Performance matrix not available'}), 500
+    
+    try:
+        if sport.upper() not in ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']:
+            raise ValidationError("Invalid sport")
+        
+        limit = int(request.args.get('limit', 10))
+        if limit < 1 or limit > 50:
+            limit = 10
+        
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        leaderboard = performance_matrix.get_sport_leaderboard(sport.upper(), limit)
+        
+        return jsonify({
+            'success': True,
+            'leaderboard': leaderboard,
+            'sport': sport.upper(),
+            'total_entries': len(leaderboard)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get sport leaderboard: {e}")
+        raise ValidationError(f'Failed to get sport leaderboard: {e}')
+
+@app.route('/api/performance/model-types', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_model_type_analysis():
+    """Get performance analysis by model type"""
+    if not PERFORMANCE_MATRIX_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Performance matrix not available'}), 500
+    
+    try:
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        analysis = performance_matrix.get_model_type_analysis()
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis,
+            'model_types_analyzed': len(analysis)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get model type analysis: {e}")
+        raise ValidationError(f'Failed to get model type analysis: {e}')
+
+@app.route('/api/performance/parameters', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_parameter_effectiveness():
+    """Analyze parameter effectiveness across models"""
+    if not PERFORMANCE_MATRIX_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Performance matrix not available'}), 500
+    
+    try:
+        model_type = request.args.get('model_type')
+        
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        parameter_analysis = performance_matrix.get_parameter_effectiveness(model_type)
+        
+        return jsonify({
+            'success': True,
+            'parameter_analysis': parameter_analysis,
+            'model_type_filter': model_type,
+            'parameters_analyzed': len(parameter_analysis)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get parameter effectiveness: {e}")
+        raise ValidationError(f'Failed to get parameter effectiveness: {e}')
+
+@app.route('/api/performance/trending', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_trending_models():
+    """Get models with improving performance trends"""
+    if not PERFORMANCE_MATRIX_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Performance matrix not available'}), 500
+    
+    try:
+        days = int(request.args.get('days', 7))
+        if days < 1 or days > 30:
+            days = 7
+        
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        trending_models = performance_matrix.get_trending_models(days)
+        
+        return jsonify({
+            'success': True,
+            'trending_models': trending_models,
+            'analysis_period_days': days,
+            'total_trending': len(trending_models)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get trending models: {e}")
+        raise ValidationError(f'Failed to get trending models: {e}')
+
+# --- SPORT-SPECIFIC MODEL ENDPOINTS ---
+
+@app.route('/api/models/create-sport-model', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['sport', 'model_type'], optional_fields=['model_name'])
+def create_sport_specific_model():
+    """Create a new sport-specific model"""
+    if not SPORT_MODELS_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Sport models not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
+        
+        sport_str = data.get('sport').upper()
+        model_type_str = data.get('model_type').lower()
+        model_name = data.get('model_name', f"{sport_str}_{model_type_str}_model")
+        
+        # Validate inputs
+        try:
+            sport = Sport(sport_str)
+            model_type = ModelType(model_type_str)
+        except ValueError as e:
+            raise ValidationError(f"Invalid sport or model type: {e}")
+        
+        # Create unique model ID
+        model_id = f"{sport_str.lower()}_{model_type_str}_{int(datetime.now().timestamp())}"
+        
+        # Create model instance
+        model = SportsModelFactory.create_model(sport, model_type, model_id)
+        
+        # Register in model registry if available
+        if hasattr(model_registry, 'register_model'):
+            registry_id = model_registry.register_model(
+                name=model_name,
+                sport=sport_str,
+                model_type=model_type_str,
+                created_by=user_id,
+                description=f"{model_type_str.title()} model for {sport_str} predictions"
+            )
+        else:
+            registry_id = model_id
+        
+        logger.info(f"Sport-specific model created: {model_id} by user {user_id}")
+        
+        return jsonify({
+            'success': True,
+            'model_id': model_id,
+            'registry_id': registry_id,
+            'model_info': model.to_dict(),
+            'features': model.get_features(),
+            'architecture': model.get_architecture()
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Failed to create sport model: {e}")
+        raise ValidationError(f'Failed to create sport model: {e}')
+
+@app.route('/api/models/sport-features/<sport>/<model_type>', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_sport_model_features(sport, model_type):
+    """Get features used by a specific sport and model type combination"""
+    if not SPORT_MODELS_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Sport models not available'}), 500
+    
+    try:
+        # Validate inputs
+        try:
+            sport_enum = Sport(sport.upper())
+            model_type_enum = ModelType(model_type.lower())
+        except ValueError as e:
+            raise ValidationError(f"Invalid sport or model type: {e}")
+        
+        from sport_models import ModelConfig
+        features = ModelConfig.get_features_for_sport(sport_enum, model_type_enum)
+        architecture = ModelConfig.get_model_architecture(sport_enum, model_type_enum)
+        
+        return jsonify({
+            'success': True,
+            'sport': sport.upper(),
+            'model_type': model_type.lower(),
+            'features': features,
+            'feature_count': len(features),
+            'architecture': architecture,
+            'weather_dependent': model_type_enum == ModelType.LSTM_WEATHER,
+            'supports_time_series': model_type_enum == ModelType.LSTM_WEATHER
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get sport model features: {e}")
+        raise ValidationError(f'Failed to get sport model features: {e}')
+
+# --- BACKTESTING ENDPOINTS ---
+
+@app.route('/api/backtest/run', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['model_id', 'sport', 'start_date', 'end_date'], 
+                      optional_fields=['initial_bankroll', 'betting_strategy', 'bet_amount', 'min_confidence'])
+def run_backtest():
+    """Run backtesting simulation for a model"""
+    if not BACKTESTING_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Backtesting engine not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
+        
+        model_id = data.get('model_id')
+        sport = data.get('sport').upper()
+        
+        # Parse dates
+        start_date = datetime.fromisoformat(data.get('start_date').replace('Z', '+00:00'))
+        end_date = datetime.fromisoformat(data.get('end_date').replace('Z', '+00:00'))
+        
+        if start_date >= end_date:
+            raise ValidationError("Start date must be before end date")
+        
+        if (end_date - start_date).days > 365:
+            raise ValidationError("Backtest period cannot exceed 365 days")
+        
+        # Validate sport
+        if sport not in ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']:
+            raise ValidationError("Invalid sport")
+        
+        # Get or create model for backtesting
+        if SPORT_MODELS_AVAILABLE:
+            # Create a demo model for backtesting
+            sport_enum = Sport(sport)
+            model_type_enum = ModelType.ENSEMBLE  # Default to ensemble
+            model = SportsModelFactory.create_model(sport_enum, model_type_enum, model_id)
+            
+            # Simulate trained model
+            model.is_trained = True
+            model.performance_metrics = {'accuracy': 0.68}
+        else:
+            # Create a mock model for demo
+            class MockModel:
+                def predict(self, game_data):
+                    return {
+                        'home_win_probability': 0.6,
+                        'away_win_probability': 0.4,
+                        'predicted_outcome': 'Home Win',
+                        'confidence': 0.72
+                    }
+            model = MockModel()
+        
+        # Create backtest configuration
+        config = BacktestConfig(
+            start_date=start_date.replace(tzinfo=None),
+            end_date=end_date.replace(tzinfo=None),
+            initial_bankroll=float(data.get('initial_bankroll', 1000)),
+            betting_strategy=BettingStrategy(data.get('betting_strategy', 'percentage')),
+            bet_amount=float(data.get('bet_amount', 2.0)),
+            min_confidence=float(data.get('min_confidence', 0.6)),
+            max_bet_percentage=0.1,  # Max 10% per bet
+            commission_rate=0.05,    # 5% commission
+            risk_management={}
+        )
+        
+        # Run backtest
+        result = backtesting_engine.run_backtest(model, sport, config)
+        
+        logger.info(f"Backtest completed for model {model_id} by user {user_id}")
+        
+        # Convert result to dict for JSON response
+        result_dict = {
+            'total_bets': result.total_bets,
+            'winning_bets': result.winning_bets,
+            'losing_bets': result.losing_bets,
+            'win_rate': round(result.win_rate, 4),
+            'total_profit_loss': round(result.total_profit_loss, 2),
+            'final_bankroll': round(result.final_bankroll, 2),
+            'roi_percentage': round(result.roi_percentage, 2),
+            'max_drawdown': round(result.max_drawdown, 2),
+            'max_drawdown_percentage': round(result.max_drawdown_percentage, 2),
+            'sharpe_ratio': round(result.sharpe_ratio, 3),
+            'sortino_ratio': round(result.sortino_ratio, 3),
+            'calmar_ratio': round(result.calmar_ratio, 3),
+            'profit_factor': round(result.profit_factor, 3),
+            'avg_win': round(result.avg_win, 2),
+            'avg_loss': round(result.avg_loss, 2),
+            'largest_win': round(result.largest_win, 2),
+            'largest_loss': round(result.largest_loss, 2),
+            'consecutive_wins': result.consecutive_wins,
+            'consecutive_losses': result.consecutive_losses,
+            'total_commission_paid': round(result.total_commission_paid, 2),
+            'total_amount_wagered': round(result.total_amount_wagered, 2),
+            'bet_history': result.bet_history[-20:]  # Last 20 bets for display
+        }
+        
+        return jsonify({
+            'success': True,
+            'backtest_result': result_dict,
+            'model_id': model_id,
+            'sport': sport,
+            'config': {
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'initial_bankroll': config.initial_bankroll,
+                'betting_strategy': config.betting_strategy.value,
+                'bet_amount': config.bet_amount,
+                'min_confidence': config.min_confidence
+            }
+        })
+        
+    except ValueError as e:
+        raise ValidationError(f"Invalid parameter value: {str(e)}")
+    except Exception as e:
+        logger.error(f"Backtest failed: {e}")
+        raise ValidationError(f'Backtest failed: {e}')
+
+@app.route('/api/backtest/compare-strategies', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['model_id', 'sport', 'start_date', 'end_date'], 
+                      optional_fields=['strategies', 'initial_bankroll'])
+def compare_betting_strategies():
+    """Compare different betting strategies for a model"""
+    if not BACKTESTING_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Backtesting engine not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
+        
+        model_id = data.get('model_id')
+        sport = data.get('sport').upper()
+        
+        # Parse dates
+        start_date = datetime.fromisoformat(data.get('start_date').replace('Z', '+00:00'))
+        end_date = datetime.fromisoformat(data.get('end_date').replace('Z', '+00:00'))
+        
+        # Get strategies to compare
+        strategy_names = data.get('strategies', ['fixed_amount', 'percentage', 'kelly_criterion'])
+        strategies = [BettingStrategy(name) for name in strategy_names]
+        
+        # Create mock model
+        class MockModel:
+            def predict(self, game_data):
+                return {
+                    'home_win_probability': 0.6,
+                    'away_win_probability': 0.4,
+                    'predicted_outcome': 'Home Win',
+                    'confidence': 0.72
+                }
+        model = MockModel()
+        
+        # Create base configuration
+        base_config = BacktestConfig(
+            start_date=start_date.replace(tzinfo=None),
+            end_date=end_date.replace(tzinfo=None),
+            initial_bankroll=float(data.get('initial_bankroll', 1000)),
+            betting_strategy=BettingStrategy.PERCENTAGE,  # Will be overridden
+            bet_amount=2.0,
+            min_confidence=0.6,
+            max_bet_percentage=0.1,
+            commission_rate=0.05,
+            risk_management={}
+        )
+        
+        # Compare strategies
+        results = backtesting_engine.compare_strategies(model, sport, base_config, strategies)
+        
+        # Format results
+        comparison_results = {}
+        for strategy_name, result in results.items():
+            comparison_results[strategy_name] = {
+                'total_bets': result.total_bets,
+                'win_rate': round(result.win_rate, 4),
+                'total_profit_loss': round(result.total_profit_loss, 2),
+                'roi_percentage': round(result.roi_percentage, 2),
+                'max_drawdown_percentage': round(result.max_drawdown_percentage, 2),
+                'sharpe_ratio': round(result.sharpe_ratio, 3),
+                'profit_factor': round(result.profit_factor, 3)
+            }
+        
+        logger.info(f"Strategy comparison completed for model {model_id} by user {user_id}")
+        
+        return jsonify({
+            'success': True,
+            'strategy_comparison': comparison_results,
+            'model_id': model_id,
+            'sport': sport,
+            'strategies_compared': len(results)
+        })
+        
+    except Exception as e:
+        logger.error(f"Strategy comparison failed: {e}")
+        raise ValidationError(f'Strategy comparison failed: {e}')
+
+# --- DATA PIPELINE ENDPOINTS ---
+
+@app.route('/api/data/pipeline/status', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_data_pipeline_status():
+    """Get current data pipeline status"""
+    if not DATA_PIPELINE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Data pipeline not available'}), 500
+    
+    try:
+        pipeline_status = data_pipeline.get_pipeline_status()
+        
+        return jsonify({
+            'success': True,
+            'pipeline_status': pipeline_status
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get pipeline status: {e}")
+        raise ValidationError(f'Failed to get pipeline status: {e}')
+
+@app.route('/api/data/pipeline/run', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(optional_fields=['sport'])
+def run_data_pipeline():
+    """Run the complete data pipeline"""
+    if not DATA_PIPELINE_AVAILABLE:
+        return jsonify({'success': False, 'message': 'Data pipeline not available'}), 500
+    
+    try:
+        data = g.sanitized_request_data
+        sport = data.get('sport')
+        
+        if sport and sport.upper() not in ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']:
+            raise ValidationError("Invalid sport specified")
+        
+        # Run the pipeline
+        pipeline_result = data_pipeline.run_full_pipeline(sport)
+        
+        logger.info(f"Data pipeline executed for sport: {sport or 'all'}")
+        
+        return jsonify({
+            'success': True,
+            'pipeline_result': pipeline_result
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to run data pipeline: {e}")
+        raise ValidationError(f'Failed to run data pipeline: {e}')
+
+@app.route('/api/data/preprocessing/config', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_preprocessing_config():
+    """Get data preprocessing configuration"""
+    try:
+        preprocessing_config = {
+            'feature_engineering': {
+                'rolling_averages': {
+                    'enabled': True,
+                    'windows': [3, 5, 10],
+                    'features': ['points_scored', 'points_allowed', 'field_goal_percentage']
+                },
+                'momentum_indicators': {
+                    'enabled': True,
+                    'win_streak_weight': 0.15,
+                    'recent_performance_window': 5
+                },
+                'opponent_adjustments': {
+                    'enabled': True,
+                    'strength_of_schedule': True,
+                    'pace_adjustments': True
+                }
+            },
+            'data_cleaning': {
+                'outlier_detection': {
+                    'method': 'isolation_forest',
+                    'contamination': 0.05,
+                    'enabled': True
+                },
+                'missing_value_handling': {
+                    'numeric_strategy': 'median',
+                    'categorical_strategy': 'mode',
+                    'time_series_strategy': 'forward_fill'
+                }
+            },
+            'normalization': {
+                'method': 'standard_scaler',
+                'features_to_normalize': ['pace', 'offensive_rating', 'defensive_rating'],
+                'preserve_distribution': True
+            },
+            'validation_rules': {
+                'min_games_played': 5,
+                'max_score_differential': 50,
+                'required_features': ['team_strength', 'opponent_strength', 'venue']
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'preprocessing_config': preprocessing_config
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get preprocessing config: {e}")
+        raise ValidationError(f'Failed to get preprocessing config: {e}')
+
+@app.route('/api/data/features/explain', methods=['GET'])
+@handle_errors
+@require_authentication
+def explain_model_features():
+    """Explain model input features and their importance"""
+    try:
+        sport = request.args.get('sport', 'NBA').upper()
+        model_type = request.args.get('model_type', 'ensemble')
+        
+        # Get features for the sport and model type
+        if SPORT_MODELS_AVAILABLE:
+            try:
+                sport_enum = Sport(sport)
+                model_type_enum = ModelType(model_type)
+                from sport_models import ModelConfig
+                features = ModelConfig.get_features_for_sport(sport_enum, model_type_enum)
+            except:
+                features = ['home_win_pct', 'away_win_pct', 'home_team_ppg', 'away_team_ppg']
+        else:
+            features = ['home_win_pct', 'away_win_pct', 'home_team_ppg', 'away_team_ppg']
+        
+        # Create feature explanations
+        feature_explanations = {
+            'home_win_pct': {
+                'description': 'Home team win percentage over the season',
+                'importance': 0.25,
+                'category': 'team_performance',
+                'data_type': 'numeric',
+                'range': [0.0, 1.0],
+                'interpretation': 'Higher values indicate stronger teams'
+            },
+            'away_win_pct': {
+                'description': 'Away team win percentage over the season',
+                'importance': 0.22,
+                'category': 'team_performance',
+                'data_type': 'numeric',
+                'range': [0.0, 1.0],
+                'interpretation': 'Higher values indicate stronger teams'
+            },
+            'home_team_ppg': {
+                'description': 'Home team average points per game',
+                'importance': 0.18,
+                'category': 'offensive_stats',
+                'data_type': 'numeric',
+                'range': [80.0, 130.0] if sport in ['NBA', 'NCAAB'] else [14.0, 45.0],
+                'interpretation': 'Higher values indicate more potent offense'
+            },
+            'away_team_ppg': {
+                'description': 'Away team average points per game',
+                'importance': 0.16,
+                'category': 'offensive_stats',
+                'data_type': 'numeric',
+                'range': [80.0, 130.0] if sport in ['NBA', 'NCAAB'] else [14.0, 45.0],
+                'interpretation': 'Higher values indicate more potent offense'
+            },
+            'temperature': {
+                'description': 'Game-time temperature in Fahrenheit',
+                'importance': 0.08,
+                'category': 'weather',
+                'data_type': 'numeric',
+                'range': [20.0, 100.0],
+                'interpretation': 'Extreme temperatures can affect player performance'
+            },
+            'humidity': {
+                'description': 'Relative humidity percentage',
+                'importance': 0.06,
+                'category': 'weather',
+                'data_type': 'numeric',
+                'range': [20.0, 90.0],
+                'interpretation': 'High humidity can reduce stamina and ball handling'
+            },
+            'wind_speed': {
+                'description': 'Wind speed in miles per hour',
+                'importance': 0.05,
+                'category': 'weather',
+                'data_type': 'numeric',
+                'range': [0.0, 30.0],
+                'interpretation': 'High winds affect passing and kicking accuracy'
+            }
+        }
+        
+        # Filter explanations to only include features for this model
+        relevant_explanations = {
+            feature: feature_explanations.get(feature, {
+                'description': f'{feature.replace("_", " ").title()}',
+                'importance': 0.1,
+                'category': 'unknown',
+                'data_type': 'numeric',
+                'interpretation': 'Feature importance varies by model'
+            })
+            for feature in features
+        }
+        
+        # Calculate feature categories summary
+        categories = {}
+        for feature, info in relevant_explanations.items():
+            category = info['category']
+            if category not in categories:
+                categories[category] = {'features': [], 'total_importance': 0}
+            categories[category]['features'].append(feature)
+            categories[category]['total_importance'] += info['importance']
+        
+        return jsonify({
+            'success': True,
+            'sport': sport,
+            'model_type': model_type,
+            'features': relevant_explanations,
+            'feature_categories': categories,
+            'total_features': len(features),
+            'weather_dependent': model_type == 'lstm_weather'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to explain features: {e}")
+        raise ValidationError(f'Failed to explain features: {e}')
 
 # Add the imports at the top if not already present
 if __name__ == '__main__':
