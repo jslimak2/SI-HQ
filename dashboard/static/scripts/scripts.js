@@ -4187,6 +4187,7 @@ window.showPage = function(pageId) {
 // Make functions globally available
 window.showPredictiveTab = showPredictiveTab;
 window.makePrediction = makePrediction;
+window.makePredictionWithModel = makePredictionWithModel;
 window.calculateKellyOptimal = calculateKellyOptimal;
 window.startModelTraining = startModelTraining;
 window.refreshPredictiveModels = refreshPredictiveModels;
