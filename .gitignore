@@ -69,4 +69,4 @@ serviceAccountKey.json
 
 # Production deployment
 /static/dist/
-/static/build/
+/static/build/dashboard/__pycache__/
