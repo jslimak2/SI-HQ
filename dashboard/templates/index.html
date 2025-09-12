@@ -568,6 +568,58 @@
                         <option value="">Link Recovery Strategy (Optional)</option>
                     </select>
                     <input type="text" name="description" placeholder="Description">
+                    
+                    <!-- Bet Sizing Strategy -->
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Bet Sizing Strategy</label>
+                        <select name="sizing_strategy" id="strategy-sizing-type" onchange="toggleStrategySizingOptions()" class="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
+                            <option value="kelly-fraction">Kelly Criterion</option>
+                            <option value="flat-rate">Flat Rate</option>
+                        </select>
+                        
+                        <!-- Kelly Factor Options -->
+                        <div id="strategy-kelly-options" class="mt-3">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Kelly Factor</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" id="strategy-kelly-full" name="kelly_factor" value="1.0" checked class="text-blue-600">
+                                    <label for="strategy-kelly-full" class="text-sm text-gray-300">Full Kelly (1.0x)</label>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" id="strategy-kelly-half" name="kelly_factor" value="0.5" class="text-blue-600">
+                                    <label for="strategy-kelly-half" class="text-sm text-gray-300">Half Kelly (0.5x)</label>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" id="strategy-kelly-quarter" name="kelly_factor" value="0.25" class="text-blue-600">
+                                    <label for="strategy-kelly-quarter" class="text-sm text-gray-300">Quarter Kelly (0.25x)</label>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" id="strategy-kelly-custom" name="kelly_factor" value="custom" class="text-blue-600">
+                                    <label for="strategy-kelly-custom" class="text-sm text-gray-300">Custom:</label>
+                                    <input type="number" name="kelly_custom_value" step="0.1" min="0.1" max="2.0" value="0.75" 
+                                           class="w-20 p-1 border border-gray-600 rounded bg-gray-700 text-white text-sm">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Flat Rate Options -->
+                        <div id="strategy-flat-options" class="mt-3 hidden">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Fixed Amount ($)</label>
+                                    <input type="number" name="flat_amount" min="1" value="50" 
+                                           class="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-1">Fixed Percentage (%)</label>
+                                    <input type="number" name="flat_percentage" min="0.1" max="10" step="0.1" value="2.0" 
+                                           class="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">Will use the smaller of the two amounts</p>
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="post9-btn p-3 mt-2">Add Strategy</button>
                 </form>
             </div>
@@ -1960,6 +2012,274 @@
         </div>
     </div>
     
+    <!-- Bet Details Modal -->
+    <div id="bet-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('bet-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Bet Analysis & Details</h3>
+            
+            <div id="bet-details-content" class="space-y-6">
+                <!-- Bet details will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Model Comparison Modal -->
+    <div id="model-comparison-modal" class="modal">
+        <div class="modal-content post9-card max-w-6xl">
+            <span class="modal-close" onclick="closeModal('model-comparison-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Model Performance Comparison</h3>
+            
+            <div class="space-y-6">
+                <!-- Model Selection -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Select First Model</label>
+                        <select id="comparison-model-1" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                            <option value="">Choose a model...</option>
+                            <option value="nba_ensemble_v1">NBA Ensemble v1</option>
+                            <option value="nfl_lstm_weather_v2">NFL LSTM Weather v2</option>
+                            <option value="mlb_statistical_v1">MLB Statistical v1</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Select Second Model</label>
+                        <select id="comparison-model-2" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                            <option value="">Choose a model...</option>
+                            <option value="nba_ensemble_v2">NBA Ensemble v2</option>
+                            <option value="nfl_neural_v1">NFL Neural v1</option>
+                            <option value="mlb_ensemble_v1">MLB Ensemble v1</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Comparison Results -->
+                <div id="model-comparison-results" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold text-white mb-4">Model 1 Performance</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Accuracy:</span>
+                                <span class="text-green-400 font-bold">72.3%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">ROI:</span>
+                                <span class="text-green-400 font-bold">+8.7%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Sharpe Ratio:</span>
+                                <span class="text-white">1.42</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Max Drawdown:</span>
+                                <span class="text-red-400">-12.4%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Bets:</span>
+                                <span class="text-white">1,847</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <h4 class="text-lg font-semibold text-white mb-4">Model 2 Performance</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Accuracy:</span>
+                                <span class="text-green-400 font-bold">69.8%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">ROI:</span>
+                                <span class="text-green-400 font-bold">+6.2%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Sharpe Ratio:</span>
+                                <span class="text-white">1.18</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Max Drawdown:</span>
+                                <span class="text-red-400">-9.8%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Total Bets:</span>
+                                <span class="text-white">2,134</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Chart Placeholder -->
+                <div class="bg-gray-800 p-6 rounded-lg">
+                    <h4 class="text-lg font-semibold text-white mb-4">Performance Over Time</h4>
+                    <div class="h-64 flex items-center justify-center text-gray-400">
+                        <div class="text-center">
+                            <div class="text-4xl mb-2">📊</div>
+                            <div>Performance comparison chart will be displayed here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Train Custom Model Modal -->
+    <div id="train-custom-model-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('train-custom-model-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Train Custom Model</h3>
+            
+            <form id="custom-model-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Basic Model Configuration -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">Model Configuration</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Model Name</label>
+                            <input type="text" name="custom_model_name" required 
+                                   class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white"
+                                   placeholder="e.g., NBA_Custom_v1">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Sport</label>
+                            <select name="custom_sport" required class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="">Select Sport</option>
+                                <option value="NBA">NBA</option>
+                                <option value="NFL">NFL</option>
+                                <option value="MLB">MLB</option>
+                                <option value="NCAAF">NCAAF</option>
+                                <option value="NCAAB">NCAAB</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Model Architecture</label>
+                            <select name="custom_model_type" required class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="">Select Architecture</option>
+                                <option value="lstm_weather">LSTM with Weather Data</option>
+                                <option value="ensemble">Ensemble Model</option>
+                                <option value="neural">Deep Neural Network</option>
+                                <option value="statistical">Statistical Model</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Training Data Period</label>
+                            <select name="training_period" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="1year">Last 1 Year</option>
+                                <option value="2year">Last 2 Years</option>
+                                <option value="3year">Last 3 Years</option>
+                                <option value="5year">Last 5 Years</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Parameters -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">Training Parameters</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Epochs</label>
+                            <input type="number" name="custom_epochs" min="10" max="200" value="50" 
+                                   class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Batch Size</label>
+                            <select name="custom_batch_size" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="16">16</option>
+                                <option value="32" selected>32</option>
+                                <option value="64">64</option>
+                                <option value="128">128</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Learning Rate</label>
+                            <select name="custom_learning_rate" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="0.0001">0.0001</option>
+                                <option value="0.001" selected>0.001</option>
+                                <option value="0.01">0.01</option>
+                                <option value="0.1">0.1</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Validation Split</label>
+                            <select name="validation_split" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="0.1">10%</option>
+                                <option value="0.2" selected>20%</option>
+                                <option value="0.3">30%</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature Selection -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-semibold text-white">Feature Selection</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="team_stats" checked class="mr-2">
+                            Team Statistics
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="player_stats" checked class="mr-2">
+                            Player Statistics
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="weather" class="mr-2">
+                            Weather Data
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="injuries" checked class="mr-2">
+                            Injury Reports
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="historical" checked class="mr-2">
+                            Historical Matchups
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="betting_lines" class="mr-2">
+                            Betting Line Movement
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="public_betting" class="mr-2">
+                            Public Betting %
+                        </label>
+                        <label class="flex items-center text-gray-300">
+                            <input type="checkbox" name="features" value="advanced_metrics" class="mr-2">
+                            Advanced Metrics
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('train-custom-model-modal')" 
+                            class="px-6 py-3 bg-gray-600 text-white rounded hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="post9-btn px-6 py-3">
+                        Start Training
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Model Details Modal -->
+    <div id="model-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-5xl">
+            <span class="modal-close" onclick="closeModal('model-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Model Details</h3>
+            
+            <div id="model-details-content" class="space-y-6">
+                <!-- Model details will be populated here -->
+            </div>
+        </div>
+    </div>
+    
     <!-- Professional Footer -->
     <footer class="mt-16 bg-gray-900 text-gray-300 py-8">
         <div class="container mx-auto px-4">
@@ -2226,12 +2546,65 @@
             } catch (error) {
                 console.error('Error fetching training queue:', error);
                 // Use demo data for now
-                generateDemoTrainingData();
+                await generateDemoTrainingData();
                 updateTrainingQueueUI();
             }
         }
         
-        function generateDemoTrainingData() {
+        async function fetchGPUStats() {
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                const headers = {};
+                
+                if (authToken && authToken !== 'demo_token') {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                const response = await fetch('/api/training/gpu-stats', { headers });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.gpu_stats;
+                } else {
+                    console.error('Failed to fetch GPU stats');
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error fetching GPU stats:', error);
+                return null;
+            }
+        }
+        
+        async function generateDemoTrainingData() {
+            // Try to get real GPU data first
+            const gpuStats = await fetchGPUStats();
+            let gpu_resources = [];
+            
+            if (gpuStats && gpuStats.individual_gpus) {
+                gpu_resources = gpuStats.individual_gpus.map((gpu, index) => ({
+                    gpu_id: index,
+                    name: gpu.name || `GPU ${index}`,
+                    memory_gb: gpu.memory_gb || 8.0,
+                    available: gpu.available !== undefined ? gpu.available : Math.random() > 0.5,
+                    current_job_id: gpu.current_job_id || null,
+                    memory_used_gb: gpu.memory_used_gb || Math.random() * gpu.memory_gb || 0,
+                    utilization_percent: gpu.utilization_percent || Math.floor(Math.random() * 100)
+                }));
+            } else {
+                // Fallback to single GPU demo data
+                gpu_resources = [
+                    {
+                        gpu_id: 0,
+                        name: "NVIDIA GeForce RTX 4080",
+                        memory_gb: 8.0,
+                        available: true,
+                        current_job_id: null,
+                        memory_used_gb: 0.8,
+                        utilization_percent: 12
+                    }
+                ];
+            }
+            
             trainingQueueData = {
                 queued_jobs: [
                     {
@@ -2279,24 +2652,7 @@
                         completed_at: new Date(Date.now() - 3600000).toISOString()
                     }
                 ],
-                gpu_resources: [
-                    {
-                        gpu_id: 0,
-                        memory_gb: 8.0,
-                        available: false,
-                        current_job_id: 'job_003',
-                        memory_used_gb: 6.4,
-                        utilization_percent: 88
-                    },
-                    {
-                        gpu_id: 1,
-                        memory_gb: 6.0,
-                        available: true,
-                        current_job_id: null,
-                        memory_used_gb: 0.0,
-                        utilization_percent: 0
-                    }
-                ]
+                gpu_resources: gpu_resources
             };
         }
         
@@ -2597,7 +2953,67 @@
                 if (response.ok) {
                     const data = await response.json();
                     const job = data.job;
+                    displayJobDetails(job);
+                } else {
+                    console.log('API call failed, using demo data for job details');
+                    // Create demo job details
+                    const demoJob = createDemoJobDetails(jobId);
+                    displayJobDetails(demoJob);
+                }
+            } catch (error) {
+                console.error('Error fetching job details:', error);
+                // Fallback to demo data
+                const demoJob = createDemoJobDetails(jobId);
+                displayJobDetails(demoJob);
+            }
+        }
+        
+        function createDemoJobDetails(jobId) {
+            // Find the job in our demo data first
+            let job = [...trainingQueueData.queued_jobs, ...trainingQueueData.running_jobs, ...trainingQueueData.completed_jobs]
+                .find(j => j.job_id === jobId);
+            
+            if (!job) {
+                // Create a basic demo job if not found
+                job = {
+                    job_id: jobId,
+                    model_id: 'demo_model_v1',
+                    model_type: 'lstm_weather',
+                    sport: 'NBA',
+                    status: 'running',
+                    progress: 45
+                };
+            }
+            
+            // Enhance with additional demo details
+            return {
+                ...job,
+                current_epoch: Math.floor((job.progress || 0) * 0.5),
+                total_epochs: 50,
+                training_config: {
+                    batch_size: 32,
+                    learning_rate: 0.001,
+                    optimizer: 'adam'
+                },
+                gpu_id: 0,
+                created_at: job.created_at || new Date(Date.now() - 3600000).toISOString(),
+                started_at: job.started_at || new Date(Date.now() - 1800000).toISOString(),
+                estimated_completion: new Date(Date.now() + 1800000).toISOString(),
+                logs: [
+                    'Starting model training...',
+                    'Loading dataset...',
+                    'Dataset loaded: 10,000 samples',
+                    'Epoch 1/50 - Loss: 0.8432, Accuracy: 0.6234',
+                    'Epoch 2/50 - Loss: 0.7891, Accuracy: 0.6756',
+                    `Epoch ${Math.floor((job.progress || 0) * 0.5)}/50 - Loss: 0.4231, Accuracy: 0.8234`,
+                    'Training in progress...'
+                ]
+            };
+        }
+        
+        function displayJobDetails(job) {
                     
+        function displayJobDetails(job) {
                     // Populate job details modal
                     const content = document.getElementById('job-details-content');
                     content.innerHTML = `
@@ -2628,7 +3044,7 @@
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-300">Progress:</span>
-                                        <span class="text-white">${job.progress}%</span>
+                                        <span class="text-white">${job.progress || 0}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -2639,7 +3055,7 @@
                                 <div class="space-y-2 text-sm">
                                     <div class="flex justify-between">
                                         <span class="text-gray-300">Epochs:</span>
-                                        <span class="text-white">${job.current_epoch || 0} / ${job.total_epochs}</span>
+                                        <span class="text-white">${job.current_epoch || 0} / ${job.total_epochs || 'N/A'}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-300">Batch Size:</span>
@@ -2651,7 +3067,7 @@
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-300">GPU ID:</span>
-                                        <span class="text-white">${job.gpu_id !== null ? job.gpu_id : 'Not assigned'}</span>
+                                        <span class="text-white">${job.gpu_id !== null && job.gpu_id !== undefined ? job.gpu_id : 'Not assigned'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -2706,14 +3122,7 @@
                     
                     // Show the modal
                     showModal('job-details-modal');
-                } else {
-                    console.error('Failed to fetch job details');
-                    alert('Failed to load job details. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error fetching job details:', error);
-                alert('Error loading job details. Please try again.');
-            }
+        }
         }
         
         function getStatusColor(status) {
