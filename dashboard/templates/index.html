@@ -273,7 +273,7 @@
     </style>
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'training-queue-page', 'predictive-analytics-page', 'analytics-page', 'account-page'];
+            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'training-queue-page', 'predictive-analytics-page', 'analytics-page', 'account-page', 'admin-page'];
             pages.forEach(id => {
                 const pageElement = document.getElementById(id);
                 if (pageElement) {
@@ -292,6 +292,9 @@
                 if (typeof window.refreshApiStatus === 'function') {
                     setTimeout(() => window.refreshApiStatus(), 100);
                 }
+            } else if (pageId === 'admin-page') {
+                // Load system status when admin page is shown
+                loadSystemStatus();
             }
         }
     </script>
@@ -320,6 +323,7 @@
         <button onclick="showPage('predictive-analytics-page')" class="nav-btn">🔮 Predictive Analytics</button>
         <button onclick="showPage('analytics-page')" class="nav-btn">Advanced Analytics</button>
         <a href="/scores" class="nav-btn">🏆 Scores & Standings</a>
+        <button onclick="showPage('admin-page')" class="nav-btn">⚙️ System Status</button>
         <button onclick="showPage('account-page')" class="nav-btn">Account</button>
     </nav>
     <div id="message-box" class="message-box"></div>
@@ -749,6 +753,66 @@
                 </form>
                 <button id="logout-btn" class="post9-btn p-3 mb-2">Sign Out</button>
                 <button id="delete-account-btn" class="post9-btn p-3 bg-red-600 text-white">Delete Account</button>
+            </div>
+        </div>
+
+        <!-- Admin/System Status Page -->
+        <div id="admin-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">System Status & Feature Overview</h2>
+                <button onclick="refreshSystemStatus()" class="post9-btn px-4 py-2">🔄 Refresh Status</button>
+            </div>
+            
+            <div id="system-status-loading" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <p class="text-white mt-2">Loading system status...</p>
+            </div>
+            
+            <div id="system-status-content" style="display: none;">
+                <!-- Overall Status Summary -->
+                <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div id="overall-mode-indicator" class="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold"></div>
+                            <h3 class="text-lg font-semibold text-white">Overall Mode</h3>
+                            <p id="overall-mode-text" class="text-gray-300"></p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-green-500 mx-auto mb-2 flex items-center justify-center text-white text-2xl font-bold">
+                                <span id="production-count">0</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white">Production Features</h3>
+                            <p class="text-gray-300">Fully functional</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-yellow-500 mx-auto mb-2 flex items-center justify-center text-white text-2xl font-bold">
+                                <span id="demo-count">0</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white">Demo Features</h3>
+                            <p class="text-gray-300">Mock/testing data</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Status Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div id="features-container">
+                        <!-- Feature cards will be dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- System Warnings -->
+                <div id="warnings-container" class="bg-yellow-900 bg-opacity-20 border border-yellow-500 rounded-lg p-4" style="display: none;">
+                    <h3 class="text-lg font-semibold text-yellow-400 mb-2">⚠️ System Warnings</h3>
+                    <ul id="warnings-list" class="text-yellow-300 space-y-1">
+                        <!-- Warnings will be dynamically populated -->
+                    </ul>
+                </div>
+
+                <!-- Last Updated -->
+                <div class="text-center text-gray-400 text-sm mt-6">
+                    Last updated: <span id="status-timestamp">--</span>
+                </div>
             </div>
         </div>
 
@@ -3195,6 +3259,124 @@
             // Auto-refresh every 30 seconds
             setInterval(refreshTrainingQueue, 30000);
         });
+
+        // Admin page functions
+        async function loadSystemStatus() {
+            const loadingDiv = document.getElementById('system-status-loading');
+            const contentDiv = document.getElementById('system-status-content');
+            
+            loadingDiv.style.display = 'block';
+            contentDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/system/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySystemStatus(data.system_status);
+                } else {
+                    throw new Error('Failed to load system status');
+                }
+            } catch (error) {
+                console.error('Error loading system status:', error);
+                displaySystemStatusError(error.message);
+            } finally {
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+            }
+        }
+
+        function displaySystemStatus(status) {
+            // Update overall mode indicator
+            const modeIndicator = document.getElementById('overall-mode-indicator');
+            const modeText = document.getElementById('overall-mode-text');
+            
+            if (status.overall_mode === 'demo') {
+                modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-yellow-500 text-white';
+                modeIndicator.textContent = '⚠️';
+                modeText.textContent = 'Demo Mode';
+            } else {
+                modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-green-500 text-white';
+                modeIndicator.textContent = '✅';
+                modeText.textContent = 'Production Mode';
+            }
+
+            // Update counts
+            document.getElementById('production-count').textContent = status.summary.production_features;
+            document.getElementById('demo-count').textContent = status.summary.demo_features;
+
+            // Display features
+            const featuresContainer = document.getElementById('features-container');
+            featuresContainer.innerHTML = '';
+
+            Object.entries(status.features).forEach(([key, feature]) => {
+                const featureCard = createFeatureCard(feature);
+                featuresContainer.appendChild(featureCard);
+            });
+
+            // Display warnings
+            const warningsContainer = document.getElementById('warnings-container');
+            const warningsList = document.getElementById('warnings-list');
+            
+            if (status.warnings && status.warnings.length > 0) {
+                warningsContainer.style.display = 'block';
+                warningsList.innerHTML = '';
+                status.warnings.forEach(warning => {
+                    const li = document.createElement('li');
+                    li.textContent = warning;
+                    warningsList.appendChild(li);
+                });
+            } else {
+                warningsContainer.style.display = 'none';
+            }
+
+            // Update timestamp
+            const timestamp = new Date(status.timestamp).toLocaleString();
+            document.getElementById('status-timestamp').textContent = timestamp;
+        }
+
+        function createFeatureCard(feature) {
+            const card = document.createElement('div');
+            card.className = 'bg-gray-800 rounded-lg p-4 border-l-4 ' + 
+                (feature.status === 'production' ? 'border-green-500' : 'border-yellow-500');
+
+            const statusIcon = feature.status === 'production' ? '✅' : '⚠️';
+            const statusColor = feature.status === 'production' ? 'text-green-400' : 'text-yellow-400';
+            const statusText = feature.status === 'production' ? 'Production' : 'Demo Mode';
+
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-white font-semibold">${feature.name}</h3>
+                    <span class="text-2xl">${statusIcon}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="inline-block px-2 py-1 rounded text-xs font-medium ${statusColor} bg-opacity-20 ${feature.status === 'production' ? 'bg-green-500' : 'bg-yellow-500'}">
+                        ${statusText}
+                    </span>
+                </div>
+                <p class="text-gray-300 text-sm">${feature.description}</p>
+            `;
+
+            return card;
+        }
+
+        function displaySystemStatusError(errorMessage) {
+            const featuresContainer = document.getElementById('features-container');
+            featuresContainer.innerHTML = `
+                <div class="col-span-full bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 text-center">
+                    <h3 class="text-red-400 font-semibold mb-2">Error Loading System Status</h3>
+                    <p class="text-red-300">${errorMessage}</p>
+                </div>
+            `;
+        }
+
+        function refreshSystemStatus() {
+            loadSystemStatus();
+        }
+
+        // Make admin functions globally available
+        window.loadSystemStatus = loadSystemStatus;
+        window.refreshSystemStatus = refreshSystemStatus;
     </script>
     
     <script type="module" src="../static/scripts/scripts.js"></script>
