@@ -1841,11 +1841,11 @@ function createInvestmentCard(investment) {
                 const defaultWager = 10;
                 const payout = calculatePayout(defaultWager, outcome.price) + defaultWager;
                 return `
-                    <div class="wager-outcome text-center p-2 border border-gray-100 rounded relative cursor-pointer" style="position:relative;">
+                    <div class="wager-outcome text-center p-2 border border-gray-100 rounded relative cursor-pointer" style="position:relative;" onclick="showBetDetails('${investment.id}', '${bookmaker.title}', '${market.key}', '${outcome.name}', ${outcome.price}, '${investment.teams}', '${investment.sport_title || investment.sport || ''}')">
                         <div class="text-xs font-medium text-gray-600">${displayText}</div>
                         <div class="text-sm font-bold text-gray-900">${priceText}</div>
                         <div class="text-xs text-gray-500">Wager: $${defaultWager} | Payout: $${payout.toFixed(2)}</div>
-                        <button class="post9-btn add-to-cart-btn" style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:8px; z-index:10;" onclick="window.addToCart({
+                        <button class="post9-btn add-to-cart-btn" style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:8px; z-index:10;" onclick="event.stopPropagation(); window.addToCart({
                             id: '${investment.id}_${bookmaker.title}_${market.key}_${outcome.name}',
                             teams: '${investment.teams}',
                             sport: '${investment.sport_title || investment.sport || ''}',
@@ -2162,14 +2162,34 @@ document.getElementById('edit-bot-form').addEventListener('submit', async functi
 document.getElementById('add-strategy-form').addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
+    
+    // Get sizing strategy parameters
+    const sizingStrategy = form.sizing_strategy.value;
+    let sizingParams = {
+        strategy_type: sizingStrategy
+    };
+    
+    if (sizingStrategy === 'kelly-fraction') {
+        const kellyFactor = form.kelly_factor.value;
+        sizingParams.kelly_factor = kellyFactor;
+        if (kellyFactor === 'custom') {
+            sizingParams.kelly_custom_value = parseFloat(form.kelly_custom_value.value);
+        }
+    } else {
+        sizingParams.flat_amount = parseFloat(form.flat_amount.value);
+        sizingParams.flat_percentage = parseFloat(form.flat_percentage.value);
+    }
+    
     const strategyData = {
         name: form.name.value,
         type: form.type.value,
         linked_strategy_id: form.linked_strategy_id.value || null,
-        description: form.description.value
+        description: form.description.value,
+        sizing_parameters: sizingParams
     };
     await window.addStrategy(strategyData);
     form.reset();
+    toggleStrategySizingOptions(); // Reset the form display
     closeModal('add-strategy-modal');
 });
 
@@ -3253,6 +3273,262 @@ function generateConsensusOdds(gameId) {
     document.getElementById('total-value').textContent = `${(Math.random() * 18 - 4).toFixed(1)}%`;
 }
 
+// Show detailed bet analysis modal
+function showBetDetails(gameId, sportsbook, marketKey, selection, odds, teams, sport) {
+    // Generate consensus odds across sportsbooks
+    const consensusData = generateConsensusData(marketKey, selection);
+    
+    // Generate model predictions
+    const modelPredictions = generateModelPredictions(teams, sport, marketKey, selection);
+    
+    // Generate Kelly calculation
+    const kellyData = generateKellyCalculation(odds, modelPredictions.winProbability);
+    
+    // Generate value analysis
+    const valueAnalysis = generateValueAnalysis(odds, consensusData.averageOdds, modelPredictions.winProbability);
+    
+    const content = document.getElementById('bet-details-content');
+    content.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Bet Information -->
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-white">Bet Information</h4>
+                <div class="bg-gray-800 p-4 rounded-lg space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Game:</span>
+                        <span class="text-white font-semibold">${teams}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Sport:</span>
+                        <span class="text-white">${sport}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Sportsbook:</span>
+                        <span class="text-white">${sportsbook}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Selection:</span>
+                        <span class="text-white">${selection}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Odds:</span>
+                        <span class="text-white font-bold">${odds > 0 ? '+' : ''}${odds}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Consensus Analysis -->
+            <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-white">Market Consensus</h4>
+                <div class="bg-gray-800 p-4 rounded-lg space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Average Odds:</span>
+                        <span class="text-white">${consensusData.averageOdds > 0 ? '+' : ''}${consensusData.averageOdds}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Best Odds:</span>
+                        <span class="text-green-400">${consensusData.bestOdds > 0 ? '+' : ''}${consensusData.bestOdds}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Sportsbooks Count:</span>
+                        <span class="text-white">${consensusData.sportsbookCount}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Implied Probability:</span>
+                        <span class="text-white">${consensusData.impliedProbability}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Model Predictions -->
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">AI Model Predictions</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                    <div class="text-sm text-gray-300 mb-1">Ensemble Model</div>
+                    <div class="text-xl font-bold text-white">${modelPredictions.ensembleProb}%</div>
+                    <div class="text-xs text-gray-400">Confidence: ${modelPredictions.ensembleConfidence}%</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                    <div class="text-sm text-gray-300 mb-1">LSTM Model</div>
+                    <div class="text-xl font-bold text-white">${modelPredictions.lstmProb}%</div>
+                    <div class="text-xs text-gray-400">Confidence: ${modelPredictions.lstmConfidence}%</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                    <div class="text-sm text-gray-300 mb-1">Weighted Average</div>
+                    <div class="text-xl font-bold text-green-400">${modelPredictions.winProbability}%</div>
+                    <div class="text-xs text-gray-400">Final Prediction</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Kelly Criterion & Sizing -->
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">Recommended Bet Sizing</h4>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-300 mb-2">Kelly Criterion</div>
+                        <div class="text-2xl font-bold text-white">${kellyData.kellyPercent}%</div>
+                        <div class="text-xs text-gray-400">Of bankroll</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-300 mb-2">Half Kelly (Safe)</div>
+                        <div class="text-2xl font-bold text-blue-400">${kellyData.halfKellyPercent}%</div>
+                        <div class="text-xs text-gray-400">Conservative sizing</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-300 mb-2">Expected Value</div>
+                        <div class="text-2xl font-bold ${kellyData.expectedValue >= 0 ? 'text-green-400' : 'text-red-400'}">${kellyData.expectedValue > 0 ? '+' : ''}${kellyData.expectedValue}%</div>
+                        <div class="text-xs text-gray-400">Per bet</div>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-gray-700 rounded text-sm">
+                    <div class="font-semibold text-white mb-2">Calculation Details:</div>
+                    <div class="text-gray-300">
+                        Kelly Formula: f* = (bp - q) / b<br>
+                        Where: b = ${kellyData.b}, p = ${kellyData.p}%, q = ${kellyData.q}%<br>
+                        Expected Value = (Win Prob × Payout) - (Loss Prob × Stake)
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Value Analysis -->
+        <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">Value Analysis</h4>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-lg font-semibold ${valueAnalysis.isPositiveValue ? 'text-green-400' : 'text-red-400'}">
+                        ${valueAnalysis.isPositiveValue ? '✅ Positive Value' : '❌ Negative Value'}
+                    </span>
+                    <span class="text-xl font-bold ${valueAnalysis.valuePercent >= 0 ? 'text-green-400' : 'text-red-400'}">
+                        ${valueAnalysis.valuePercent > 0 ? '+' : ''}${valueAnalysis.valuePercent}%
+                    </span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-300">
+                    <div>• Model Fair Odds: ${valueAnalysis.fairOdds > 0 ? '+' : ''}${valueAnalysis.fairOdds}</div>
+                    <div>• Market Odds: ${odds > 0 ? '+' : ''}${odds}</div>
+                    <div>• Edge vs Market: ${valueAnalysis.edgeVsMarket}%</div>
+                    <div>• ${valueAnalysis.recommendation}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showModal('bet-details-modal');
+}
+
+function generateConsensusData(marketKey, selection) {
+    // Simulate consensus data from multiple sportsbooks
+    const baseOdds = Math.random() > 0.5 ? Math.floor(Math.random() * 200 + 100) : -Math.floor(Math.random() * 200 + 110);
+    const variance = 20;
+    const sportsbookCount = Math.floor(Math.random() * 4) + 3; // 3-6 sportsbooks
+    
+    const oddsArray = Array.from({length: sportsbookCount}, () => 
+        baseOdds + Math.floor((Math.random() - 0.5) * variance)
+    );
+    
+    const averageOdds = Math.round(oddsArray.reduce((a, b) => a + b) / oddsArray.length);
+    const bestOdds = Math.max(...oddsArray);
+    
+    // Convert to implied probability
+    const impliedProbability = averageOdds > 0 
+        ? (100 / (averageOdds + 100) * 100).toFixed(1)
+        : (Math.abs(averageOdds) / (Math.abs(averageOdds) + 100) * 100).toFixed(1);
+    
+    return {
+        averageOdds,
+        bestOdds,
+        sportsbookCount,
+        impliedProbability
+    };
+}
+
+function generateModelPredictions(teams, sport, marketKey, selection) {
+    const baseProb = Math.random() * 40 + 30; // 30-70% base probability
+    const ensembleProb = (baseProb + (Math.random() - 0.5) * 10).toFixed(1);
+    const lstmProb = (baseProb + (Math.random() - 0.5) * 8).toFixed(1);
+    
+    const ensembleConfidence = (75 + Math.random() * 20).toFixed(1);
+    const lstmConfidence = (70 + Math.random() * 25).toFixed(1);
+    
+    // Weighted average favoring ensemble model
+    const winProbability = ((parseFloat(ensembleProb) * 0.7) + (parseFloat(lstmProb) * 0.3)).toFixed(1);
+    
+    return {
+        ensembleProb,
+        lstmProb,
+        winProbability,
+        ensembleConfidence,
+        lstmConfidence
+    };
+}
+
+function generateKellyCalculation(odds, winProbability) {
+    const p = parseFloat(winProbability) / 100;
+    const q = 1 - p;
+    const b = odds > 0 ? odds / 100 : 100 / Math.abs(odds);
+    
+    const kellyFraction = (b * p - q) / b;
+    const kellyPercent = Math.max(0, kellyFraction * 100).toFixed(1);
+    const halfKellyPercent = (kellyPercent / 2).toFixed(1);
+    
+    // Calculate expected value
+    const winPayout = odds > 0 ? odds / 100 : 100 / Math.abs(odds);
+    const expectedValue = (p * winPayout - q).toFixed(2);
+    
+    return {
+        kellyPercent,
+        halfKellyPercent,
+        expectedValue,
+        b: b.toFixed(2),
+        p: (p * 100).toFixed(1),
+        q: (q * 100).toFixed(1)
+    };
+}
+
+function generateValueAnalysis(odds, consensusOdds, winProbability) {
+    const modelProb = parseFloat(winProbability) / 100;
+    const fairOdds = modelProb > 0.5 
+        ? Math.round(-100 / (modelProb / (1 - modelProb)))
+        : Math.round(100 * (1 - modelProb) / modelProb);
+    
+    // Calculate value percentage
+    let valuePercent;
+    if (odds > 0 && fairOdds > 0) {
+        valuePercent = ((odds - fairOdds) / fairOdds * 100).toFixed(1);
+    } else if (odds < 0 && fairOdds < 0) {
+        valuePercent = ((Math.abs(fairOdds) - Math.abs(odds)) / Math.abs(fairOdds) * 100).toFixed(1);
+    } else {
+        // Mixed signs, convert to decimal and compare
+        const oddsDecimal = odds > 0 ? 1 + odds/100 : 1 + 100/Math.abs(odds);
+        const fairDecimal = fairOdds > 0 ? 1 + fairOdds/100 : 1 + 100/Math.abs(fairOdds);
+        valuePercent = ((oddsDecimal - fairDecimal) / fairDecimal * 100).toFixed(1);
+    }
+    
+    const isPositiveValue = parseFloat(valuePercent) > 0;
+    const edgeVsMarket = ((odds - consensusOdds) / Math.abs(consensusOdds) * 100).toFixed(1);
+    
+    let recommendation;
+    if (isPositiveValue && parseFloat(valuePercent) > 5) {
+        recommendation = "Strong value bet - model suggests significant edge over market pricing";
+    } else if (isPositiveValue) {
+        recommendation = "Marginal value - proceed with caution and smaller sizing";
+    } else {
+        recommendation = "No value detected - market appears efficiently priced or overvalued";
+    }
+    
+    return {
+        isPositiveValue,
+        valuePercent: parseFloat(valuePercent),
+        fairOdds,
+        edgeVsMarket,
+        recommendation
+    };
+}
+
 // Draw odds movement chart using Canvas
 function drawOddsMovementChart(team1, team2) {
     const canvas = document.getElementById('odds-chart-canvas');
@@ -4226,6 +4502,21 @@ function toggleKellyOptions() {
     }
 }
 
+// Toggle between Kelly fraction and flat rate options in strategy form
+function toggleStrategySizingOptions() {
+    const strategyType = document.getElementById('strategy-sizing-type').value;
+    const kellyOptions = document.getElementById('strategy-kelly-options');
+    const flatOptions = document.getElementById('strategy-flat-options');
+    
+    if (strategyType === 'kelly-fraction') {
+        kellyOptions.classList.remove('hidden');
+        flatOptions.classList.add('hidden');
+    } else {
+        kellyOptions.classList.add('hidden');
+        flatOptions.classList.remove('hidden');
+    }
+}
+
 // Reset Kelly calculator to defaults
 function resetKellyCalculator() {
     document.getElementById('kelly-win-prob').value = '55.0';
@@ -4291,6 +4582,8 @@ window.toggleKellyOptions = toggleKellyOptions;
 window.resetKellyCalculator = resetKellyCalculator;
 window.startModelTraining = startModelTraining;
 window.refreshPredictiveModels = refreshPredictiveModels;
+window.showBetDetails = showBetDetails;
+window.toggleStrategySizingOptions = toggleStrategySizingOptions;
 
 // Add form handler for train model modal
 document.addEventListener('DOMContentLoaded', function() {
