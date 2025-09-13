@@ -2788,40 +2788,93 @@ function renderCartItems() {
     const container = document.getElementById('cart-items-container');
     if (!container) return;
     container.innerHTML = '';
+    
     betCart.forEach(wager => {
         const cartItem = document.createElement('div');
-        cartItem.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3';
+        const isInvestorRec = wager.isInvestorRecommendation;
+        
+        // Different styling for investor recommendations
+        if (isInvestorRec) {
+            cartItem.className = 'bg-gradient-to-r from-orange-50 to-yellow-50 border-l-4 border-orange-400 rounded-lg p-3 mb-2';
+        } else {
+            cartItem.className = 'bg-gray-50 border border-gray-200 rounded-lg p-3';
+        }
+        
         const commenceTime = new Date(wager.commenceTime).toLocaleString();
-        cartItem.innerHTML = `
-            <div class="flex justify-between items-start mb-2">
-                <div class="flex-1">
-                    <div class="font-semibold text-sm text-gray-900">${wager.teams}</div>
-                    <div class="text-xs text-gray-600">${wager.sport} • ${commenceTime}</div>
+        
+        // Different content for investor recommendations
+        if (isInvestorRec) {
+            cartItem.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs px-2 py-1 bg-orange-600 text-white rounded-full">🎯 ${wager.investorName}</span>
+                            <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">${wager.confidence}% confidence</span>
+                        </div>
+                        <div class="font-semibold text-sm text-gray-900">${wager.teams}</div>
+                        <div class="text-xs text-gray-600">${wager.sport} • ${commenceTime}</div>
+                    </div>
+                    <button onclick="removeFromCart('${wager.id}')" class="text-red-500 hover:text-red-700 ml-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
-                <button onclick="removeFromCart('${wager.id}')" class="text-red-500 hover:text-red-700 ml-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="text-xs text-gray-700 mb-2">
-                <div><span class="font-medium">Book:</span> ${wager.sportsbook}</div>
-                <div><span class="font-medium">Market:</span> ${wager.marketType}</div>
-                <div><span class="font-medium">Selection:</span> ${wager.selection}</div>
-                <div><span class="font-medium">Odds:</span> ${wager.odds > 0 ? '+' : ''}${wager.odds}</div>
-            </div>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <span class="text-xs text-gray-600 mr-2">Wager:</span>
-                    <input type="number" value="${wager.wagerAmount}" min="1" step="0.01" 
-                           onchange="updateWagerAmount('${wager.id}', this.value)"
-                           class="w-20 px-2 py-1 border border-gray-300 rounded text-xs">
+                <div class="text-xs text-gray-700 mb-2">
+                    <div><span class="font-medium">Source:</span> Automated Investor</div>
+                    <div><span class="font-medium">Market:</span> ${wager.marketType}</div>
+                    <div><span class="font-medium">Selection:</span> ${wager.selection}</div>
+                    <div><span class="font-medium">Odds:</span> ${wager.odds > 0 ? '+' : ''}${wager.odds}</div>
+                    <div><span class="font-medium">Risk Level:</span> <span class="${wager.riskLevel === 'High' ? 'text-red-600' : wager.riskLevel === 'Medium' ? 'text-yellow-600' : 'text-green-600'}">${wager.riskLevel}</span></div>
                 </div>
-                <div class="text-xs">
-                    <div class="text-green-600 font-semibold">$${wager.payout.toFixed(2)}</div>
+                <div class="bg-yellow-50 p-2 rounded text-xs text-yellow-800 mb-2">
+                    <strong>Reasoning:</strong> ${wager.reasoning}
                 </div>
-            </div>
-        `;
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="text-xs text-gray-600 mr-2">Recommended Amount:</span>
+                        <input type="number" value="${wager.wagerAmount}" min="1" step="0.01" 
+                               onchange="updateWagerAmount('${wager.id}', this.value)"
+                               class="w-20 px-2 py-1 border border-orange-300 rounded text-xs">
+                    </div>
+                    <div class="text-xs">
+                        <div class="text-green-600 font-semibold">$${wager.payout.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Original manual investment display (should be rare now)
+            cartItem.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-gray-900">${wager.teams}</div>
+                        <div class="text-xs text-gray-600">${wager.sport} • ${commenceTime}</div>
+                    </div>
+                    <button onclick="removeFromCart('${wager.id}')" class="text-red-500 hover:text-red-700 ml-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="text-xs text-gray-700 mb-2">
+                    <div><span class="font-medium">Book:</span> ${wager.sportsbook}</div>
+                    <div><span class="font-medium">Market:</span> ${wager.marketType}</div>
+                    <div><span class="font-medium">Selection:</span> ${wager.selection}</div>
+                    <div><span class="font-medium">Odds:</span> ${wager.odds > 0 ? '+' : ''}${wager.odds}</div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="text-xs text-gray-600 mr-2">Wager:</span>
+                        <input type="number" value="${wager.wagerAmount}" min="1" step="0.01" 
+                               onchange="updateWagerAmount('${wager.id}', this.value)"
+                               class="w-20 px-2 py-1 border border-gray-300 rounded text-xs">
+                    </div>
+                    <div class="text-xs">
+                        <div class="text-green-600 font-semibold">$${wager.payout.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+        }
         container.appendChild(cartItem);
     });
 }
@@ -3600,6 +3653,10 @@ function showInvestmentDetails(gameId, teams, sport, commenceTime) {
     document.getElementById('investment-details-sport').textContent = sport;
     document.getElementById('investment-details-time').textContent = new Date(commenceTime).toLocaleString();
     
+    // Store game ID in modal for later reference
+    const modal = document.getElementById('investment-details-modal');
+    modal.setAttribute('data-game-id', gameId);
+    
     // Generate comprehensive analysis
     const consensusAnalysis = generateComprehensiveConsensus(investment);
     const modelPredictions = generateAdvancedModelPredictions(teams, sport);
@@ -3616,7 +3673,7 @@ function showInvestmentDetails(gameId, teams, sport, commenceTime) {
     updateInvestorRecommendationsDisplay(investorRecommendations, calculatedWagers);
     
     // Show the modal
-    document.getElementById('investment-details-modal').classList.remove('hidden');
+    modal.classList.remove('hidden');
 }
 
 // Generate comprehensive consensus analysis across all sportsbooks
@@ -5864,23 +5921,114 @@ function updateInvestorRecommendationsDisplay(recommendations, calculatedWagers)
 
 // Functions to handle investor recommendation actions
 function acceptInvestorRecommendation(investorName, index) {
-    showMessage(`✅ Accepted recommendation from ${investorName}`, false);
-    // Here you would typically make an API call to place the bet
-    document.getElementById('investment-details-modal').classList.add('hidden');
+    // Get the recommendation details from the current modal
+    const modal = document.getElementById('investment-details-modal');
+    const gameTitle = document.getElementById('investment-details-teams').textContent;
+    const sport = document.getElementById('investment-details-sport').textContent;
+    const gameTime = document.getElementById('investment-details-time').textContent;
+    
+    // Get the current investments and recommendations
+    const gameId = modal.getAttribute('data-game-id') || 'unknown';
+    const investorRecommendations = getInvestorRecommendationsForGame(gameId);
+    const calculatedWagers = generateCalculatedWagers(investorRecommendations, generateAdvancedModelPredictions(gameTitle, sport));
+    
+    if (index >= 0 && index < calculatedWagers.length) {
+        const recommendation = investorRecommendations[index];
+        const wager = calculatedWagers[index];
+        
+        // Create investment holding data compatible with existing cart system
+        const investmentHolding = {
+            id: `${gameId}_${investorName}_${Date.now()}`,
+            teams: gameTitle,
+            sport: sport,
+            sportsbook: 'Investor Recommendation',
+            marketType: recommendation.betType,
+            selection: recommendation.selection,
+            odds: recommendation.odds,
+            wagerAmount: recommendation.recommendedAmount,
+            potentialPayout: recommendation.potentialPayout,
+            addedAt: new Date().toISOString(),
+            investorName: investorName,
+            confidence: recommendation.confidence,
+            reasoning: recommendation.reasoning,
+            kellyFraction: wager.kellyFraction,
+            riskLevel: wager.riskLevel,
+            commenceTime: gameTime,
+            isInvestorRecommendation: true
+        };
+        
+        // Check if this recommendation is already in holdings
+        const existingIndex = betCart.findIndex(item => 
+            item.teams === gameTitle && 
+            item.investorName === investorName && 
+            item.selection === recommendation.selection
+        );
+        
+        if (existingIndex >= 0) {
+            showMessage(`${investorName}'s recommendation for ${recommendation.selection} is already in your holdings!`, true);
+            return;
+        }
+        
+        // Add to holdings
+        betCart.push(investmentHolding);
+        updateCartUI();
+        
+        showMessage(`✅ Added ${investorName}'s recommendation to investment holdings: ${recommendation.selection} for ${recommendation.recommendedAmount.toFixed(2)}`, false);
+        
+        // Close the modal
+        document.getElementById('investment-details-modal').classList.add('hidden');
+        
+        // Update the badge on the holdings button to show new items
+        updateCartCount();
+    } else {
+        showMessage('Invalid recommendation index', true);
+    }
+}
+
+// Function to update cart count badge
+function updateCartCount() {
+    const cartCount = betCart.length;
+    const cartBadge = document.getElementById('cart-count-badge');
+    
+    if (cartBadge) {
+        if (cartCount > 0) {
+            cartBadge.textContent = cartCount;
+            cartBadge.classList.remove('hidden');
+        } else {
+            cartBadge.classList.add('hidden');
+        }
+    }
 }
 
 function modifyInvestorRecommendation(investorName, index) {
     const newAmount = prompt(`Enter new wager amount for ${investorName}'s recommendation:`);
     if (newAmount && !isNaN(newAmount) && parseFloat(newAmount) > 0) {
-        showMessage(`📝 Modified ${investorName}'s recommendation to $${newAmount}`, false);
-        // Here you would update the recommendation with the new amount
+        // Get current recommendation data
+        const gameId = document.getElementById('investment-details-modal').getAttribute('data-game-id') || 'unknown';
+        const investorRecommendations = getInvestorRecommendationsForGame(gameId);
+        
+        if (index >= 0 && index < investorRecommendations.length) {
+            // Update the recommendation amount
+            investorRecommendations[index].recommendedAmount = parseFloat(newAmount);
+            investorRecommendations[index].potentialPayout = parseFloat(newAmount) * (Math.abs(investorRecommendations[index].odds) / 100 + 1);
+            
+            // Refresh the display
+            const gameTitle = document.getElementById('investment-details-teams').textContent;
+            const sport = document.getElementById('investment-details-sport').textContent;
+            const modelPredictions = generateAdvancedModelPredictions(gameTitle, sport);
+            const calculatedWagers = generateCalculatedWagers(investorRecommendations, modelPredictions);
+            updateInvestorRecommendationsDisplay(investorRecommendations, calculatedWagers);
+            
+            showMessage(`📝 Modified ${investorName}'s recommendation to $${newAmount}`, false);
+        }
     }
 }
 
 function rejectInvestorRecommendation(investorName, index) {
     if (confirm(`Are you sure you want to reject ${investorName}'s recommendation?`)) {
         showMessage(`❌ Rejected recommendation from ${investorName}`, false);
-        // Here you would mark the recommendation as rejected
+        // Here you would mark the recommendation as rejected in a real system
+        // For demo purposes, we'll just show the message
     }
 }
 
