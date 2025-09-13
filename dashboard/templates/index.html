@@ -839,7 +839,7 @@
                 <h2 class="text-2xl font-bold text-white">Available Investments</h2>
                 <div class="flex items-center gap-4">
                     <button id="cart-toggle-btn" class="post9-btn px-4 py-2 relative" onclick="toggleBetCart()">
-                        <span class="inline-block mr-2">🛒</span>Bet Cart
+                        <span class="inline-block mr-2">📊</span>Investment Holdings
                         <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs px-2 py-1 hidden">0</span>
                     </button>
                 </div>
@@ -851,27 +851,27 @@
             <div id="no-investments-message" class="text-center text-gray-400 mt-8 hidden">No investments available.</div>
             <button id="refresh-investments-btn" class="post9-btn px-4 py-2 mt-6"><span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments</button>
             
-            <!-- Bet Cart Sidebar -->
+            <!-- Investment Holdings Sidebar -->
             <div id="bet-cart-sidebar" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 overflow-hidden">
                 <div class="h-full flex flex-col">
                     <div class="p-4 border-b bg-gray-50">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-xl font-bold text-gray-900">Bet Cart</h3>
+                            <h3 class="text-xl font-bold text-gray-900">Investment Holdings</h3>
                             <button onclick="closeBetCart()" class="text-gray-500 hover:text-gray-700">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </button>
                         </div>
-                        <p class="text-sm text-gray-600 mt-1">Selected: <span id="cart-items-count">0</span> bets</p>
+                        <p class="text-sm text-gray-600 mt-1">Pending: <span id="cart-items-count">0</span> investments</p>
                     </div>
                     
                     <div class="flex-1 overflow-y-auto p-4">
                         <div id="cart-items-container" class="space-y-3">
                             <div id="empty-cart-message" class="text-center text-gray-500 mt-8">
-                                <p class="text-lg">🛒</p>
-                                <p>No bets selected</p>
-                                <p class="text-sm">Add bets from the investment options</p>
+                                <p class="text-lg">📊</p>
+                                <p>No investments on hold</p>
+                                <p class="text-sm">Add recommended wagers from the investment options</p>
                             </div>
                         </div>
                     </div>
@@ -882,21 +882,24 @@
                             <div id="cart-total-payout" class="text-xl font-bold text-green-600">$0.00</div>
                         </div>
                         <div class="space-y-2">
-                            <button id="place-bets-btn" onclick="showBetConfirmation()" class="w-full post9-btn py-3" disabled>
-                                Place Selected Bets
+                            <button id="place-bets-btn" onclick="showHoldInvestments()" class="w-full post9-btn py-3" disabled>
+                                Hold Investments
+                            </button>
+                            <button id="verify-investments-btn" onclick="showVerificationModal()" class="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700" disabled>
+                                🔍 Verify Placed Bets
                             </button>
                             <button id="export-excel-btn" onclick="exportToExcel()" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50" disabled>
                                 Export to Excel
                             </button>
                             <button onclick="clearCart()" class="w-full bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600">
-                                Clear Cart
+                                Clear Holdings
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Cart Overlay -->
+            <!-- Holdings Overlay -->
             <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="closeBetCart()"></div>
         </div>
         <div id="account-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
@@ -1881,12 +1884,21 @@
     <div id="bet-confirmation-modal" class="modal">
         <div class="modal-content max-w-4xl">
             <span class="modal-close" onclick="window.closeModal('bet-confirmation-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-6">Confirm Bet Placement</h2>
+            <h2 class="text-2xl font-bold mb-6">Hold Investment Recommendations</h2>
+            
+            <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-800 mb-2">📋 Next Steps:</h4>
+                <ol class="text-sm text-blue-700 space-y-1">
+                    <li>1. Export recommendations to Excel (organized by sportsbook)</li>
+                    <li>2. Manually place these bets on your personal accounts</li>
+                    <li>3. Return here to verify and confirm each placement</li>
+                </ol>
+            </div>
             
             <div class="mb-6">
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                        <span class="font-semibold">Total Bets:</span>
+                        <span class="font-semibold">Total Investments:</span>
                         <span id="confirm-bet-count">0</span>
                     </div>
                     <div>
@@ -1905,27 +1917,60 @@
             </div>
 
             <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-4">Bets by Sportsbook</h3>
+                <h3 class="text-lg font-semibold mb-4">Investments by Sportsbook</h3>
                 <div id="bets-by-sportsbook" class="space-y-4"></div>
             </div>
 
             <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-4">Bets by Bot</h3>
+                <h3 class="text-lg font-semibold mb-4">Investments by Bot Strategy</h3>
                 <div id="bets-by-bot" class="space-y-4"></div>
             </div>
 
             <div class="flex justify-between">
                 <div class="flex space-x-3">
                     <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
-                        Export to Excel
+                        📊 Export to Excel
                     </button>
                 </div>
                 <div class="flex space-x-3">
                     <button onclick="window.closeModal('bet-confirmation-modal')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
                         Cancel
                     </button>
-                    <button onclick="confirmPlaceBets()" class="post9-btn px-6 py-2">
-                        Confirm & Place Bets
+                    <button onclick="confirmHoldInvestments()" class="post9-btn px-6 py-2">
+                        🔒 Hold Investments
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Investment Verification Modal -->
+    <div id="investment-verification-modal" class="modal">
+        <div class="modal-content max-w-6xl">
+            <span class="modal-close" onclick="window.closeModal('investment-verification-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-6">Verify Manually Placed Investments</h2>
+            
+            <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-semibold text-yellow-800 mb-2">⚠️ Verification Required:</h4>
+                <p class="text-sm text-yellow-700">
+                    For each investment below, please verify the bet was placed manually and update the actual odds if different from the recommended odds.
+                </p>
+            </div>
+            
+            <div id="verification-investments-container" class="space-y-4">
+                <!-- Verification items will be populated here -->
+            </div>
+            
+            <div class="flex justify-between mt-6">
+                <button onclick="window.closeModal('investment-verification-modal')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                    Close
+                </button>
+                <div class="space-x-3">
+                    <button onclick="markAllAsPlaced()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        ✅ Mark All as Placed
+                    </button>
+                    <button onclick="processVerifiedInvestments()" class="post9-btn px-6 py-2">
+                        Process Verified Investments
                     </button>
                 </div>
             </div>

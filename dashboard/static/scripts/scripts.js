@@ -2411,7 +2411,7 @@ window.addToCart = function(wagerData) {
     // Check if wager already exists in cart
     const existingIndex = betCart.findIndex(item => item.id === wagerData.id);
     if (existingIndex >= 0) {
-        showMessage('This wager is already in your cart!', true);
+        showMessage('This investment is already in your holdings!', true);
         return;
     }
     wagerData.wagerAmount = 10;
@@ -2421,25 +2421,25 @@ window.addToCart = function(wagerData) {
     wagerData.addedAt = new Date().toISOString();
     betCart.push(wagerData);
     setTimeout(updateCartUI, 0); // Ensure UI updates after adding
-    showMessage(`Added ${wagerData.selection} to cart!`, false);
+    showMessage(`Added ${wagerData.selection} to investment holdings!`, false);
 }
 
 window.removeFromCart = function(itemId) {
     betCart = betCart.filter(item => item.id !== itemId);
     updateCartUI();
-    showMessage('Removed bet from cart', false);
+    showMessage('Removed investment from holdings', false);
 }
 
 window.clearCart = function() {
     if (betCart.length === 0) {
-        showMessage('Cart is already empty', true);
+        showMessage('Holdings are already empty', true);
         return;
     }
     
-    if (confirm('Are you sure you want to clear all bets from your cart?')) {
+    if (confirm('Are you sure you want to clear all investments from your holdings?')) {
         betCart = [];
         updateCartUI();
-        showMessage('Cart cleared', false);
+        showMessage('Holdings cleared', false);
     }
 }
 
@@ -2470,7 +2470,18 @@ window.closeBetCart = function() {
 
 window.showBetConfirmation = function() {
     if (betCart.length === 0) {
-        showMessage('No bets in cart to place', true);
+        showMessage('No investments in holdings to place', true);
+        return;
+    }
+    
+    populateConfirmationModal();
+    showModal('bet-confirmation-modal');
+}
+
+// New function for the investment holding workflow
+window.showHoldInvestments = function() {
+    if (betCart.length === 0) {
+        showMessage('No investments in holdings to hold', true);
         return;
     }
     
@@ -2480,6 +2491,128 @@ window.showBetConfirmation = function() {
 
 window.confirmPlaceBets = function() {
     confirmPlaceBetsInternal();
+}
+
+// New function for holding investments instead of immediately placing bets
+window.confirmHoldInvestments = function() {
+    if (betCart.length === 0) {
+        showMessage('No investments to hold', true);
+        return;
+    }
+    
+    // Here we would transition investments to "on hold" status
+    // For now, we'll show a success message and keep them in the holdings
+    showMessage(`${betCart.length} investment(s) are now on hold. Export to Excel and place manually on your sportsbook accounts.`, false);
+    window.closeModal('bet-confirmation-modal');
+    
+    // In a real implementation, we would:
+    // 1. Save these investments with "on_hold" status to the backend
+    // 2. They would remain in holdings until user verifies placement
+    // 3. Add verification interface for each investment
+}
+
+// Investment verification functions
+window.showVerificationModal = function() {
+    if (betCart.length === 0) {
+        showMessage('No investments to verify', true);
+        return;
+    }
+    
+    populateVerificationModal();
+    showModal('investment-verification-modal');
+}
+
+function populateVerificationModal() {
+    const container = document.getElementById('verification-investments-container');
+    container.innerHTML = '';
+    
+    betCart.forEach((investment, index) => {
+        const verificationItem = document.createElement('div');
+        verificationItem.className = 'bg-gray-50 border rounded-lg p-4';
+        verificationItem.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <div class="font-semibold text-lg">${investment.teams}</div>
+                    <div class="text-sm text-gray-600">${investment.sport} | ${investment.sportsbook}</div>
+                    <div class="text-sm">${investment.marketType}: ${investment.selection}</div>
+                    <div class="text-sm">Recommended: ${investment.odds > 0 ? '+' : ''}${investment.odds} | Amount: $${investment.wagerAmount}</div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm font-medium">Status:</label>
+                        <select id="status-${index}" class="text-sm border rounded px-2 py-1">
+                            <option value="pending">Pending</option>
+                            <option value="placed">Placed</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm font-medium">Actual Odds:</label>
+                        <input type="number" id="odds-${index}" value="${investment.odds}" 
+                               class="text-sm border rounded px-2 py-1 w-20" step="1">
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm font-medium">Actual Amount:</label>
+                        <input type="number" id="amount-${index}" value="${investment.wagerAmount}" 
+                               class="text-sm border rounded px-2 py-1 w-20" step="0.01">
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(verificationItem);
+    });
+}
+
+window.markAllAsPlaced = function() {
+    betCart.forEach((investment, index) => {
+        const statusSelect = document.getElementById(`status-${index}`);
+        if (statusSelect) {
+            statusSelect.value = 'placed';
+        }
+    });
+    showMessage('All investments marked as placed', false);
+}
+
+window.processVerifiedInvestments = function() {
+    const verifiedInvestments = [];
+    const rejectedInvestments = [];
+    
+    betCart.forEach((investment, index) => {
+        const status = document.getElementById(`status-${index}`)?.value || 'pending';
+        const actualOdds = parseFloat(document.getElementById(`odds-${index}`)?.value) || investment.odds;
+        const actualAmount = parseFloat(document.getElementById(`amount-${index}`)?.value) || investment.wagerAmount;
+        
+        if (status === 'placed') {
+            const updatedInvestment = {
+                ...investment,
+                actualOdds: actualOdds,
+                actualAmount: actualAmount,
+                actualPayout: calculatePayout(actualAmount, actualOdds) + actualAmount,
+                status: 'active',
+                placedAt: new Date().toISOString()
+            };
+            verifiedInvestments.push(updatedInvestment);
+        } else if (status === 'rejected') {
+            rejectedInvestments.push(investment);
+        }
+    });
+    
+    if (verifiedInvestments.length > 0) {
+        // In a real implementation, these would be moved to the investor's active wagers
+        // and amounts would be deducted from bot balance
+        showMessage(`${verifiedInvestments.length} investment(s) verified and moved to active wagers. ${rejectedInvestments.length} rejected.`, false);
+        
+        // Remove processed investments from holdings
+        betCart = betCart.filter((investment, index) => {
+            const status = document.getElementById(`status-${index}`)?.value || 'pending';
+            return status === 'pending';
+        });
+        
+        updateCartUI();
+        window.closeModal('investment-verification-modal');
+    } else {
+        showMessage('No investments were marked as placed', true);
+    }
 }
 
 window.exportToExcel = function() {
@@ -2493,6 +2626,7 @@ function updateCartUI() {
     const cartContainerEl = document.getElementById('cart-items-container');
     const emptyMessage = document.getElementById('empty-cart-message');
     const placeBetsBtn = document.getElementById('place-bets-btn');
+    const verifyBtn = document.getElementById('verify-investments-btn');
     const exportBtn = document.getElementById('export-excel-btn');
     
     // Update cart count badge
@@ -2525,6 +2659,9 @@ function updateCartUI() {
     // Enable/disable buttons
     if (placeBetsBtn) {
         placeBetsBtn.disabled = cartCount === 0;
+    }
+    if (verifyBtn) {
+        verifyBtn.disabled = cartCount === 0;
     }
     if (exportBtn) {
         exportBtn.disabled = cartCount === 0;
@@ -2650,7 +2787,7 @@ function populateConfirmationModal() {
     
     // Group by sportsbook
     const betsBySportsbook = {};
-    const betsByBot = { 'Manual Selection': betCart }; // For now, all bets are manual
+    const betsByBot = { 'Manual Selection': betCart }; // For now, all investments are manual
     
     betCart.forEach(bet => {
         if (!betsBySportsbook[bet.sportsbook]) {
@@ -2749,45 +2886,72 @@ async function confirmPlaceBetsInternal() {
 
 async function exportToExcelInternal() {
     if (betCart.length === 0) {
-        showMessage('No bets to export', true);
+        showMessage('No investments to export', true);
         return;
     }
     
     try {
-        // Create CSV content
-        const headers = ['Game', 'Sport', 'Sportsbook', 'Market', 'Selection', 'Odds', 'Bet Amount', 'Potential Payout', 'Game Time'];
-        const rows = betCart.map(bet => [
-            bet.teams,
-            bet.sport,
-            bet.sportsbook,
-            bet.marketType,
-            bet.selection,
-            bet.odds,
-            bet.wagerAmount,
-            bet.payout.toFixed(2),
-            new Date(bet.commenceTime).toLocaleString()
-        ]);
+        // Group investments by sportsbook
+        const investmentsBySportsbook = {};
+        betCart.forEach(bet => {
+            if (!investmentsBySportsbook[bet.sportsbook]) {
+                investmentsBySportsbook[bet.sportsbook] = [];
+            }
+            investmentsBySportsbook[bet.sportsbook].push(bet);
+        });
         
-        const csvContent = [headers, ...rows].map(row => 
-            row.map(cell => `"${cell}"`).join(',')
-        ).join('\n');
+        // Create organized CSV content
+        let csvContent = '';
+        const headers = ['Game', 'Sport', 'Market', 'Selection', 'Odds', 'Bet Amount', 'Potential Payout', 'Game Time', 'Investment ID'];
+        
+        // Add summary section
+        csvContent += 'INVESTMENT HOLDINGS EXPORT\n';
+        csvContent += `Export Date:,${new Date().toLocaleString()}\n`;
+        csvContent += `Total Investments:,${betCart.length}\n`;
+        csvContent += `Total Amount:,$${betCart.reduce((sum, bet) => sum + bet.wagerAmount, 0).toFixed(2)}\n`;
+        csvContent += `Total Potential Payout:,$${betCart.reduce((sum, bet) => sum + bet.potentialPayout, 0).toFixed(2)}\n\n`;
+        
+        // Add investments organized by sportsbook
+        Object.entries(investmentsBySportsbook).forEach(([sportsbook, investments], index) => {
+            if (index > 0) csvContent += '\n';
+            
+            csvContent += `SPORTSBOOK: ${sportsbook.toUpperCase()}\n`;
+            csvContent += `Investments: ${investments.length}\n`;
+            csvContent += `Total Amount: $${investments.reduce((sum, bet) => sum + bet.wagerAmount, 0).toFixed(2)}\n`;
+            csvContent += headers.join(',') + '\n';
+            
+            investments.forEach(bet => {
+                const row = [
+                    bet.teams,
+                    bet.sport,
+                    bet.marketType,
+                    bet.selection,
+                    bet.odds,
+                    bet.wagerAmount,
+                    bet.potentialPayout.toFixed(2),
+                    new Date(bet.commenceTime).toLocaleString(),
+                    bet.id
+                ];
+                csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+        });
         
         // Create and download file
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `bet-cart-${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `investment-holdings-${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        showMessage('Bet cart exported to CSV file', false);
+        showMessage('Investment holdings exported to CSV file (organized by sportsbook)', false);
         
     } catch (error) {
         console.error('Error exporting to Excel:', error);
-        showMessage('Failed to export bets. Please try again.', true);
+        showMessage('Failed to export investments. Please try again.', true);
     }
 }
 
