@@ -974,7 +974,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-white">Model Gallery</h2>
                 <div class="flex gap-3">
-                    <button onclick="showModal('train-custom-model-modal')" class="post9-btn px-4 py-2">Train Custom Model</button>
+                    <button onclick="showModal('unified-training-modal')" class="post9-btn px-4 py-2">🚀 Train Model</button>
                     <button onclick="showModal('model-comparison-modal')" class="post9-btn px-4 py-2">Compare Models</button>
                 </div>
             </div>
@@ -1028,7 +1028,7 @@
                 <h2 class="text-2xl font-bold text-white">🔥 Training Queue & GPU Resources</h2>
                 <div class="flex gap-3">
                     <button onclick="refreshTrainingQueue()" class="post9-btn px-4 py-2">🔄 Refresh</button>
-                    <button onclick="showModal('submit-training-modal')" class="post9-btn px-4 py-2">🚀 Submit Training Job</button>
+                    <button onclick="showModal('unified-training-modal')" class="post9-btn px-4 py-2">🚀 Submit Training Job</button>
                 </div>
             </div>
 
@@ -1204,7 +1204,7 @@
                 <h2 class="text-2xl font-bold text-white">🔮 Predictive Analytics</h2>
                 <div class="flex gap-3">
                     <button onclick="refreshPredictiveModels()" class="post9-btn px-4 py-2">🔄 Refresh Models</button>
-                    <button onclick="showModal('train-model-modal')" class="post9-btn px-4 py-2">🏋️ Train Model</button>
+                    <button onclick="showModal('unified-training-modal')" class="post9-btn px-4 py-2">🚀 Train Model</button>
                 </div>
             </div>
 
@@ -1968,61 +1968,6 @@
         </div>
     </div>
     
-    <!-- Train Model Modal -->
-    <div id="train-model-modal" class="modal">
-        <div class="modal-content post9-card">
-            <span class="modal-close" onclick="closeModal('train-model-modal')">&times;</span>
-            <h3 class="text-xl font-bold mb-4 text-white">Train New Model</h3>
-            <form id="train-model-form" class="flex flex-col gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Model Name</label>
-                    <input type="text" name="model_name" placeholder="e.g., NBA Advanced v2.0" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Sport</label>
-                    <select name="sport" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white" required>
-                        <option value="">Select Sport</option>
-                        <option value="NBA">NBA</option>
-                        <option value="NFL">NFL</option>
-                        <option value="MLB">MLB</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Model Type</label>
-                    <select name="model_type" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white" required>
-                        <option value="">Select Type</option>
-                        <option value="statistical">Statistical</option>
-                        <option value="neural">Neural Network</option>
-                        <option value="ensemble">Ensemble</option>
-                        <option value="lstm">LSTM</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Training Samples</label>
-                        <input type="number" name="training_samples" placeholder="1000" min="100" max="10000" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Epochs</label>
-                        <input type="number" name="epochs" placeholder="50" min="10" max="200" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                    <textarea name="description" placeholder="Brief description of the model's purpose and features..." rows="3" class="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white"></textarea>
-                </div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" onclick="closeModal('train-model-modal')" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                        Start Training
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Submit Training Job Modal -->
     <div id="submit-training-modal" class="modal">
         <div class="modal-content post9-card max-w-2xl">
@@ -2423,6 +2368,154 @@
             <div id="model-details-content" class="space-y-6">
                 <!-- Model details will be populated here -->
             </div>
+        </div>
+    </div>
+    
+    <!-- Unified Training Modal -->
+    <div id="unified-training-modal" class="modal">
+        <div class="modal-content post9-card max-w-4xl">
+            <span class="modal-close" onclick="closeModal('unified-training-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">🚀 Train New Model</h3>
+            
+            <form id="unified-training-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Basic Model Configuration -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">Model Configuration</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Model Name</label>
+                            <input type="text" name="model_name" required 
+                                   class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white"
+                                   placeholder="e.g., NBA Advanced v2.0">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Sport</label>
+                            <select name="sport" required class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="">Select Sport</option>
+                                <option value="NBA">NBA</option>
+                                <option value="NFL">NFL</option>
+                                <option value="MLB">MLB</option>
+                                <option value="NCAAF">NCAAF</option>
+                                <option value="NCAAB">NCAAB</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Model Type</label>
+                            <select name="model_type" required class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="">Select Model Type</option>
+                                <option value="lstm_weather">LSTM + Weather Data</option>
+                                <option value="ensemble">Ensemble Model</option>
+                                <option value="neural">Deep Neural Network</option>
+                                <option value="statistical">Statistical Model</option>
+                                <option value="random_forest">Random Forest</option>
+                                <option value="xgboost">XGBoost</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Training Data Period</label>
+                            <select name="training_period" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                <option value="1year">Last 1 Year</option>
+                                <option value="2year">Last 2 Years</option>
+                                <option value="3year">Last 3 Years</option>
+                                <option value="5year">Last 5 Years</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Training Parameters -->
+                    <div class="space-y-4">
+                        <h4 class="text-lg font-semibold text-white">Training Parameters</h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Training Samples</label>
+                                <input type="number" name="training_samples" placeholder="1000" min="100" max="10000" 
+                                       class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Epochs</label>
+                                <input type="number" name="epochs" placeholder="50" min="10" max="200" 
+                                       class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Learning Rate</label>
+                                <select name="learning_rate" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                    <option value="0.001">0.001 (Default)</option>
+                                    <option value="0.01">0.01 (Fast)</option>
+                                    <option value="0.0001">0.0001 (Slow)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Batch Size</label>
+                                <select name="batch_size" class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white">
+                                    <option value="32">32 (Default)</option>
+                                    <option value="64">64</option>
+                                    <option value="128">128</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Feature Set</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="features[]" value="basic_stats" checked class="mr-2">
+                                    <span class="text-sm text-gray-300">Basic Team Statistics</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="features[]" value="advanced_stats" class="mr-2">
+                                    <span class="text-sm text-gray-300">Advanced Analytics</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="features[]" value="weather" class="mr-2">
+                                    <span class="text-sm text-gray-300">Weather Data</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="features[]" value="injury_reports" class="mr-2">
+                                    <span class="text-sm text-gray-300">Injury Reports</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="features[]" value="betting_lines" class="mr-2">
+                                    <span class="text-sm text-gray-300">Historical Betting Lines</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Model Description</label>
+                    <textarea name="description" placeholder="Brief description of the model's purpose and strategy..." rows="3" 
+                              class="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white"></textarea>
+                </div>
+                
+                <div class="bg-blue-900 bg-opacity-30 p-4 rounded-lg">
+                    <h5 class="font-semibold text-blue-300 mb-2">Training Information</h5>
+                    <p class="text-sm text-gray-300 mb-2">
+                        Training will begin immediately and typically takes 15-45 minutes depending on model complexity and data size.
+                    </p>
+                    <p class="text-sm text-gray-300">
+                        You'll receive notifications when training completes, and the model will be available in the Model Gallery.
+                    </p>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeModal('unified-training-modal')" 
+                            class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        🚀 Start Training
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     
@@ -3009,16 +3102,25 @@
         }
         
         async function submitTrainingJob() {
-            const form = document.getElementById('submit-training-form');
+            const form = document.getElementById('unified-training-form');
             const formData = new FormData(form);
             
+            // Get selected features
+            const features = [];
+            const featureCheckboxes = form.querySelectorAll('input[name="features[]"]:checked');
+            featureCheckboxes.forEach(checkbox => features.push(checkbox.value));
+            
             const jobData = {
-                model_id: formData.get('model_id'),
+                model_name: formData.get('model_name'),
                 sport: formData.get('sport'),
                 model_type: formData.get('model_type'),
-                epochs: parseInt(formData.get('epochs')),
-                batch_size: parseInt(formData.get('batch_size')),
-                learning_rate: parseFloat(formData.get('learning_rate'))
+                training_period: formData.get('training_period'),
+                training_samples: parseInt(formData.get('training_samples')) || 1000,
+                epochs: parseInt(formData.get('epochs')) || 50,
+                learning_rate: parseFloat(formData.get('learning_rate')) || 0.001,
+                batch_size: parseInt(formData.get('batch_size')) || 32,
+                features: features,
+                description: formData.get('description') || ''
             };
             
             try {
@@ -3041,7 +3143,7 @@
                 if (response.ok) {
                     const result = await response.json();
                     alert(`Training job submitted successfully! Job ID: ${result.job_id}`);
-                    closeModal('submit-training-modal');
+                    closeModal('unified-training-modal');
                     form.reset();
                     refreshTrainingQueue();
                 } else {
@@ -3291,8 +3393,8 @@
         
         // Initialize training queue when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Add event listener for training form submission
-            const trainingForm = document.getElementById('submit-training-form');
+            // Add event listener for unified training form submission
+            const trainingForm = document.getElementById('unified-training-form');
             if (trainingForm) {
                 trainingForm.addEventListener('submit', function(e) {
                     e.preventDefault();
