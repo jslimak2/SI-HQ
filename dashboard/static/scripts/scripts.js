@@ -1274,6 +1274,9 @@ function displayInvestments(investments) {
     const investmentsContainer = document.getElementById('investments-container');
     const sportTabsContainer = document.getElementById('sport-tabs-container');
     
+    // Store investments globally for reference
+    window.currentInvestments = investments;
+    
     const groupedBySport = investments.reduce((acc, investment) => {
         const sport = investment.sport_title || investment.sport || 'Unknown Sport';
         if (!acc[sport]) {
@@ -1803,11 +1806,60 @@ async function deleteUserAccount() {
 
 function createInvestmentCard(investment) {
     const card = document.createElement('div');
-    card.className = 'investment-card bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm';
     
     // Format commence time
     const commenceTime = new Date(investment.commence_time);
     const formattedTime = commenceTime.toLocaleString();
+
+    // Get bot recommendations for this game
+    const gameRecommendations = botRecommendations[investment.id] || {};
+    const hasRecommendations = Object.keys(gameRecommendations).length > 0;
+    
+    // Check for placed bets on this game
+    const placedBets = investment.placed_bets || [];
+    const hasPlacedBets = placedBets.length > 0;
+    
+    // Determine card styling based on recommendations and placed bets
+    let cardBorderClass = 'border border-gray-200';
+    let cardBgClass = 'bg-white';
+    let headerBadges = '';
+    
+    if (hasRecommendations && hasPlacedBets) {
+        cardBorderClass = 'border-2 border-purple-400 shadow-lg';
+        cardBgClass = 'bg-gradient-to-r from-purple-50 to-blue-50';
+        headerBadges = `
+            <div class="flex gap-2 mt-2">
+                <span class="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
+                    🎯 ${Object.keys(gameRecommendations).length} Recommendation${Object.keys(gameRecommendations).length > 1 ? 's' : ''}
+                </span>
+                <span class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
+                    ✅ ${placedBets.length} Placed Bet${placedBets.length > 1 ? 's' : ''}
+                </span>
+            </div>
+        `;
+    } else if (hasRecommendations) {
+        cardBorderClass = 'border-2 border-orange-400 shadow-lg';
+        cardBgClass = 'bg-gradient-to-r from-orange-50 to-yellow-50';
+        headerBadges = `
+            <div class="mt-2">
+                <span class="px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded-full">
+                    🎯 ${Object.keys(gameRecommendations).length} Investor Recommendation${Object.keys(gameRecommendations).length > 1 ? 's' : ''}
+                </span>
+            </div>
+        `;
+    } else if (hasPlacedBets) {
+        cardBorderClass = 'border-2 border-green-400 shadow-lg';
+        cardBgClass = 'bg-gradient-to-r from-green-50 to-emerald-50';
+        headerBadges = `
+            <div class="mt-2">
+                <span class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
+                    ✅ ${placedBets.length} Active Wager${placedBets.length > 1 ? 's' : ''}
+                </span>
+            </div>
+        `;
+    }
+    
+    card.className = `investment-card ${cardBgClass} rounded-lg p-4 mb-4 shadow-sm ${cardBorderClass}`;
 
     // Generate placed wagers HTML
     const placedWagersHtml = investment.placed_bets.length > 0
@@ -1845,10 +1897,7 @@ function createInvestmentCard(investment) {
         'WynnBET': { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' }
     };
 
-    // Get bot recommendations for this game
-    const gameRecommendations = botRecommendations[investment.id] || [];
-
-    // Generate bookmakers HTML
+    // Generate bookmakers HTML - removed add to cart functionality for manual selection
     const bookmakersHtml = bookmakers.map(bookmaker => {
         const colors = sportsbookColors[bookmaker.title] || { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200' };
         const marketsHtml = bookmaker.markets.map(market => {
@@ -1865,17 +1914,7 @@ function createInvestmentCard(investment) {
                     <div class="wager-outcome text-center p-2 border border-gray-100 rounded relative cursor-pointer" style="position:relative;" onclick="showBetDetails('${investment.id}', '${bookmaker.title}', '${market.key}', '${outcome.name}', ${outcome.price}, '${investment.teams}', '${investment.sport_title || investment.sport || ''}')">
                         <div class="text-xs font-medium text-gray-600">${displayText}</div>
                         <div class="text-sm font-bold text-gray-900">${priceText}</div>
-                        <div class="text-xs text-gray-500">Wager: $${defaultWager} | Payout: $${payout.toFixed(2)}</div>
-                        <button class="post9-btn add-to-cart-btn" style="display:none; position:absolute; left:50%; transform:translateX(-50%); bottom:8px; z-index:10;" onclick="event.stopPropagation(); window.addToCart({
-                            id: '${investment.id}_${bookmaker.title}_${market.key}_${outcome.name}',
-                            teams: '${investment.teams}',
-                            sport: '${investment.sport_title || investment.sport || ''}',
-                            sportsbook: '${bookmaker.title}',
-                            marketType: '${marketName}',
-                            selection: '${outcome.name}',
-                            odds: ${outcome.price},
-                            commenceTime: '${investment.commence_time}'
-                        })">Add to Cart</button>
+                        <div class="text-xs text-gray-500">Click for analysis</div>
                     </div>
                 `;
             }).join('');
@@ -1896,28 +1935,71 @@ function createInvestmentCard(investment) {
         `;
     }).join('');
 
-    // Generate game-level bot summary if there are recommendations
+    // Generate bot recommendation summary
     let botSummaryHtml = '';
-    if (gameRecommendations.length > 0) {
-        const uniqueBots = [...new Set(gameRecommendations.map(rec => rec.bot_name))];
-        botSummaryHtml = `
-            <div class="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="text-xs font-semibold text-gray-600 mb-2">🤖 Bot Recommendations:</div>
-                <div class="flex flex-wrap gap-2">
-                    ${uniqueBots.map(botName => {
-                        const botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
-                        const avgConfidence = Math.round(botRecs.reduce((sum, rec) => sum + rec.confidence, 0) / botRecs.length);
-                        const totalAmount = botRecs.reduce((sum, rec) => sum + rec.recommended_amount, 0);
-                        const botColor = botRecs[0].bot_color;
-                        
-                        return `
-                            <div class="text-xs px-2 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
-                                 style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
-                                 onclick="showBotRecommendationDetails('${investment.id}', '${botName}')">
-                                ${botName}: ${botRecs.length} bet${botRecs.length > 1 ? 's' : ''}, ${avgConfidence}% avg, $${totalAmount.toFixed(0)}
-                            </div>
-                        `;
-                    }).join('')}
+    if (hasRecommendations) {
+        const botNames = Object.keys(gameRecommendations);
+        const botSummaries = botNames.map(botName => {
+            const botRecs = gameRecommendations[botName];
+            if (!botRecs || (!Array.isArray(botRecs) && typeof botRecs !== 'object')) return '';
+            
+            // Handle both array and object formats
+            const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
+            if (recsArray.length === 0) return '';
+            
+            const avgConfidence = Math.round(recsArray.reduce((sum, rec) => sum + (rec.confidence || 0), 0) / recsArray.length);
+            const totalAmount = recsArray.reduce((sum, rec) => sum + (rec.recommended_amount || 0), 0);
+            const botColor = recsArray[0].bot_color || '#3B82F6';
+            
+            return `
+                <div class="text-xs px-3 py-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
+                     style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
+                     onclick="event.stopPropagation(); showBotRecommendationDetails('${investment.id}', '${botName}')">
+                    <span class="font-medium">${botName}</span>: ${recsArray.length} bet${recsArray.length > 1 ? 's' : ''}, ${avgConfidence}% avg confidence, $${totalAmount.toFixed(0)} total
+                </div>
+            `;
+        }).filter(html => html).join('');
+        
+        if (botSummaries) {
+            botSummaryHtml = `
+                <div class="mb-4 p-3 bg-orange-100 border border-orange-200 rounded-lg">
+                    <div class="text-sm font-medium text-orange-800 mb-2">🎯 Automated Investor Recommendations:</div>
+                    <div class="space-y-2">
+                        ${botSummaries}
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Generate placed wagers summary with more details
+    let placedWagersSummaryHtml = '';
+    if (hasPlacedBets) {
+        const wagersHtml = placedBets.map(bet => {
+            const investor = bet.investor_name || bet.placed_by || 'Manual';
+            const sportsbook = bet.sportsbook || 'Unknown';
+            const betType = bet.bet_type || bet.market_type || 'Unknown';
+            const selection = bet.selection || bet.outcome || 'Unknown';
+            const odds = bet.odds || 0;
+            const amount = bet.amount || bet.wager_amount || 0;
+            
+            return `
+                <div class="text-xs px-3 py-2 bg-green-100 border border-green-200 rounded-lg">
+                    <div class="font-medium text-green-800">
+                        ${investor} placed $${amount} on ${sportsbook}
+                    </div>
+                    <div class="text-green-700">
+                        ${betType}: ${selection} at ${odds > 0 ? '+' : ''}${odds} odds
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        placedWagersSummaryHtml = `
+            <div class="mb-4 p-3 bg-green-100 border border-green-200 rounded-lg">
+                <div class="text-sm font-medium text-green-800 mb-2">✅ Active Wagers:</div>
+                <div class="space-y-2">
+                    ${wagersHtml}
                 </div>
             </div>
         `;
@@ -1926,18 +2008,49 @@ function createInvestmentCard(investment) {
     card.innerHTML = `
         <style>
             .wager-outcome { position: relative; cursor: pointer; }
-            .wager-outcome:hover .add-to-cart-btn { display: block !important; }
-            .game-title-clickable { cursor: pointer; transition: color 0.2s ease; }
-            .game-title-clickable:hover { color: #3b82f6; text-decoration: underline; }
+            .wager-outcome:hover { background-color: rgba(59, 130, 246, 0.1); }
+            .game-title-clickable { 
+                cursor: pointer; 
+                transition: all 0.2s ease; 
+                padding: 0.5rem;
+                border-radius: 0.5rem;
+                margin: -0.5rem;
+            }
+            .game-title-clickable:hover { 
+                color: #3b82f6; 
+                background-color: rgba(59, 130, 246, 0.1);
+                transform: translateY(-1px);
+            }
+            .investment-highlight {
+                position: relative;
+                overflow: hidden;
+            }
+            .investment-highlight::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transition: left 0.5s;
+            }
+            .investment-highlight:hover::before {
+                left: 100%;
+            }
         </style>
         <div class="mb-4">
-            <h3 class="text-lg font-bold text-gray-900 game-title-clickable" onclick="showGameAnalytics('${investment.id}', '${investment.teams}', '${investment.sport_title || investment.sport || 'Sport'}', '${investment.commence_time}')">
+            <h3 class="text-lg font-bold text-gray-900 game-title-clickable investment-highlight" 
+                onclick="showInvestmentDetails('${investment.id}', '${investment.teams}', '${investment.sport_title || investment.sport || 'Sport'}', '${investment.commence_time}')">
                 ${investment.teams} 📊
+                <span class="text-sm font-normal text-blue-600 ml-2">Click for detailed analysis</span>
             </h3>
             <p class="text-sm text-gray-600">${formattedTime}</p>
             <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
+            ${headerBadges}
         </div>
         ${botSummaryHtml}
+        ${placedWagersSummaryHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
         </div>
@@ -3470,8 +3583,289 @@ function generateConsensusOdds(gameId) {
     document.getElementById('total-value').textContent = `${(Math.random() * 18 - 4).toFixed(1)}%`;
 }
 
-// Show detailed bet analysis modal
+// Show detailed investment analysis modal with comprehensive details
+function showInvestmentDetails(gameId, teams, sport, commenceTime) {
+    // Find the investment data from the currently loaded investments
+    const investment = getCurrentInvestmentData(gameId);
+    
+    if (!investment) {
+        console.error('Investment data not found for game ID:', gameId);
+        showMessage('Unable to load investment details. Please try refreshing the page.', true);
+        return;
+    }
+    
+    // Set modal title and basic info
+    document.getElementById('investment-details-title').textContent = `${teams} - Investment Analysis`;
+    document.getElementById('investment-details-teams').textContent = teams;
+    document.getElementById('investment-details-sport').textContent = sport;
+    document.getElementById('investment-details-time').textContent = new Date(commenceTime).toLocaleString();
+    
+    // Generate comprehensive analysis
+    const consensusAnalysis = generateComprehensiveConsensus(investment);
+    const modelPredictions = generateAdvancedModelPredictions(teams, sport);
+    const investorRecommendations = getInvestorRecommendationsForGame(gameId);
+    const calculatedWagers = generateCalculatedWagers(investorRecommendations, modelPredictions);
+    
+    // Update consensus odds section
+    updateConsensusOddsDisplay(consensusAnalysis);
+    
+    // Update model predictions section
+    updateModelPredictionsDisplay(modelPredictions);
+    
+    // Update investor recommendations section
+    updateInvestorRecommendationsDisplay(investorRecommendations, calculatedWagers);
+    
+    // Show the modal
+    document.getElementById('investment-details-modal').classList.remove('hidden');
+}
+
+// Generate comprehensive consensus analysis across all sportsbooks
+function generateComprehensiveConsensus(investment) {
+    const consensusData = {
+        moneyline: { home: [], away: [] },
+        spread: { home: [], away: [] },
+        total: { over: [], under: [] },
+        averages: {},
+        bestOdds: {},
+        worstOdds: {}
+    };
+    
+    // Process all bookmakers and markets
+    if (investment.bookmakers && investment.bookmakers.length > 0) {
+        investment.bookmakers.forEach(bookmaker => {
+            bookmaker.markets.forEach(market => {
+                if (market.key === 'h2h') {
+                    // Moneyline odds
+                    market.outcomes.forEach(outcome => {
+                        if (outcome.name === investment.teams.split(' vs ')[0]) {
+                            consensusData.moneyline.home.push({ odds: outcome.price, book: bookmaker.title });
+                        } else if (outcome.name === investment.teams.split(' vs ')[1]) {
+                            consensusData.moneyline.away.push({ odds: outcome.price, book: bookmaker.title });
+                        }
+                    });
+                } else if (market.key === 'spreads') {
+                    // Spread odds
+                    market.outcomes.forEach(outcome => {
+                        if (outcome.name === investment.teams.split(' vs ')[0]) {
+                            consensusData.spread.home.push({ 
+                                odds: outcome.price, 
+                                point: outcome.point || 0, 
+                                book: bookmaker.title 
+                            });
+                        } else if (outcome.name === investment.teams.split(' vs ')[1]) {
+                            consensusData.spread.away.push({ 
+                                odds: outcome.price, 
+                                point: outcome.point || 0, 
+                                book: bookmaker.title 
+                            });
+                        }
+                    });
+                } else if (market.key === 'totals') {
+                    // Total points
+                    market.outcomes.forEach(outcome => {
+                        if (outcome.name === 'Over') {
+                            consensusData.total.over.push({ 
+                                odds: outcome.price, 
+                                point: outcome.point || 0, 
+                                book: bookmaker.title 
+                            });
+                        } else if (outcome.name === 'Under') {
+                            consensusData.total.under.push({ 
+                                odds: outcome.price, 
+                                point: outcome.point || 0, 
+                                book: bookmaker.title 
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    }
+    
+    // Calculate averages and find best/worst odds
+    ['moneyline', 'spread', 'total'].forEach(marketType => {
+        if (marketType === 'moneyline') {
+            if (consensusData.moneyline.home.length > 0) {
+                consensusData.averages.homeMoneyline = Math.round(
+                    consensusData.moneyline.home.reduce((sum, item) => sum + item.odds, 0) / consensusData.moneyline.home.length
+                );
+                consensusData.bestOdds.homeMoneyline = consensusData.moneyline.home.reduce((best, current) => 
+                    current.odds > best.odds ? current : best
+                );
+                consensusData.worstOdds.homeMoneyline = consensusData.moneyline.home.reduce((worst, current) => 
+                    current.odds < worst.odds ? current : worst
+                );
+            }
+            if (consensusData.moneyline.away.length > 0) {
+                consensusData.averages.awayMoneyline = Math.round(
+                    consensusData.moneyline.away.reduce((sum, item) => sum + item.odds, 0) / consensusData.moneyline.away.length
+                );
+                consensusData.bestOdds.awayMoneyline = consensusData.moneyline.away.reduce((best, current) => 
+                    current.odds > best.odds ? current : best
+                );
+                consensusData.worstOdds.awayMoneyline = consensusData.moneyline.away.reduce((worst, current) => 
+                    current.odds < worst.odds ? current : worst
+                );
+            }
+        }
+    });
+    
+    return consensusData;
+}
+
+// Generate advanced model predictions with confidence intervals
+function generateAdvancedModelPredictions(teams, sport) {
+    const teamNames = teams.split(' vs ');
+    const homeTeam = teamNames[0];
+    const awayTeam = teamNames[1];
+    
+    // Simulate multiple model predictions
+    const models = [
+        {
+            name: 'Neural Network Ensemble',
+            type: 'Deep Learning',
+            homeWinProb: 0.58 + (Math.random() - 0.5) * 0.2,
+            confidence: 78 + Math.random() * 15,
+            factors: ['Team strength differential', 'Recent form', 'Head-to-head history'],
+            lastUpdated: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+        },
+        {
+            name: 'Statistical Model',
+            type: 'Regression',
+            homeWinProb: 0.62 + (Math.random() - 0.5) * 0.15,
+            confidence: 71 + Math.random() * 12,
+            factors: ['Win percentage', 'Points differential', 'Home court advantage'],
+            lastUpdated: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000)
+        },
+        {
+            name: 'XGBoost Predictor',
+            type: 'Gradient Boosting',
+            homeWinProb: 0.55 + (Math.random() - 0.5) * 0.25,
+            confidence: 82 + Math.random() * 10,
+            factors: ['Advanced metrics', 'Player efficiency', 'Matchup advantages'],
+            lastUpdated: new Date(Date.now() - Math.random() * 5 * 24 * 60 * 60 * 1000)
+        }
+    ];
+    
+    // Calculate ensemble prediction
+    const ensembleHomeProb = models.reduce((sum, model) => sum + model.homeWinProb, 0) / models.length;
+    const ensembleConfidence = models.reduce((sum, model) => sum + model.confidence, 0) / models.length;
+    
+    return {
+        models,
+        ensemble: {
+            homeWinProb: ensembleHomeProb,
+            awayWinProb: 1 - ensembleHomeProb,
+            confidence: ensembleConfidence
+        },
+        impliedOdds: {
+            home: Math.round((1 / ensembleHomeProb) * 100 - 100),
+            away: Math.round((1 / (1 - ensembleHomeProb)) * 100 - 100)
+        },
+        recommendedBets: generateModelRecommendedBets(ensembleHomeProb, ensembleConfidence)
+    };
+}
+
+// Get investor recommendations for specific game
+function getInvestorRecommendationsForGame(gameId) {
+    // Check if we have bot recommendations for this game
+    const gameRecommendations = botRecommendations[gameId] || {};
+    
+    const recommendations = [];
+    
+    Object.keys(gameRecommendations).forEach(botName => {
+        const botRecs = gameRecommendations[botName];
+        if (!botRecs) return;
+        
+        // Handle both array and object formats
+        const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
+        
+        recsArray.forEach(rec => {
+            if (rec && typeof rec === 'object') {
+                recommendations.push({
+                    investorName: botName,
+                    investorColor: rec.bot_color || '#3B82F6',
+                    betType: rec.market_type || 'Moneyline',
+                    selection: rec.outcome || 'Unknown',
+                    recommendedAmount: rec.recommended_amount || 0,
+                    confidence: rec.confidence || 0,
+                    reasoning: rec.strategy_reason || 'Advanced algorithm analysis',
+                    expectedValue: rec.expected_value || 0,
+                    potentialPayout: rec.potential_payout || 0,
+                    odds: rec.odds || 0
+                });
+            }
+        });
+    });
+    
+    return recommendations;
+}
+
+// Generate calculated wager recommendations
+function generateCalculatedWagers(recommendations, modelPredictions) {
+    return recommendations.map(rec => {
+        const kellyFraction = calculateKellyFraction(rec.odds, modelPredictions.ensemble.homeWinProb);
+        const confidenceAdjustedKelly = kellyFraction * (rec.confidence / 100);
+        
+        return {
+            ...rec,
+            kellyFraction: kellyFraction,
+            adjustedKelly: confidenceAdjustedKelly,
+            optimalWager: Math.max(0, confidenceAdjustedKelly * 1000), // Assuming $1000 bankroll
+            riskLevel: kellyFraction > 0.1 ? 'High' : kellyFraction > 0.05 ? 'Medium' : 'Low',
+            valueAnalysis: {
+                impliedProb: 1 / (Math.abs(rec.odds) / 100 + 1),
+                modelProb: rec.betType === 'Moneyline' ? modelPredictions.ensemble.homeWinProb : 0.5,
+                edge: ((1 / (Math.abs(rec.odds) / 100 + 1)) - modelPredictions.ensemble.homeWinProb) * 100
+            }
+        };
+    });
+}
+
+// Helper function to calculate Kelly Fraction
+function calculateKellyFraction(odds, winProbability) {
+    const decimal_odds = odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
+    return Math.max(0, (winProbability * decimal_odds - 1) / (decimal_odds - 1));
+}
+
+// Generate model recommended bets
+function generateModelRecommendedBets(homeWinProb, confidence) {
+    const bets = [];
+    
+    // Only recommend bets with high confidence
+    if (confidence > 75) {
+        if (homeWinProb > 0.6) {
+            bets.push({
+                type: 'Moneyline',
+                selection: 'Home Team',
+                reasoning: `Model shows ${(homeWinProb * 100).toFixed(1)}% home win probability`,
+                strength: homeWinProb > 0.7 ? 'Strong' : 'Moderate'
+            });
+        } else if (homeWinProb < 0.4) {
+            bets.push({
+                type: 'Moneyline',
+                selection: 'Away Team',
+                reasoning: `Model shows ${((1-homeWinProb) * 100).toFixed(1)}% away win probability`,
+                strength: homeWinProb < 0.3 ? 'Strong' : 'Moderate'
+            });
+        }
+    }
+    
+    return bets;
+}
+
+// Show detailed bet analysis modal (keeping original for backward compatibility)
 function showBetDetails(gameId, sportsbook, marketKey, selection, odds, teams, sport) {
+    // Find the investment data
+    const investment = getCurrentInvestmentData(gameId);
+    
+    if (investment) {
+        // Use the new comprehensive details modal
+        showInvestmentDetails(gameId, teams, sport, investment.commence_time, investment);
+        return;
+    }
+    
+    // Fallback to original implementation
     // Generate consensus odds across sportsbooks
     const consensusData = generateConsensusData(marketKey, selection);
     
@@ -5230,12 +5624,280 @@ window.showPage = function(pageId) {
 window.showPredictiveTab = showPredictiveTab;
 window.makePrediction = makePrediction;
 window.makePredictionWithModel = makePredictionWithModel;
+// Helper function to get current investment data by gameId
+function getCurrentInvestmentData(gameId) {
+    // This should be called with the current investments in scope
+    // For now, we'll store the current investments globally when they're loaded
+    if (window.currentInvestments) {
+        return window.currentInvestments.find(inv => inv.id === gameId);
+    }
+    return null;
+}
+
+// Update consensus odds display in the modal
+function updateConsensusOddsDisplay(consensusData) {
+    const container = document.getElementById('consensus-analysis-content');
+    if (!container) return;
+    
+    let html = '';
+    
+    // Moneyline consensus
+    if (consensusData.averages.homeMoneyline || consensusData.averages.awayMoneyline) {
+        html += `
+            <div class="bg-white p-4 rounded-lg mb-4">
+                <h4 class="text-lg font-semibold mb-3 text-gray-800">Moneyline Consensus</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    ${consensusData.averages.homeMoneyline ? `
+                        <div>
+                            <div class="text-sm text-gray-600">Home Team Average</div>
+                            <div class="text-xl font-bold text-blue-600">${consensusData.averages.homeMoneyline > 0 ? '+' : ''}${consensusData.averages.homeMoneyline}</div>
+                            <div class="text-xs text-gray-500">Best: ${consensusData.bestOdds.homeMoneyline.odds} (${consensusData.bestOdds.homeMoneyline.book})</div>
+                        </div>
+                    ` : ''}
+                    ${consensusData.averages.awayMoneyline ? `
+                        <div>
+                            <div class="text-sm text-gray-600">Away Team Average</div>
+                            <div class="text-xl font-bold text-red-600">${consensusData.averages.awayMoneyline > 0 ? '+' : ''}${consensusData.averages.awayMoneyline}</div>
+                            <div class="text-xs text-gray-500">Best: ${consensusData.bestOdds.awayMoneyline.odds} (${consensusData.bestOdds.awayMoneyline.book})</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Market depth analysis
+    const totalBooks = consensusData.moneyline.home.length + consensusData.moneyline.away.length;
+    if (totalBooks > 0) {
+        html += `
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h5 class="font-semibold mb-2 text-gray-700">Market Analysis</h5>
+                <div class="text-sm text-gray-600">
+                    <div>Books offering odds: ${Math.max(consensusData.moneyline.home.length, consensusData.moneyline.away.length)}</div>
+                    <div>Market liquidity: ${totalBooks > 6 ? 'High' : totalBooks > 3 ? 'Medium' : 'Low'}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+// Update model predictions display
+function updateModelPredictionsDisplay(modelPredictions) {
+    const container = document.getElementById('model-predictions-content');
+    if (!container) return;
+    
+    let html = `
+        <div class="space-y-4">
+            <!-- Ensemble Prediction -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-700 p-4 rounded-lg text-white">
+                <h4 class="text-lg font-semibold mb-3">Ensemble Prediction</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm opacity-80">Home Win Probability</div>
+                        <div class="text-2xl font-bold">${(modelPredictions.ensemble.homeWinProb * 100).toFixed(1)}%</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">Away Win Probability</div>
+                        <div class="text-2xl font-bold">${(modelPredictions.ensemble.awayWinProb * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <div class="text-sm opacity-80">Model Confidence</div>
+                    <div class="text-xl font-bold">${modelPredictions.ensemble.confidence.toFixed(1)}%</div>
+                </div>
+            </div>
+            
+            <!-- Individual Models -->
+            <div class="bg-white p-4 rounded-lg">
+                <h5 class="font-semibold mb-3 text-gray-800">Individual Model Predictions</h5>
+                <div class="space-y-3">
+    `;
+    
+    modelPredictions.models.forEach(model => {
+        html += `
+            <div class="border border-gray-200 p-3 rounded">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <div class="font-medium text-gray-800">${model.name}</div>
+                        <div class="text-xs text-gray-500">${model.type}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-blue-600">${(model.homeWinProb * 100).toFixed(1)}%</div>
+                        <div class="text-xs text-gray-500">${model.confidence.toFixed(0)}% conf.</div>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-600">
+                    Key factors: ${model.factors.join(', ')}
+                </div>
+                <div class="text-xs text-gray-400 mt-1">
+                    Updated: ${model.lastUpdated.toLocaleDateString()}
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+                </div>
+            </div>
+            
+            <!-- Model Implied Odds -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h5 class="font-semibold mb-3 text-gray-700">Model Implied Odds</h5>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-600">Home Team</div>
+                        <div class="text-xl font-bold text-green-600">${modelPredictions.impliedOdds.home > 0 ? '+' : ''}${modelPredictions.impliedOdds.home}</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-600">Away Team</div>
+                        <div class="text-xl font-bold text-green-600">${modelPredictions.impliedOdds.away > 0 ? '+' : ''}${modelPredictions.impliedOdds.away}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Update investor recommendations display
+function updateInvestorRecommendationsDisplay(recommendations, calculatedWagers) {
+    const container = document.getElementById('investor-recommendations-content');
+    if (!container) return;
+    
+    if (recommendations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <div class="text-lg font-medium mb-2">No Investor Recommendations</div>
+                <div class="text-sm">None of your automated investors have recommended bets for this game.</div>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div class="space-y-4">
+            <div class="bg-gradient-to-r from-green-500 to-green-700 p-4 rounded-lg text-white">
+                <h4 class="text-lg font-semibold mb-2">Active Recommendations</h4>
+                <div class="text-sm opacity-90">${recommendations.length} recommendation${recommendations.length > 1 ? 's' : ''} from your automated investors</div>
+            </div>
+    `;
+    
+    calculatedWagers.forEach((wager, index) => {
+        const rec = recommendations[index];
+        html += `
+            <div class="bg-white border-l-4 p-4 rounded-lg" style="border-left-color: ${rec.investorColor}">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <div class="font-semibold text-gray-800" style="color: ${rec.investorColor}">${rec.investorName}</div>
+                        <div class="text-sm text-gray-600">${rec.betType} - ${rec.selection}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-gray-800">$${rec.recommendedAmount.toFixed(2)}</div>
+                        <div class="text-sm text-gray-500">${rec.confidence}% confidence</div>
+                    </div>
+                </div>
+                
+                <!-- Calculation Details -->
+                <div class="bg-gray-50 p-3 rounded mt-3">
+                    <h6 class="font-medium text-gray-700 mb-2">Calculation Details</h6>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <div class="text-gray-600">Kelly Fraction:</div>
+                            <div class="font-medium">${(wager.kellyFraction * 100).toFixed(2)}%</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-600">Adjusted Kelly:</div>
+                            <div class="font-medium">${(wager.adjustedKelly * 100).toFixed(2)}%</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-600">Risk Level:</div>
+                            <div class="font-medium ${wager.riskLevel === 'High' ? 'text-red-600' : wager.riskLevel === 'Medium' ? 'text-yellow-600' : 'text-green-600'}">${wager.riskLevel}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-600">Expected Value:</div>
+                            <div class="font-medium ${rec.expectedValue > 0 ? 'text-green-600' : 'text-red-600'}">${rec.expectedValue > 0 ? '+' : ''}${rec.expectedValue.toFixed(2)}%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Value Analysis -->
+                <div class="bg-blue-50 p-3 rounded mt-3">
+                    <h6 class="font-medium text-blue-800 mb-2">Value Analysis</h6>
+                    <div class="text-sm text-blue-700">
+                        <div class="mb-1">Market Probability: ${(wager.valueAnalysis.impliedProb * 100).toFixed(1)}%</div>
+                        <div class="mb-1">Model Probability: ${(wager.valueAnalysis.modelProb * 100).toFixed(1)}%</div>
+                        <div class="font-medium">Edge: ${wager.valueAnalysis.edge > 0 ? '+' : ''}${wager.valueAnalysis.edge.toFixed(2)}%</div>
+                    </div>
+                </div>
+                
+                <!-- Reasoning -->
+                <div class="mt-3 p-3 bg-yellow-50 rounded">
+                    <h6 class="font-medium text-yellow-800 mb-1">Investment Reasoning</h6>
+                    <div class="text-sm text-yellow-700">${rec.reasoning}</div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mt-4 flex gap-2">
+                    <button onclick="acceptInvestorRecommendation('${rec.investorName}', ${index})" 
+                            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
+                        Accept Recommendation
+                    </button>
+                    <button onclick="modifyInvestorRecommendation('${rec.investorName}', ${index})" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+                        Modify Amount
+                    </button>
+                    <button onclick="rejectInvestorRecommendation('${rec.investorName}', ${index})" 
+                            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium">
+                        Reject
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Functions to handle investor recommendation actions
+function acceptInvestorRecommendation(investorName, index) {
+    showMessage(`✅ Accepted recommendation from ${investorName}`, false);
+    // Here you would typically make an API call to place the bet
+    document.getElementById('investment-details-modal').classList.add('hidden');
+}
+
+function modifyInvestorRecommendation(investorName, index) {
+    const newAmount = prompt(`Enter new wager amount for ${investorName}'s recommendation:`);
+    if (newAmount && !isNaN(newAmount) && parseFloat(newAmount) > 0) {
+        showMessage(`📝 Modified ${investorName}'s recommendation to $${newAmount}`, false);
+        // Here you would update the recommendation with the new amount
+    }
+}
+
+function rejectInvestorRecommendation(investorName, index) {
+    if (confirm(`Are you sure you want to reject ${investorName}'s recommendation?`)) {
+        showMessage(`❌ Rejected recommendation from ${investorName}`, false);
+        // Here you would mark the recommendation as rejected
+    }
+}
+
 window.calculateKellyOptimal = calculateKellyOptimal;
 window.toggleKellyOptions = toggleKellyOptions;
 window.resetKellyCalculator = resetKellyCalculator;
 window.startModelTraining = startModelTraining;
 window.refreshPredictiveModels = refreshPredictiveModels;
 window.showBetDetails = showBetDetails;
+window.showInvestmentDetails = showInvestmentDetails;
+window.getCurrentInvestmentData = getCurrentInvestmentData;
+window.updateConsensusOddsDisplay = updateConsensusOddsDisplay;
+window.updateModelPredictionsDisplay = updateModelPredictionsDisplay;
+window.updateInvestorRecommendationsDisplay = updateInvestorRecommendationsDisplay;
+window.acceptInvestorRecommendation = acceptInvestorRecommendation;
+window.modifyInvestorRecommendation = modifyInvestorRecommendation;
+window.rejectInvestorRecommendation = rejectInvestorRecommendation;
 window.toggleStrategySizingOptions = toggleStrategySizingOptions;
 
 // Add form handler for train model modal

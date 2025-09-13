@@ -2281,6 +2281,62 @@
         </div>
     </div>
     
+    <!-- Investment Details Modal -->
+    <div id="investment-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-6xl">
+            <span class="modal-close" onclick="closeModal('investment-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white" id="investment-details-title">Investment Analysis</h3>
+            
+            <!-- Game Information Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-lg mb-6 text-white">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <div class="text-sm opacity-80">Teams</div>
+                        <div class="text-lg font-semibold" id="investment-details-teams">-</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">Sport</div>
+                        <div class="text-lg font-semibold" id="investment-details-sport">-</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">Game Time</div>
+                        <div class="text-lg font-semibold" id="investment-details-time">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Consensus & Model Predictions -->
+                <div class="space-y-6">
+                    <!-- Consensus Analysis -->
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 text-white">Consensus Odds Analysis</h4>
+                        <div id="consensus-analysis-content">
+                            <!-- Consensus data will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Model Predictions -->
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 text-white">Model Predictions</h4>
+                        <div id="model-predictions-content">
+                            <!-- Model predictions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Investor Recommendations -->
+                <div>
+                    <h4 class="text-xl font-bold mb-4 text-white">Investor Recommendations</h4>
+                    <div id="investor-recommendations-content">
+                        <!-- Investor recommendations will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bot Recommendation Details Modal -->
     <div id="bot-recommendation-modal" class="modal">
         <div class="modal-content post9-card max-w-5xl">
