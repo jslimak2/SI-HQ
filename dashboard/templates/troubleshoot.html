@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshooting Guide - Post9</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .post9-bg {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+        }
+        .post9-card {
+            background: rgba(30, 27, 75, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body class="post9-bg min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Post<span class="text-purple-400">9</span> Troubleshooting Guide</h1>
+            <p class="text-gray-300">Quick solutions to common issues</p>
+            <a href="/" class="inline-block mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                ← Back to Dashboard
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            
+            <!-- Bot Issues -->
+            <div class="post9-card p-6 rounded-lg">
+                <h2 class="text-2xl font-bold text-purple-400 mb-4">🤖 Bot Issues</h2>
+                
+                <div class="space-y-4">
+                    <div class="border-l-4 border-blue-500 pl-4">
+                        <h3 class="font-semibold text-blue-300">Bot Not Placing Bets</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Check confidence threshold (should be 50-80%)</li>
+                            <li>• Verify sufficient balance</li>
+                            <li>• Ensure strategy rules aren't too restrictive</li>
+                            <li>• Check if markets are active</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-yellow-500 pl-4">
+                        <h3 class="font-semibold text-yellow-300">Strategy Picks Error</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• If you see "'>=' not supported" errors, the strategy parameters may be misconfigured</li>
+                            <li>• Go to Strategy Builder and verify all numeric fields contain numbers, not text</li>
+                            <li>• Try recreating the strategy with fresh parameters</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-red-500 pl-4">
+                        <h3 class="font-semibold text-red-300">High Loss Rate</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Model may need retraining with recent data</li>
+                            <li>• Reduce bet size percentage (try 1-2%)</li>
+                            <li>• Check if strategy is too aggressive</li>
+                            <li>• Review recent market conditions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Training Issues -->
+            <div class="post9-card p-6 rounded-lg">
+                <h2 class="text-2xl font-bold text-purple-400 mb-4">🧠 Model Training Issues</h2>
+                
+                <div class="space-y-4">
+                    <div class="border-l-4 border-green-500 pl-4">
+                        <h3 class="font-semibold text-green-300">Training Fails</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Check data availability for chosen sport</li>
+                            <li>• Reduce training sample size</li>
+                            <li>• Try simpler model type (Statistical)</li>
+                            <li>• Verify sufficient historical data</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-indigo-500 pl-4">
+                        <h3 class="font-semibold text-indigo-300">Poor Model Performance</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Try ensemble models instead of single algorithms</li>
+                            <li>• Increase training data timeframe</li>
+                            <li>• Check feature engineering settings</li>
+                            <li>• Consider different sports with more data</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-orange-500 pl-4">
+                        <h3 class="font-semibold text-orange-300">Training Queue Stuck</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Check System Status page for training queue status</li>
+                            <li>• Cancel and restart training if stuck for >30 minutes</li>
+                            <li>• Try training during off-peak hours</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Issues -->
+            <div class="post9-card p-6 rounded-lg">
+                <h2 class="text-2xl font-bold text-purple-400 mb-4">⚙️ Technical Issues</h2>
+                
+                <div class="space-y-4">
+                    <div class="border-l-4 border-cyan-500 pl-4">
+                        <h3 class="font-semibold text-cyan-300">Dashboard Not Loading</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Refresh the page (Ctrl+F5 or Cmd+Shift+R)</li>
+                            <li>• Clear browser cache and cookies</li>
+                            <li>• Check internet connection</li>
+                            <li>• Try incognito/private browsing mode</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-pink-500 pl-4">
+                        <h3 class="font-semibold text-pink-300">Data Not Updating</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Check the last update timestamp</li>
+                            <li>• Verify data pipeline is running in System Status</li>
+                            <li>• Manual refresh using the refresh button</li>
+                            <li>• Check for scheduled maintenance notifications</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="border-l-4 border-teal-500 pl-4">
+                        <h3 class="font-semibold text-teal-300">API Connection Issues</h3>
+                        <ul class="text-gray-300 text-sm mt-2 space-y-1">
+                            <li>• Check Account page for API status</li>
+                            <li>• Verify API credentials are properly configured</li>
+                            <li>• Check for API rate limiting</li>
+                            <li>• Review recent API logs for errors</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Getting Help -->
+            <div class="post9-card p-6 rounded-lg">
+                <h2 class="text-2xl font-bold text-purple-400 mb-4">📞 Getting Help</h2>
+                
+                <div class="space-y-4">
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <h3 class="font-semibold text-white mb-2">Before Contacting Support</h3>
+                        <ol class="text-gray-300 text-sm space-y-1 list-decimal list-inside">
+                            <li>Check this troubleshooting guide</li>
+                            <li>Review Dashboard → Performance → Bot Logs</li>
+                            <li>Check System Status page for known issues</li>
+                            <li>Try the suggested solutions above</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-lg">
+                        <h3 class="font-semibold text-white mb-2">Still Need Help?</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-blue-200">📚</span>
+                                <span>Review the Quick Reference Guide</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-green-200">💬</span>
+                                <span>Join our community for peer support</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-yellow-200">📧</span>
+                                <span>Contact our support team with specific error details</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reference -->
+        <div class="mt-12 max-w-4xl mx-auto">
+            <div class="post9-card p-6 rounded-lg">
+                <h2 class="text-2xl font-bold text-purple-400 mb-4">🔍 Quick Diagnostic Commands</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-800 p-4 rounded">
+                        <h3 class="font-semibold text-white mb-2">Check Bot Status</h3>
+                        <p class="text-gray-300 text-sm">Dashboard → View Bot Details → Check logs and recent activity</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded">
+                        <h3 class="font-semibold text-white mb-2">Verify Balance</h3>
+                        <p class="text-gray-300 text-sm">Dashboard → Bot Details → Current Balance should be > minimum bet</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded">
+                        <h3 class="font-semibold text-white mb-2">Test Strategy</h3>
+                        <p class="text-gray-300 text-sm">Strategy Builder → Backtest → Run simulation with recent data</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded">
+                        <h3 class="font-semibold text-white mb-2">Model Performance</h3>
+                        <p class="text-gray-300 text-sm">Model Gallery → Select Model → Review accuracy and recent predictions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -512,6 +512,11 @@ def privacy():
     """Privacy Policy page"""
     return render_template('privacy.html')
 
+@app.route('/troubleshoot')
+def troubleshoot():
+    """Troubleshooting Guide page"""
+    return render_template('troubleshoot.html')
+
 @app.route('/demo')
 def demo():
     """Renders a demo page showing the new bot functionality."""
@@ -999,13 +1004,29 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
     """Generate +eV (Expected Value) strategy picks."""
     picks = []
     
-    # Get strategy parameters
+    # Get strategy parameters with proper type conversion to handle dict/float issues
     params = strategy_data.get('parameters', {})
-    min_ev = params.get('min_expected_value', 5.0)
-    max_bet_pct = params.get('max_bet_percentage', 3.0)
-    min_confidence = params.get('confidence_threshold', 65)
-    max_odds = params.get('max_odds', 3.0)
-    kelly_fraction = params.get('kelly_fraction', 0.25)
+    
+    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            # If it's a dict, try to extract a 'value' field or use default
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
+    min_ev = safe_float_extract(params.get('min_expected_value', 5.0), 5.0)
+    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 3.0), 3.0)
+    min_confidence = safe_float_extract(params.get('confidence_threshold', 65), 65)
+    max_odds = safe_float_extract(params.get('max_odds', 3.0), 3.0)
+    kelly_fraction = safe_float_extract(params.get('kelly_fraction', 0.25), 0.25)
     
     # Demo games with calculated expected values
     demo_games = [
