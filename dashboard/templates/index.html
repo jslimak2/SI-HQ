@@ -2375,7 +2375,7 @@
     
     <!-- Model Details Modal -->
     <div id="model-details-modal" class="modal">
-        <div class="modal-content post9-card max-w-5xl">
+        <div class="modal-content post9-card max-w-7xl">
             <span class="modal-close" onclick="closeModal('model-details-modal')">&times;</span>
             <h3 class="text-2xl font-bold mb-6 text-white">Model Details</h3>
             
@@ -3284,6 +3284,138 @@
                 generateDemoTrainingData();
                 updateTrainingQueueUI();
             });
+            
+            // Missing viewJobDetails function implementation
+            window.viewJobDetails = function(jobId) {
+                // Find the job in all categories
+                let job = null;
+                
+                // Search in all job arrays
+                const allJobs = [
+                    ...trainingQueueData.queued_jobs,
+                    ...trainingQueueData.running_jobs,
+                    ...trainingQueueData.completed_jobs
+                ];
+                
+                job = allJobs.find(j => j.job_id === jobId);
+                
+                if (!job) {
+                    showMessage('Job not found', true);
+                    return;
+                }
+                
+                // Populate job details modal
+                const content = document.getElementById('job-details-content');
+                if (!content) return;
+                
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Job Information -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-white">Job Information</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Job ID:</span>
+                                    <span class="text-white font-mono">${job.job_id}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Model ID:</span>
+                                    <span class="text-white">${job.model_id}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Sport:</span>
+                                    <span class="text-white">${job.sport}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Model Type:</span>
+                                    <span class="text-white">${job.model_type}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Status:</span>
+                                    <span class="px-2 py-1 rounded text-xs ${getJobStatusColor(job.status)}">${job.status.toUpperCase()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timing Information -->
+                        <div class="space-y-4">
+                            <h4 class="text-lg font-semibold text-white">Timing</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Created:</span>
+                                    <span class="text-white">${new Date(job.created_at).toLocaleString()}</span>
+                                </div>
+                                ${job.started_at ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Started:</span>
+                                    <span class="text-white">${new Date(job.started_at).toLocaleString()}</span>
+                                </div>
+                                ` : ''}
+                                ${job.completed_at ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Completed:</span>
+                                    <span class="text-white">${new Date(job.completed_at).toLocaleString()}</span>
+                                </div>
+                                ` : ''}
+                                ${job.duration ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Duration:</span>
+                                    <span class="text-white">${job.duration}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${job.training_config ? `
+                    <!-- Training Configuration -->
+                    <div class="mt-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">Training Configuration</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Epochs:</span>
+                                <span class="text-white">${job.training_config.epochs}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Batch Size:</span>
+                                <span class="text-white">${job.training_config.batch_size}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${job.progress !== undefined ? `
+                    <!-- Progress Information -->
+                    <div class="mt-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">Training Progress</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Overall Progress</span>
+                                <span class="text-white">${job.progress}%</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-3">
+                                <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: ${job.progress}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                
+                // Show the modal
+                showModal('job-details-modal');
+            };
+            
+            // Helper function for job status colors
+            function getJobStatusColor(status) {
+                switch(status) {
+                    case 'running': return 'bg-blue-500 text-white';
+                    case 'completed': return 'bg-green-500 text-white';
+                    case 'failed': return 'bg-red-500 text-white';
+                    case 'cancelled': return 'bg-gray-500 text-white';
+                    case 'queued': return 'bg-yellow-500 text-black';
+                    default: return 'bg-gray-500 text-white';
+                }
+            }
             
             // Auto-refresh every 30 seconds
             setInterval(refreshTrainingQueue, 30000);

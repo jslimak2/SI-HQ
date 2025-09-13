@@ -209,6 +209,11 @@ body {
     max-width: 72rem; /* 6xl is 72rem */
 }
 
+.modal-content.max-w-7xl {
+    width: 95%;
+    max-width: 80rem; /* 7xl is 80rem */
+}
+
 .modal-close {
     color: #aaa;
     position: absolute;
