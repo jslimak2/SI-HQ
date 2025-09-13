@@ -78,20 +78,25 @@ Expected Return: Variable, high potential
 
 ```mermaid
 flowchart TD
-    START[Create Bot] --> SPORT[Choose Sport]
-    SPORT --> MARKET[Select Market Type]
-    MARKET --> MODEL[Assign Model]
+    START[Create Bot] --> MODEL[Assign Model]
     MODEL --> STRATEGY[Attach Strategy]
     STRATEGY --> BALANCE[Set Starting Balance]
     BALANCE --> LIMITS[Configure Limits]
     LIMITS --> ACTIVATE[Activate Bot]
+    
+    MODEL --> AUTO_SPORT[Sport Auto-Populated from Model]
+    AUTO_SPORT --> STRATEGY
 ```
 
 ### Essential Settings:
+- **Model Selection**: Choose your trained model (sport is automatically determined)
 - **Starting Balance**: How much money the bot can use
 - **Max Bet %**: Maximum percentage of balance per bet (typically 1-5%)
 - **Stop Loss**: Automatic shutdown if losses exceed threshold
 - **Daily Limits**: Maximum number of bets per day
+
+### 📝 Note: 
+**Sport selection is no longer required** - the sport is automatically populated based on the selected model's training data.
 
 ## 📈 Performance Metrics
 
@@ -108,12 +113,11 @@ flowchart TD
 
 1. **Navigate to Dashboard** → Bots Section
 2. **Click "Create New Bot"**
-3. **Select Sport**: Start with NBA (most data available)
-4. **Choose Model**: Ensemble for beginners
-5. **Pick Strategy**: Use "Conservative" template
-6. **Set Balance**: Start with small amount ($1000)
-7. **Configure Limits**: 2% max bet, 10% stop loss
-8. **Activate and Monitor**
+3. **Choose Model**: Ensemble for beginners (sport auto-populated)
+4. **Pick Strategy**: Use "Conservative" template
+5. **Set Balance**: Start with small amount ($1000)
+6. **Configure Limits**: 2% max bet, 10% stop loss
+7. **Activate and Monitor**
 
 ### Improving Performance
 
