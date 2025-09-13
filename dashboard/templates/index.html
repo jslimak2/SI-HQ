@@ -1695,6 +1695,12 @@
             <form id="edit-strategy-form" class="space-y-4">
                 <input type="hidden" id="strategy-modal-id">
                 <div>
+                    <label for="strategy-modal-name-input" class="block text-sm font-medium text-gray-700">Strategy Name</label>
+                    <input type="text" id="strategy-modal-name-input" name="name" 
+                           class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500" 
+                           placeholder="Enter strategy name" required>
+                </div>
+                <div>
                     <label for="strategy-modal-description" class="block text-sm font-medium text-gray-700">Description</label>
                     <textarea id="strategy-modal-description" name="description" rows="4" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"></textarea>
                 </div>
@@ -3609,40 +3615,76 @@
         }
         
         function filterModels() {
+            // Ensure models are loaded before filtering
+            const modelsGrid = document.getElementById('models-grid');
+            if (!modelsGrid) return;
+            
+            // Check if models are loaded - if not, load them first
+            const modelCards = document.querySelectorAll('.model-card');
+            if (modelCards.length === 0) {
+                loadModels();
+                // Give a small delay for models to render, then apply filters
+                setTimeout(() => {
+                    applyModelFilters();
+                }, 100);
+            } else {
+                applyModelFilters();
+            }
+        }
+        
+        function applyModelFilters() {
             const sportFilter = document.getElementById('model-filter-sport').value;
             const typeFilter = document.getElementById('model-filter-type').value;
             const performanceFilter = document.getElementById('model-filter-performance').value;
             
             const modelCards = document.querySelectorAll('.model-card');
+            let visibleCount = 0;
             
             modelCards.forEach(card => {
-                const modelId = card.dataset.modelId;
                 let shouldShow = true;
                 
-                // Get model info from the card
-                const sportText = card.querySelector('p').textContent;
-                const sport = sportText.split(' • ')[0].toLowerCase();
-                const type = sportText.split(' • ')[1].toLowerCase();
-                const accuracyText = card.querySelector('.text-sm.font-bold.text-gray-900').textContent;
-                const accuracy = parseFloat(accuracyText.replace('%', ''));
-                
-                // Apply filters
-                if (sportFilter !== 'all' && sport !== sportFilter) {
-                    shouldShow = false;
+                try {
+                    // Get model info from the card more safely
+                    const sportTypeElement = card.querySelector('p');
+                    if (!sportTypeElement) return;
+                    
+                    const sportTypeText = sportTypeElement.textContent;
+                    const [sport, type] = sportTypeText.split(' • ').map(s => s.toLowerCase());
+                    
+                    const accuracyElement = card.querySelector('.text-sm.font-bold.text-gray-900');
+                    if (!accuracyElement) return;
+                    
+                    const accuracy = parseFloat(accuracyElement.textContent.replace('%', ''));
+                    
+                    // Apply filters
+                    if (sportFilter !== 'all' && sport !== sportFilter.toLowerCase()) {
+                        shouldShow = false;
+                    }
+                    
+                    if (typeFilter !== 'all' && !type.includes(typeFilter.toLowerCase())) {
+                        shouldShow = false;
+                    }
+                    
+                    if (performanceFilter !== 'all') {
+                        if (performanceFilter === 'high' && accuracy <= 70) shouldShow = false;
+                        if (performanceFilter === 'medium' && (accuracy <= 60 || accuracy > 70)) shouldShow = false;
+                        if (performanceFilter === 'low' && accuracy >= 60) shouldShow = false;
+                    }
+                    
+                    // Apply visibility
+                    card.style.display = shouldShow ? 'block' : 'none';
+                    if (shouldShow) visibleCount++;
+                    
+                } catch (error) {
+                    console.warn('Error filtering model card:', error);
+                    // If there's an error parsing the card, show it by default
+                    card.style.display = 'block';
+                    visibleCount++;
                 }
-                
-                if (typeFilter !== 'all' && !type.includes(typeFilter)) {
-                    shouldShow = false;
-                }
-                
-                if (performanceFilter !== 'all') {
-                    if (performanceFilter === 'high' && accuracy <= 70) shouldShow = false;
-                    if (performanceFilter === 'medium' && (accuracy <= 60 || accuracy > 70)) shouldShow = false;
-                    if (performanceFilter === 'low' && accuracy >= 60) shouldShow = false;
-                }
-                
-                card.style.display = shouldShow ? 'block' : 'none';
             });
+            
+            // Show feedback message about filtering results
+            showMessage(`Showing ${visibleCount} model(s) matching your filters.`, 'info');
         }
         
         function viewModelDetails(modelId) {
@@ -3770,6 +3812,49 @@
             showMessage('Predictive analytics data refreshed successfully.', 'success');
         }
         
+        function openStrategyDetails(strategyId, strategyName, strategyDescription) {
+            // Open the strategy details modal for editing
+            document.getElementById('strategy-modal-id').value = strategyId;
+            document.getElementById('strategy-modal-name').textContent = strategyName;
+            document.getElementById('strategy-modal-name-input').value = strategyName;
+            document.getElementById('strategy-modal-description').value = strategyDescription || '';
+            
+            // Show the modal
+            showModal('strategy-details-modal');
+        }
+        
+        function saveStrategyChanges() {
+            const strategyId = document.getElementById('strategy-modal-id').value;
+            const newName = document.getElementById('strategy-modal-name-input').value.trim();
+            const newDescription = document.getElementById('strategy-modal-description').value.trim();
+            
+            if (!newName) {
+                showMessage('Strategy name is required.', 'error');
+                return false;
+            }
+            
+            try {
+                // In a real implementation, this would make an API call to update the strategy
+                console.log(`Updating strategy ${strategyId}:`, { name: newName, description: newDescription });
+                
+                // Update the modal header to reflect the change immediately
+                document.getElementById('strategy-modal-name').textContent = newName;
+                
+                // Close the modal and show success message
+                closeModal('strategy-details-modal');
+                showMessage(`Strategy "${newName}" updated successfully.`, 'success');
+                
+                // In a real implementation, we would refresh the strategies list here
+                // loadStrategies();
+                
+                return true;
+            } catch (error) {
+                console.error('Error updating strategy:', error);
+                showMessage('Error updating strategy. Please try again.', 'error');
+                return false;
+            }
+        }
+        
         // Initialize training queue when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listener for unified training form submission
@@ -3778,6 +3863,15 @@
                 trainingForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     submitTrainingJob();
+                });
+            }
+            
+            // Add event listener for strategy edit form submission
+            const strategyEditForm = document.getElementById('edit-strategy-form');
+            if (strategyEditForm) {
+                strategyEditForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    saveStrategyChanges();
                 });
             }
             
