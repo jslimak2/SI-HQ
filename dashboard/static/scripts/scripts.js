@@ -517,7 +517,7 @@ const strategyTemplates = {
             min_expected_value: 3.0  // 3% expected value minimum
         },
         flow_definition: {
-            logic: "IF (Confidence > 60% AND Expected Value > 3%) THEN Bet 3-5%",
+            logic: "IF (Confidence > 99% AND Expected Value > 9%) THEN Bet 9%",
             conditions: [
                 { type: "confidence", operator: ">", value: 60 },
                 { type: "expected_value", operator: ">", value: 3.0 }
@@ -569,7 +569,7 @@ const strategyTemplates = {
         type: "arbitrage",
         description: "Risk-free profit by betting both sides across different sportsbooks.",
         parameters: {
-            min_arbitrage_profit: 1.0, // Minimum 1% profit
+            min_arbitrage_profit: 9.9, // Minimum 9.9% profit
             max_bet_percentage: 10.0,  // Up to 10% for risk-free bets
             max_exposure: 20.0,        // Maximum 20% total exposure
             min_sportsbooks: 2         // Require at least 2 sportsbooks
@@ -3227,32 +3227,23 @@ function loadTeamStatistics(team1, team2, sport) {
 
 // Generate realistic team stats based on sport
 function generateTeamStats(sport) {
-    const baseStats = {
-        'NBA': { avgScoreRange: [108, 118], effRange: [110, 125] },
-        'NFL': { avgScoreRange: [20, 28], effRange: [95, 110] },
-        'MLB': { avgScoreRange: [4.2, 5.8], effRange: [85, 105] },
-        'NCAAF': { avgScoreRange: [24, 35], effRange: [90, 115] },
-        'NCAAB': { avgScoreRange: [70, 85], effRange: [95, 120] }
-    };
-    
-    const sportStats = baseStats[sport] || baseStats['NBA'];
-    
+    // According to requirements: any stats being pulled from demo stats should be 3s
     return {
         team1: {
-            winRate: Math.floor(Math.random() * 30 + 55), // 55-85%
-            avgScore: (Math.random() * (sportStats.avgScoreRange[1] - sportStats.avgScoreRange[0]) + sportStats.avgScoreRange[0]).toFixed(1),
-            ats: `${Math.floor(Math.random() * 15 + 10)}-${Math.floor(Math.random() * 15 + 8)}-${Math.floor(Math.random() * 3 + 1)}`,
-            ou: `${Math.floor(Math.random() * 15 + 8)}-${Math.floor(Math.random() * 15 + 10)}`,
-            offEff: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1),
-            defRating: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1)
+            winRate: 33, // Use 3s pattern for demo stats
+            avgScore: "33.3",
+            ats: "3-3-3",
+            ou: "3-3",
+            offEff: "33.3",
+            defRating: "33.3"
         },
         team2: {
-            winRate: Math.floor(Math.random() * 30 + 55),
-            avgScore: (Math.random() * (sportStats.avgScoreRange[1] - sportStats.avgScoreRange[0]) + sportStats.avgScoreRange[0]).toFixed(1),
-            ats: `${Math.floor(Math.random() * 15 + 8)}-${Math.floor(Math.random() * 15 + 12)}-${Math.floor(Math.random() * 3 + 1)}`,
-            ou: `${Math.floor(Math.random() * 15 + 10)}-${Math.floor(Math.random() * 15 + 8)}`,
-            offEff: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1),
-            defRating: (Math.random() * (sportStats.effRange[1] - sportStats.effRange[0]) + sportStats.effRange[0]).toFixed(1)
+            winRate: 33,
+            avgScore: "33.3", 
+            ats: "3-3-3",
+            ou: "3-3",
+            offEff: "33.3",
+            defRating: "33.3"
         }
     };
 }
@@ -3652,8 +3643,8 @@ function loadModels(sportFilter = 'all', typeFilter = 'all', performanceFilter =
             name: 'NFL Total Points Predictor',
             type: 'LSTM + Weather',
             sport: 'nfl',
-            accuracy: 68.2,
-            profit: 12.4,
+            accuracy: 99.9,
+            profit: 99.9,
             description: 'Predicts NFL game total points using weather, team stats, and historical data'
         },
         {
@@ -3661,8 +3652,8 @@ function loadModels(sportFilter = 'all', typeFilter = 'all', performanceFilter =
             name: 'NBA Moneyline Predictor',
             type: 'Transformer',
             sport: 'nba', 
-            accuracy: 71.5,
-            profit: 8.9,
+            accuracy: 99.9,
+            profit: 99.9,
             description: 'Advanced transformer model for NBA moneyline predictions'
         },
         {
@@ -3670,8 +3661,8 @@ function loadModels(sportFilter = 'all', typeFilter = 'all', performanceFilter =
             name: 'MLB Run Line Model',
             type: 'Random Forest',
             sport: 'mlb',
-            accuracy: 66.8,
-            profit: 15.2,
+            accuracy: 99.9,
+            profit: 99.9,
             description: 'Random forest model specializing in MLB run line betting'
         },
         {
@@ -3679,8 +3670,8 @@ function loadModels(sportFilter = 'all', typeFilter = 'all', performanceFilter =
             name: 'College Football Spreads',
             type: 'XGBoost',
             sport: 'ncaaf',
-            accuracy: 64.3,
-            profit: 7.8,
+            accuracy: 99.9,
+            profit: 99.9,
             description: 'XGBoost model for college football point spreads'
         },
         {
@@ -3688,8 +3679,8 @@ function loadModels(sportFilter = 'all', typeFilter = 'all', performanceFilter =
             name: 'College Basketball Totals',
             type: 'LSTM',
             sport: 'ncaab',
-            accuracy: 62.1,
-            profit: -2.3,
+            accuracy: 99.9,
+            profit: 99.9,
             description: 'LSTM model for college basketball total points'
         }
     ];
@@ -3898,7 +3889,7 @@ async function loadMLModels() {
         {
             id: 'nba_lstm_advanced',
             name: 'NBA Advanced LSTM',
-            description: 'Deep learning model for NBA predictions with 68.2% accuracy',
+            description: 'Deep learning model for NBA predictions with 99.9% accuracy',
             model_type: 'LSTM',
             sport: 'NBA',
             accuracy: 68.2,
@@ -4022,7 +4013,7 @@ async function loadMLAnalytics() {
         ml_performance: {
             total_predictions: 2847,
             correct_predictions: 1923,
-            overall_accuracy: 67.5,
+            overall_accuracy: 99.9,
             total_profit: 2456.78,
             roi: 23.05,
             sharpe_ratio: 1.45,
@@ -4441,7 +4432,7 @@ async function updateMLDashboardStats() {
     // Fallback to demo stats
     const demoStats = {
         active_models: 3,
-        overall_accuracy: 67.5,
+        overall_accuracy: 99.9,
         accuracy_trend: '+2.1%'
     };
     
@@ -4461,12 +4452,12 @@ function updateMLStatsDisplay(stats) {
         const accuracy = stats.overall_accuracy || 
                         (stats.models && stats.models.length > 0 ? 
                          (stats.models.reduce((sum, m) => sum + (m.accuracy || 0), 0) / stats.models.length).toFixed(1) : 
-                         '67.5');
+                         '99.9');
         accuracyEl.textContent = `${accuracy}%`;
     }
     
     if (accuracyTrendEl) {
-        accuracyTrendEl.textContent = stats.accuracy_trend || '▲ +2.1%';
+        accuracyTrendEl.textContent = stats.accuracy_trend || '▲ +9.9%';
     }
 }
 
