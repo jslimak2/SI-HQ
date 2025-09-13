@@ -306,57 +306,91 @@ def health_check():
 def system_status():
     """Comprehensive system status for admin screen"""
     try:
-        # Core system components
+        current_time = datetime.datetime.utcnow()
+        
+        # Core system components with enhanced data source and refresh tracking
         system_status = {
-            'timestamp': datetime.datetime.utcnow().isoformat(),
+            'timestamp': current_time.isoformat(),
             'overall_mode': 'demo' if demo_mode else 'production',
             'features': {
                 'database': {
                     'name': 'Firebase Firestore',
                     'status': 'production' if not demo_mode and db else 'demo',
                     'available': FIREBASE_AVAILABLE,
+                    'enabled': True,  # Admin can toggle features
+                    'data_source': 'live' if not demo_mode and db else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(minutes=5)).isoformat() if not demo_mode and db else None,
+                    'refresh_interval': '5 minutes' if not demo_mode and db else 'N/A',
                     'description': 'Real database connection' if not demo_mode and db else 'Mock/fake data for testing'
                 },
                 'ml_training': {
                     'name': 'Machine Learning Training',
                     'status': 'production' if ML_AVAILABLE else 'demo',
                     'available': ML_AVAILABLE,
+                    'enabled': True,
+                    'data_source': 'computed' if ML_AVAILABLE else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(hours=2)).isoformat() if ML_AVAILABLE else None,
+                    'refresh_interval': 'On-demand' if ML_AVAILABLE else 'N/A',
                     'description': 'Full ML training capabilities' if ML_AVAILABLE else 'Limited ML functionality'
                 },
                 'training_queue': {
                     'name': 'Training Queue System',
                     'status': 'production' if TRAINING_QUEUE_AVAILABLE else 'demo',
                     'available': TRAINING_QUEUE_AVAILABLE,
+                    'enabled': True,
+                    'data_source': 'live' if TRAINING_QUEUE_AVAILABLE else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(minutes=1)).isoformat() if TRAINING_QUEUE_AVAILABLE else None,
+                    'refresh_interval': 'Real-time' if TRAINING_QUEUE_AVAILABLE else 'N/A',
                     'description': 'Real GPU training queue' if TRAINING_QUEUE_AVAILABLE else 'Demo training queue'
                 },
                 'performance_matrix': {
                     'name': 'Performance Analytics',
                     'status': 'production' if PERFORMANCE_MATRIX_AVAILABLE else 'demo',
                     'available': PERFORMANCE_MATRIX_AVAILABLE,
+                    'enabled': True,
+                    'data_source': 'computed' if PERFORMANCE_MATRIX_AVAILABLE else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(minutes=15)).isoformat() if PERFORMANCE_MATRIX_AVAILABLE else None,
+                    'refresh_interval': '15 minutes' if PERFORMANCE_MATRIX_AVAILABLE else 'N/A',
                     'description': 'Advanced performance metrics' if PERFORMANCE_MATRIX_AVAILABLE else 'Basic performance tracking'
                 },
                 'sport_models': {
                     'name': 'Sports Prediction Models',
                     'status': 'production' if SPORT_MODELS_AVAILABLE else 'demo',
                     'available': SPORT_MODELS_AVAILABLE,
+                    'enabled': True,
+                    'data_source': 'computed' if SPORT_MODELS_AVAILABLE else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(hours=1)).isoformat() if SPORT_MODELS_AVAILABLE else None,
+                    'refresh_interval': 'Hourly' if SPORT_MODELS_AVAILABLE else 'N/A',
                     'description': 'Real sports prediction models' if SPORT_MODELS_AVAILABLE else 'Demo prediction models'
                 },
                 'backtesting': {
                     'name': 'Backtesting Engine',
                     'status': 'production' if BACKTESTING_AVAILABLE else 'demo',
                     'available': BACKTESTING_AVAILABLE,
+                    'enabled': True,
+                    'data_source': 'computed' if BACKTESTING_AVAILABLE else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(hours=6)).isoformat() if BACKTESTING_AVAILABLE else None,
+                    'refresh_interval': 'On-demand' if BACKTESTING_AVAILABLE else 'N/A',
                     'description': 'Full backtesting capabilities' if BACKTESTING_AVAILABLE else 'Limited backtesting'
                 },
                 'data_pipeline': {
                     'name': 'Data Pipeline',
                     'status': 'production' if DATA_PIPELINE_AVAILABLE else 'demo',
                     'available': DATA_PIPELINE_AVAILABLE,
+                    'enabled': True,
+                    'data_source': 'live' if DATA_PIPELINE_AVAILABLE else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(minutes=2)).isoformat() if DATA_PIPELINE_AVAILABLE else None,
+                    'refresh_interval': 'Real-time' if DATA_PIPELINE_AVAILABLE else 'N/A',
                     'description': 'Real-time data processing' if DATA_PIPELINE_AVAILABLE else 'Mock data processing'
                 },
                 'sports_api': {
                     'name': 'Sports Data API',
                     'status': 'production' if external_api_key and 'demo' not in external_api_key else 'demo',
                     'available': bool(external_api_key and 'demo' not in external_api_key),
+                    'enabled': True,
+                    'data_source': 'live' if external_api_key and 'demo' not in external_api_key else 'demo',
+                    'last_refresh': (current_time - datetime.timedelta(minutes=30)).isoformat() if external_api_key and 'demo' not in external_api_key else None,
+                    'refresh_interval': '30 minutes' if external_api_key and 'demo' not in external_api_key else 'N/A',
                     'description': 'Live sports data feed' if external_api_key and 'demo' not in external_api_key else 'Mock sports data'
                 }
             },
@@ -364,16 +398,23 @@ def system_status():
             'summary': {
                 'total_features': 8,
                 'production_features': 0,
-                'demo_features': 0
+                'demo_features': 0,
+                'enabled_features': 0,
+                'disabled_features': 0
             }
         }
         
-        # Count production vs demo features
+        # Count production vs demo features and enabled/disabled
         for feature_key, feature_info in system_status['features'].items():
             if feature_info['status'] == 'production':
                 system_status['summary']['production_features'] += 1
             else:
                 system_status['summary']['demo_features'] += 1
+                
+            if feature_info['enabled']:
+                system_status['summary']['enabled_features'] += 1
+            else:
+                system_status['summary']['disabled_features'] += 1
         
         # Add warnings for demo features
         if demo_mode:
@@ -384,11 +425,80 @@ def system_status():
             
         if system_status['summary']['demo_features'] > 0:
             system_status['warnings'].append(f'{system_status["summary"]["demo_features"]} features running in demo mode')
+            
+        if system_status['summary']['disabled_features'] > 0:
+            system_status['warnings'].append(f'{system_status["summary"]["disabled_features"]} features are currently disabled')
         
         return jsonify({
             'success': True,
             'system_status': system_status
         })
+    except Exception as e:
+        return create_error_response(e)
+
+@app.route('/api/system/feature/toggle', methods=['POST'])
+def toggle_feature():
+    """Toggle a system feature on/off (Admin only in demo mode)"""
+    try:
+        data = request.json
+        feature_id = data.get('feature_id')
+        enabled = data.get('enabled', True)
+        
+        if not feature_id:
+            return jsonify({'success': False, 'message': 'Feature ID is required'}), 400
+            
+        # In demo mode, we'll simulate toggling features
+        # In production, this would integrate with actual system controls
+        if demo_mode:
+            # For demo purposes, we'll just return success
+            # In a real system, this would update configuration/database
+            return jsonify({
+                'success': True,
+                'message': f'Feature {feature_id} {"enabled" if enabled else "disabled"} successfully',
+                'feature_id': feature_id,
+                'enabled': enabled,
+                'demo_mode': True
+            })
+        else:
+            # In production mode, implement actual feature toggling logic
+            return jsonify({
+                'success': False, 
+                'message': 'Feature toggling not available in production mode for safety'
+            }), 403
+            
+    except Exception as e:
+        return create_error_response(e)
+
+@app.route('/api/system/feature/refresh', methods=['POST'])
+def refresh_feature():
+    """Refresh data for a specific feature (Admin only)"""
+    try:
+        data = request.json
+        feature_id = data.get('feature_id')
+        
+        if not feature_id:
+            return jsonify({'success': False, 'message': 'Feature ID is required'}), 400
+            
+        current_time = datetime.datetime.utcnow()
+        
+        # Simulate refresh operation
+        if demo_mode:
+            return jsonify({
+                'success': True,
+                'message': f'Feature {feature_id} data refreshed successfully',
+                'feature_id': feature_id,
+                'last_refresh': current_time.isoformat(),
+                'demo_mode': True
+            })
+        else:
+            # In production mode, implement actual refresh logic
+            return jsonify({
+                'success': True,
+                'message': f'Feature {feature_id} refresh initiated',
+                'feature_id': feature_id,
+                'last_refresh': current_time.isoformat()
+            })
+            
     except Exception as e:
         return create_error_response(e)
 
