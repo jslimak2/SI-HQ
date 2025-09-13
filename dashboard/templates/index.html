@@ -480,16 +480,24 @@
                         <small class="text-gray-600">Choose which market to bet on</small>
                     </div>
                     
-                    <!-- Other Bot Settings -->
+                    <!-- Risk Management Configuration -->
                     <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Bot Configuration</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Risk Management</label>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <input type="number" name="starting_balance" placeholder="Starting Balance ($)" required>
-                            <input type="number" name="bet_percentage" placeholder="Bet Percentage (1-10%)" min="0.1" max="10" step="0.1" required>
-                            <input type="number" name="max_bets_per_week" placeholder="Max Bets/Week" min="1" max="50" required>
+                            <input type="number" name="bet_percentage" placeholder="Max Bet % (1-10%)" min="0.1" max="10" step="0.1" value="2.0" required>
+                            <input type="number" name="max_bets_per_week" placeholder="Max Bets/Week" min="1" max="50" value="5" required>
+                            <input type="number" name="max_bets_per_day" placeholder="Max Bets/Day" min="1" max="10" value="2">
+                            <input type="number" name="minimum_confidence" placeholder="Min Confidence %" min="50" max="95" value="65" step="1">
+                            <input type="number" name="stop_loss_percentage" placeholder="Stop Loss %" min="5" max="50" value="10" step="1">
+                            <input type="number" name="kelly_fraction" placeholder="Kelly Fraction" min="0.1" max="1.0" value="0.25" step="0.05">
                             <select name="strategy_id" id="strategy-select">
                                 <option value="">Select Strategy (Optional)</option>
                             </select>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-600">
+                            <p><strong>Kelly Fraction:</strong> Fraction of full Kelly Criterion to use (0.25 = 25% of Kelly)</p>
+                            <p><strong>Stop Loss:</strong> Automatically pause bot if balance drops by this percentage</p>
                         </div>
                     </div>
                     
@@ -1547,12 +1555,24 @@
                     <input type="number" step="0.01" id="modal-balance" name="current_balance" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" disabled>
                 </div>
                 <div>
-                    <label for="modal-bet-percent" class="block text-sm font-medium text-gray-700">Bet % of Balance</label>
+                    <label for="modal-bet-percent" class="block text-sm font-medium text-gray-700">Max Bet % of Balance</label>
                     <input type="number" step="0.01" id="modal-bet-percent" name="bet_percentage" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
                     <label for="modal-max-bets" class="block text-sm font-medium text-gray-700">Max Bets / Week</label>
                     <input type="number" id="modal-max-bets" name="max_bets_per_week" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="modal-min-confidence" class="block text-sm font-medium text-gray-700">Minimum Confidence %</label>
+                    <input type="number" id="modal-min-confidence" name="minimum_confidence" min="50" max="95" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="modal-kelly-fraction" class="block text-sm font-medium text-gray-700">Kelly Fraction (0.1-1.0)</label>
+                    <input type="number" id="modal-kelly-fraction" name="kelly_fraction" min="0.1" max="1.0" step="0.05" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="modal-schema-version" class="block text-sm font-medium text-gray-700">Schema Version</label>
+                    <input type="text" id="modal-schema-version" name="schema_version" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm bg-gray-100" readonly>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Allowable Platforms</label>

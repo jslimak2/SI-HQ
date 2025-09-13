@@ -3289,12 +3289,120 @@ def generate_demo_standings(sport_filter='all'):
     
     return standings
 
+@app.route('/api/schema/validate', methods=['POST'])
+@handle_errors
+def validate_schema():
+    """Validate data against our standardized schemas"""
+    try:
+        data = request.json
+        schema_type = data.get('schema_type')
+        schema_data = data.get('data')
+        
+        if not schema_type or not schema_data:
+            return jsonify({
+                'success': False, 
+                'message': 'schema_type and data are required'
+            }), 400
+        
+        validation_issues = []
+        
+        if schema_type == 'model':
+            try:
+                model = ModelSchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_model(model)
+            except Exception as e:
+                validation_issues.append(f"Schema parsing error: {str(e)}")
+                
+        elif schema_type == 'bot':
+            try:
+                bot = BotSchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_bot(bot)
+            except Exception as e:
+                validation_issues.append(f"Schema parsing error: {str(e)}")
+                
+        elif schema_type == 'strategy':
+            try:
+                strategy = StrategySchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_strategy(strategy)
+            except Exception as e:
+                validation_issues.append(f"Schema parsing error: {str(e)}")
+        else:
+            return jsonify({
+                'success': False,
+                'message': f'Unknown schema type: {schema_type}'
+            }), 400
+        
+        return jsonify({
+            'success': len(validation_issues) == 0,
+            'validation_issues': validation_issues,
+            'schema_type': schema_type,
+            'is_valid': len(validation_issues) == 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Schema validation failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Validation failed: {str(e)}'
+        }), 500
+
+@app.route('/api/schema/info', methods=['GET'])
+def get_schema_info():
+    """Get information about available schemas"""
+    try:
+        schema_info = {
+            'version': '2.0.0',
+            'schemas': {
+                'model': {
+                    'description': 'Machine learning model schema with performance tracking',
+                    'required_fields': ['model_id', 'name', 'version', 'sport', 'created_by'],
+                    'enums': {
+                        'sport': [sport.value for sport in Sport],
+                        'status': [status.value for status in ModelStatus],
+                        'market_types': [market.value for market in MarketType]
+                    }
+                },
+                'bot': {
+                    'description': 'Automated investor/bot schema with risk management',
+                    'required_fields': ['bot_id', 'name', 'current_balance', 'created_by'],
+                    'enums': {
+                        'active_status': [status.value for status in BotStatus],
+                        'sport_filter': [sport.value for sport in Sport]
+                    }
+                },
+                'strategy': {
+                    'description': 'Investment strategy schema with performance metrics',
+                    'required_fields': ['strategy_id', 'name', 'strategy_type', 'created_by'],
+                    'enums': {
+                        'strategy_type': [stype.value for stype in StrategyType]
+                    }
+                }
+            },
+            'features': [
+                'Schema validation',
+                'Legacy data migration',
+                'Performance metrics tracking',
+                'Risk management configuration',
+                'Type safety with enums'
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'schema_info': schema_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get schema info: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get schema info: {str(e)}'
+        }), 500
+
 @app.route('/scores')
 def scores_page():
     """Render the scores and standings page"""
     return render_template('scores.html')
-
-# --- TRAINING QUEUE ENDPOINTS ---
 
 @app.route('/api/training/queue', methods=['GET'])
 @handle_errors
