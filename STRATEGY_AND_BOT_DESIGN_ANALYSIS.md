@@ -93,3 +93,7 @@ The TailwindCSS CDN warning is expected in development. For production:
 - [x] Documented design rationale for bot/strategy relationships
 - [x] Explained dual strategy interface purpose
 - [ ] Consider UI improvements for strategy interface clarity
+
+---
+
+**Last Updated**: 9/13/2025
