@@ -91,6 +91,7 @@
             overflow: hidden;
             border: 1px solid transparent;
             transition: transform 0.3s, border-color 0.3s;
+            pointer-events: none; /* Disable clicking to prevent unwanted page jumping */
         }
         .stats-card:hover {
             transform: translateY(-5px);
@@ -271,6 +272,44 @@
             color: #ff9900;
             font-weight: 600;
         }
+        
+        /* Message Box Styles */
+        .message-box {
+            display: none;
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .message-box.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .message-box.info {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .message-box.warning {
+            background-color: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
     </style>
     <script>
         function showPage(pageId) {
@@ -296,6 +335,9 @@
             } else if (pageId === 'admin-page') {
                 // Load system status when admin page is shown
                 loadSystemStatus();
+            } else if (pageId === 'model-gallery-page') {
+                // Load models when model gallery page is shown
+                loadModels();
             }
         }
     </script>
@@ -3389,6 +3431,218 @@
         function deployModel(modelId) {
             // For now, just show an alert. In real implementation, would deploy the model
             alert(`Deploying model: ${modelId}`);
+        }
+        
+        function deleteModel(modelId, modelName) {
+            if (!confirm(`Are you sure you want to delete the model "${modelName}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                // In a real implementation, this would make an API call to delete the model
+                console.log(`Deleting model: ${modelId}`);
+                
+                // Remove the model from the UI
+                const modelCard = document.querySelector(`[data-model-id="${modelId}"]`);
+                if (modelCard) {
+                    modelCard.remove();
+                    showMessage(`Model "${modelName}" has been deleted successfully.`, 'success');
+                } else {
+                    showMessage(`Model "${modelName}" has been deleted.`, 'success');
+                }
+                
+                // Refresh the models grid to reflect changes
+                loadModels();
+                
+            } catch (error) {
+                console.error('Error deleting model:', error);
+                showMessage('Error deleting model. Please try again.', 'error');
+            }
+        }
+        
+        function loadModels() {
+            const modelsGrid = document.getElementById('models-grid');
+            if (!modelsGrid) return;
+            
+            // Demo models data - in a real implementation, this would come from an API
+            const demoModels = [
+                {
+                    id: 'model_1',
+                    name: 'NBA Advanced LSTM v2.1',
+                    sport: 'NBA',
+                    type: 'lstm_weather',
+                    accuracy: 72.3,
+                    created_at: '2024-12-15T10:30:00Z',
+                    status: 'active',
+                    description: 'Advanced LSTM model with weather data integration for NBA games',
+                    training_samples: 5000,
+                    last_prediction: '2024-12-15T14:22:00Z'
+                },
+                {
+                    id: 'model_2',
+                    name: 'NFL Statistical Model v1.8',
+                    sport: 'NFL',
+                    type: 'statistical',
+                    accuracy: 68.7,
+                    created_at: '2024-12-14T15:45:00Z',
+                    status: 'active',
+                    description: 'Statistical model focusing on team performance metrics',
+                    training_samples: 3200,
+                    last_prediction: '2024-12-15T13:10:00Z'
+                },
+                {
+                    id: 'model_3',
+                    name: 'MLB Ensemble Predictor',
+                    sport: 'MLB',
+                    type: 'ensemble',
+                    accuracy: 71.2,
+                    created_at: '2024-12-13T09:15:00Z',
+                    status: 'active',
+                    description: 'Ensemble model combining multiple algorithms for baseball predictions',
+                    training_samples: 8500,
+                    last_prediction: '2024-12-15T12:05:00Z'
+                },
+                {
+                    id: 'model_4',
+                    name: 'NCAAF XGBoost v3.0',
+                    sport: 'NCAAF',
+                    type: 'xgboost',
+                    accuracy: 69.8,
+                    created_at: '2024-12-12T11:20:00Z',
+                    status: 'training',
+                    description: 'XGBoost model for college football with advanced team statistics',
+                    training_samples: 4100,
+                    last_prediction: '2024-12-14T16:30:00Z'
+                },
+                {
+                    id: 'model_5',
+                    name: 'Multi-Sport Neural Net',
+                    sport: 'Multi',
+                    type: 'neural',
+                    accuracy: 70.5,
+                    created_at: '2024-12-11T16:40:00Z',
+                    status: 'active',
+                    description: 'Deep neural network trained on multiple sports for pattern recognition',
+                    training_samples: 12000,
+                    last_prediction: '2024-12-15T11:45:00Z'
+                }
+            ];
+            
+            modelsGrid.innerHTML = demoModels.map(model => `
+                <div class="bg-white rounded-lg shadow-lg p-6 model-card" data-model-id="${model.id}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">${model.name}</h3>
+                            <p class="text-sm text-gray-600">${model.sport} • ${model.type.toUpperCase()}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="px-2 py-1 text-xs rounded-full ${model.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${model.status}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700">Accuracy</span>
+                            <span class="text-sm font-bold text-gray-900">${model.accuracy}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full" 
+                                 style="width: ${model.accuracy}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 mb-4">
+                        <p><strong>Training Samples:</strong> ${model.training_samples.toLocaleString()}</p>
+                        <p><strong>Created:</strong> ${new Date(model.created_at).toLocaleDateString()}</p>
+                        <p><strong>Last Used:</strong> ${new Date(model.last_prediction).toLocaleDateString()}</p>
+                    </div>
+                    
+                    <p class="text-sm text-gray-600 mb-4">${model.description}</p>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="viewModelDetails('${model.id}')" 
+                                class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
+                            📊 Details
+                        </button>
+                        <button onclick="deployModel('${model.id}')" 
+                                class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors">
+                            🚀 Deploy
+                        </button>
+                        <button onclick="deleteModel('${model.id}', '${model.name}')" 
+                                class="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterModels() {
+            const sportFilter = document.getElementById('model-filter-sport').value;
+            const typeFilter = document.getElementById('model-filter-type').value;
+            const performanceFilter = document.getElementById('model-filter-performance').value;
+            
+            const modelCards = document.querySelectorAll('.model-card');
+            
+            modelCards.forEach(card => {
+                const modelId = card.dataset.modelId;
+                let shouldShow = true;
+                
+                // Get model info from the card
+                const sportText = card.querySelector('p').textContent;
+                const sport = sportText.split(' • ')[0].toLowerCase();
+                const type = sportText.split(' • ')[1].toLowerCase();
+                const accuracyText = card.querySelector('.text-sm.font-bold.text-gray-900').textContent;
+                const accuracy = parseFloat(accuracyText.replace('%', ''));
+                
+                // Apply filters
+                if (sportFilter !== 'all' && sport !== sportFilter) {
+                    shouldShow = false;
+                }
+                
+                if (typeFilter !== 'all' && !type.includes(typeFilter)) {
+                    shouldShow = false;
+                }
+                
+                if (performanceFilter !== 'all') {
+                    if (performanceFilter === 'high' && accuracy <= 70) shouldShow = false;
+                    if (performanceFilter === 'medium' && (accuracy <= 60 || accuracy > 70)) shouldShow = false;
+                    if (performanceFilter === 'low' && accuracy >= 60) shouldShow = false;
+                }
+                
+                card.style.display = shouldShow ? 'block' : 'none';
+            });
+        }
+        
+        function viewModelDetails(modelId) {
+            // This would show detailed model information in a modal
+            showModal('model-details-modal');
+            // Populate model details - simplified for now
+            const detailsContent = document.getElementById('model-details-content');
+            if (detailsContent) {
+                detailsContent.innerHTML = `
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-blue-800 mb-2">Model ID: ${modelId}</h4>
+                        <p class="text-blue-700">Detailed model information would be displayed here including training history, performance metrics, feature importance, and prediction examples.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            if (messageBox) {
+                messageBox.textContent = message;
+                messageBox.className = `message-box ${type}`;
+                messageBox.style.display = 'block';
+                
+                // Hide message after 3 seconds
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 3000);
+            }
         }
         
         // Initialize training queue when page loads
