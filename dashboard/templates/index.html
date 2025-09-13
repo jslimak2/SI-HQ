@@ -780,7 +780,7 @@
             <div id="system-status-content" style="display: none;">
                 <!-- Overall Status Summary -->
                 <div class="bg-gray-800 rounded-lg p-6 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="text-center">
                             <div id="overall-mode-indicator" class="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold"></div>
                             <h3 class="text-lg font-semibold text-white">Overall Mode</h3>
@@ -791,7 +791,7 @@
                                 <span id="production-count">0</span>
                             </div>
                             <h3 class="text-lg font-semibold text-white">Production Features</h3>
-                            <p class="text-gray-300">Fully functional</p>
+                            <p class="text-gray-300">Live data & functionality</p>
                         </div>
                         <div class="text-center">
                             <div class="w-16 h-16 rounded-full bg-yellow-500 mx-auto mb-2 flex items-center justify-center text-white text-2xl font-bold">
@@ -799,6 +799,13 @@
                             </div>
                             <h3 class="text-lg font-semibold text-white">Demo Features</h3>
                             <p class="text-gray-300">Mock/testing data</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-16 h-16 rounded-full bg-blue-500 mx-auto mb-2 flex items-center justify-center text-white text-2xl font-bold">
+                                <span id="enabled-count">0</span>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white">Enabled Features</h3>
+                            <p class="text-gray-300">Currently active</p>
                         </div>
                     </div>
                 </div>
@@ -3499,13 +3506,14 @@
             // Update counts
             document.getElementById('production-count').textContent = status.summary.production_features;
             document.getElementById('demo-count').textContent = status.summary.demo_features;
+            document.getElementById('enabled-count').textContent = status.summary.enabled_features;
 
             // Display features
             const featuresContainer = document.getElementById('features-container');
             featuresContainer.innerHTML = '';
 
             Object.entries(status.features).forEach(([key, feature]) => {
-                const featureCard = createFeatureCard(feature);
+                const featureCard = createFeatureCard(feature, key);
                 featuresContainer.appendChild(featureCard);
             });
 
@@ -3530,7 +3538,7 @@
             document.getElementById('status-timestamp').textContent = timestamp;
         }
 
-        function createFeatureCard(feature) {
+        function createFeatureCard(feature, featureKey) {
             const card = document.createElement('div');
             card.className = 'bg-gray-800 rounded-lg p-4 border-l-4 ' + 
                 (feature.status === 'production' ? 'border-green-500' : 'border-yellow-500');
@@ -3538,17 +3546,75 @@
             const statusIcon = feature.status === 'production' ? '✅' : '⚠️';
             const statusColor = feature.status === 'production' ? 'text-green-400' : 'text-yellow-400';
             const statusText = feature.status === 'production' ? 'Production' : 'Demo Mode';
+            
+            // Data source icon and color
+            const dataSourceIcon = feature.data_source === 'live' ? '🔴' : 
+                                   feature.data_source === 'demo' ? '🟡' : '🔵';
+            const dataSourceText = feature.data_source === 'live' ? 'Live Data' : 
+                                   feature.data_source === 'demo' ? 'Demo Data' : 'Computed';
+            
+            // Format last refresh time
+            const lastRefreshText = feature.last_refresh ? 
+                new Date(feature.last_refresh).toLocaleString() : 'Never';
+            
+            // Enable/disable toggle
+            const toggleId = `toggle-${featureKey}`;
+            const enabledText = feature.enabled ? 'Enabled' : 'Disabled';
+            const enabledColor = feature.enabled ? 'text-green-400' : 'text-red-400';
 
             card.innerHTML = `
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-white font-semibold">${feature.name}</h3>
-                    <span class="text-2xl">${statusIcon}</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">${statusIcon}</span>
+                        <span class="text-lg">${dataSourceIcon}</span>
+                    </div>
                 </div>
-                <div class="mb-2">
-                    <span class="inline-block px-2 py-1 rounded text-xs font-medium ${statusColor} bg-opacity-20 ${feature.status === 'production' ? 'bg-green-500' : 'bg-yellow-500'}">
-                        ${statusText}
-                    </span>
+                
+                <div class="mb-3 space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block px-2 py-1 rounded text-xs font-medium ${statusColor} bg-opacity-20 ${feature.status === 'production' ? 'bg-green-500' : 'bg-yellow-500'}">
+                            ${statusText}
+                        </span>
+                        <span class="inline-block px-2 py-1 rounded text-xs font-medium text-gray-300 bg-gray-600">
+                            ${dataSourceText}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-400">Status:</span>
+                            <span class="text-xs ${enabledColor} font-medium">${enabledText}</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="${toggleId}" ${feature.enabled ? 'checked' : ''} 
+                                       onchange="toggleFeature('${featureKey}', this.checked)"
+                                       class="sr-only peer">
+                                <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer 
+                                           peer-checked:after:translate-x-full peer-checked:after:border-white 
+                                           after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                                           after:bg-white after:border-gray-300 after:border after:rounded-full 
+                                           after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        
+                        <button onclick="refreshFeature('${featureKey}')" 
+                                class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
+                            🔄 Refresh
+                        </button>
+                    </div>
                 </div>
+                
+                <div class="mb-2 space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Last Refresh:</span>
+                        <span class="text-gray-300">${lastRefreshText}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">Refresh Interval:</span>
+                        <span class="text-gray-300">${feature.refresh_interval || 'N/A'}</span>
+                    </div>
+                </div>
+                
                 <p class="text-gray-300 text-sm">${feature.description}</p>
             `;
 
@@ -3567,6 +3633,115 @@
 
         function refreshSystemStatus() {
             loadSystemStatus();
+        }
+        
+        // Feature management functions
+        async function toggleFeature(featureKey, enabled) {
+            try {
+                const response = await fetch('/api/system/feature/toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        feature_id: featureKey,
+                        enabled: enabled
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    showAdminMessage(data.message, false);
+                    
+                    // Optionally refresh the status to reflect changes
+                    setTimeout(() => {
+                        loadSystemStatus();
+                    }, 1000);
+                } else {
+                    // Revert toggle if failed
+                    const toggle = document.getElementById(`toggle-${featureKey}`);
+                    if (toggle) {
+                        toggle.checked = !enabled;
+                    }
+                    showAdminMessage('Failed to toggle feature: ' + data.message, true);
+                }
+            } catch (error) {
+                console.error('Error toggling feature:', error);
+                // Revert toggle if failed
+                const toggle = document.getElementById(`toggle-${featureKey}`);
+                if (toggle) {
+                    toggle.checked = !enabled;
+                }
+                showAdminMessage('Error toggling feature. Please try again.', true);
+            }
+        }
+        
+        async function refreshFeature(featureKey) {
+            try {
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '🔄 Refreshing...';
+                button.disabled = true;
+                
+                const response = await fetch('/api/system/feature/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        feature_id: featureKey
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAdminMessage(data.message, false);
+                    
+                    // Refresh the status to show updated times
+                    setTimeout(() => {
+                        loadSystemStatus();
+                    }, 1000);
+                } else {
+                    showAdminMessage('Failed to refresh feature: ' + data.message, true);
+                }
+            } catch (error) {
+                console.error('Error refreshing feature:', error);
+                showAdminMessage('Error refreshing feature. Please try again.', true);
+            } finally {
+                // Reset button state
+                setTimeout(() => {
+                    const button = document.querySelector(`button[onclick="refreshFeature('${featureKey}')"]`);
+                    if (button) {
+                        button.innerHTML = '🔄 Refresh';
+                        button.disabled = false;
+                    }
+                }, 2000);
+            }
+        }
+        
+        function showAdminMessage(message, isError = false) {
+            // Create or update admin message area
+            let messageDiv = document.getElementById('admin-message');
+            if (!messageDiv) {
+                messageDiv = document.createElement('div');
+                messageDiv.id = 'admin-message';
+                messageDiv.className = 'fixed top-4 right-4 px-4 py-2 rounded shadow-lg z-50 max-w-md';
+                document.body.appendChild(messageDiv);
+            }
+            
+            messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded shadow-lg z-50 max-w-md ${
+                isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+            }`;
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
         }
 
         // Make admin functions globally available
