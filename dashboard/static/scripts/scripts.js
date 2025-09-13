@@ -643,6 +643,16 @@ window.createFromTemplate = function(templateKey) {
     });
 };
 
+// Helper function to safely extract parameter values
+function getParameterValue(param) {
+    if (param === null || param === undefined) return '';
+    if (typeof param === 'object') {
+        // Try common object properties
+        return param.value || param.default || param.current || '';
+    }
+    return param;
+}
+
 // Update displayStrategies function to show more details
 function displayStrategies() {
     const container = strategiesContainer;
@@ -695,9 +705,9 @@ function displayStrategies() {
                 
                 ${strategy.parameters ? `
                     <div class="text-xs text-gray-200">
-                        ${strategy.parameters.max_bet_percentage ? `Max Bet: ${strategy.parameters.max_bet_percentage}%` : ''}
-                        ${strategy.parameters.min_confidence ? `<br>Min Confidence: ${strategy.parameters.min_confidence}%` : ''}
-                        ${strategy.parameters.min_expected_value ? `<br>Min +eV: ${strategy.parameters.min_expected_value}%` : ''}
+                        ${strategy.parameters.max_bet_percentage ? `Max Bet: ${getParameterValue(strategy.parameters.max_bet_percentage)}%` : ''}
+                        ${strategy.parameters.min_confidence ? `<br>Min Confidence: ${getParameterValue(strategy.parameters.min_confidence)}%` : ''}
+                        ${strategy.parameters.min_expected_value ? `<br>Min +eV: ${getParameterValue(strategy.parameters.min_expected_value)}%` : ''}
                     </div>
                 ` : ''}
             </div>
@@ -2438,9 +2448,12 @@ window.toggleBetCart = function() {
     if (cartVisible) {
         closeBetCart();
     } else {
-        sidebar.classList.remove('translate-x-full');
-        overlay.classList.remove('hidden');
-        cartVisible = true;
+        if (sidebar && overlay) {
+            sidebar.classList.remove('translate-x-full');
+            overlay.classList.remove('hidden');
+            cartVisible = true;
+            updateCartUI(); // Force update when opening cart
+        }
     }
 }
 
@@ -2472,8 +2485,6 @@ window.exportToExcel = function() {
 }
 
 function updateCartUI() {
-    const cartContainer = document.getElementById('cart-container');
-    if (!cartContainer) return;
     const cartCount = betCart.length;
     const cartBadge = document.getElementById('cart-count-badge');
     const cartItemsCount = document.getElementById('cart-items-count');
@@ -2483,29 +2494,39 @@ function updateCartUI() {
     const exportBtn = document.getElementById('export-excel-btn');
     
     // Update cart count badge
-    if (cartCount > 0) {
-        cartBadge.textContent = cartCount;
-        cartBadge.classList.remove('hidden');
-    } else {
-        cartBadge.classList.add('hidden');
+    if (cartBadge) {
+        if (cartCount > 0) {
+            cartBadge.textContent = cartCount;
+            cartBadge.classList.remove('hidden');
+        } else {
+            cartBadge.classList.add('hidden');
+        }
     }
     
     // Update items count
-    cartItemsCount.textContent = cartCount;
+    if (cartItemsCount) {
+        cartItemsCount.textContent = cartCount;
+    }
     
     // Show/hide empty message
-    if (cartCount === 0) {
-        emptyMessage.classList.remove('hidden');
-        cartContainerEl.innerHTML = '';
-        cartContainerEl.appendChild(emptyMessage);
-    } else {
-        emptyMessage.classList.add('hidden');
-        renderCartItems();
+    if (cartContainerEl && emptyMessage) {
+        if (cartCount === 0) {
+            emptyMessage.classList.remove('hidden');
+            cartContainerEl.innerHTML = '';
+            cartContainerEl.appendChild(emptyMessage);
+        } else {
+            emptyMessage.classList.add('hidden');
+            renderCartItems();
+        }
     }
     
     // Enable/disable buttons
-    placeBetsBtn.disabled = cartCount === 0;
-    exportBtn.disabled = cartCount === 0;
+    if (placeBetsBtn) {
+        placeBetsBtn.disabled = cartCount === 0;
+    }
+    if (exportBtn) {
+        exportBtn.disabled = cartCount === 0;
+    }
     
     // Update total payout
     updateCartTotals();
@@ -2513,6 +2534,7 @@ function updateCartUI() {
 
 function renderCartItems() {
     const container = document.getElementById('cart-items-container');
+    if (!container) return;
     container.innerHTML = '';
     betCart.forEach(wager => {
         const cartItem = document.createElement('div');
@@ -2570,8 +2592,11 @@ function calculatePayout(betAmount, odds) {
 }
 
 function updateCartTotals() {
-    const totalPayout = betCart.reduce((sum, wager) => sum + wager.payout, 0);
-    document.getElementById('cart-total-payout').textContent = `$${totalPayout.toFixed(2)}`;
+    const totalPayout = betCart.reduce((sum, wager) => sum + (wager.payout || 0), 0);
+    const totalElement = document.getElementById('cart-total-payout');
+    if (totalElement) {
+        totalElement.textContent = `$${totalPayout.toFixed(2)}`;
+    }
 }
 
 function toggleBetCart() {
