@@ -39,6 +39,9 @@ let bots = [];
 let strategies = [];
 let userSettings = {};
 
+// Make strategies globally accessible for inline scripts
+window.strategies = strategies;
+
 // Bet cart management
 let betCart = [];
 let cartVisible = false;
@@ -221,6 +224,7 @@ async function fetchStrategies() {
         const q = collection(db, `users/${userId}/strategies`);
         onSnapshot(q, (querySnapshot) => {
             strategies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            window.strategies = strategies;
             displayStrategies();
             updateStrategySelects();
             hideLoading();
@@ -377,6 +381,7 @@ async function loadDemoStrategies() {
         const response = await fetch('/static/../data/strategies.json');
         const demoStrategies = await response.json();
         strategies = demoStrategies || [];
+        window.strategies = strategies;
         displayStrategies();
         updateStrategySelects();
         hideLoading();
@@ -432,6 +437,7 @@ async function loadDemoStrategies() {
                 "created_from_template": "positive_ev"
             }
         ];
+        window.strategies = strategies;
         displayStrategies();
         updateStrategySelects();
         hideLoading();
