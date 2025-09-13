@@ -11,11 +11,18 @@ At ***Post*9**, we merge the passion of sports with the precision of data scienc
 ### Quick Start
 - **[Quick Reference Guide](QUICK_REFERENCE_GUIDE.md)** - Get started in 5 minutes
 - **[Architecture Overview](ARCHITECTURE_AND_SYSTEM_DESIGN.md)** - Complete system documentation
+- **[Schema Documentation](SCHEMA_DOCUMENTATION.md)** - **NEW v2.0** Standardized data models
 
 ### Core Concepts
 - **Models** 🤖 - AI-powered prediction engines for sports outcomes
 - **Strategies** 📋 - Intelligent rules for when and how to invest
 - **Bots** 🚀 - Automated investors that execute your strategies 24/7
+
+### Schema & Data Models ✨ **NEW**
+- **[Schema v2.0 Documentation](SCHEMA_DOCUMENTATION.md)** - Complete schema reference
+- **Model Schema** - Enhanced ML model tracking with performance metrics
+- **Bot Schema** - Comprehensive bot management with risk controls
+- **Strategy Schema** - Advanced strategy configuration and tracking
 
 ### Detailed Documentation
 - [Architecture & System Design](ARCHITECTURE_AND_SYSTEM_DESIGN.md) - Comprehensive technical documentation with Mermaid diagrams

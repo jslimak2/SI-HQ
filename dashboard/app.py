@@ -49,6 +49,13 @@ except ImportError as e:
             pass
     firestore = MockFirestore()
 
+# Import standardized schemas
+from .schemas import (
+    BotSchema, StrategySchema, ModelSchema, BotStatus, StrategyType, Sport,
+    RiskManagement, PerformanceMetrics, SchemaValidator
+)
+from .data_service import data_service
+
 # Professional imports
 from config import ConfigManager, setup_logging, validate_config
 from error_handling import (
@@ -502,15 +509,16 @@ def get_overall_stats():
 @rate_limit(requests_per_hour=100)
 @sanitize_request_data(required_fields=['name', 'initial_balance'], optional_fields=['bet_percentage', 'max_bets_per_week', 'sport', 'model_id'])
 def add_bot():
-    """Adds a new bot to the Firestore database with professional validation."""
+    """Adds a new bot using the standardized schema with professional validation."""
     if not db:
         raise ValidationError("Database not available in demo mode")
     
     try:
         # Get sanitized data
         data = g.sanitized_request_data
+        user_id = g.current_user.get('user_id')
         
-        # Additional validation
+        # Validate inputs
         initial_balance = float(data.get('initial_balance', 1000.0))
         if initial_balance <= 0 or initial_balance > 1000000:
             raise ValidationError("Initial balance must be between $1 and $1,000,000")
@@ -523,11 +531,8 @@ def add_bot():
         if max_bets_per_week <= 0 or max_bets_per_week > 100:
             raise ValidationError("Max bets per week must be between 1 and 100")
         
-        new_bot_ref = bots_collection.document()
-        bot_id = new_bot_ref.id
-        
         # Auto-detect sport from model if model_id is provided
-        detected_sport = data.get('sport', 'NBA')  # Default sport
+        detected_sport = None
         model_id = data.get('model_id')
         sport_auto_detected = False
         sport_detection_source = None
@@ -540,17 +545,17 @@ def add_bot():
                 detected_sport = model_metadata.sport
                 sport_auto_detected = True
                 sport_detection_source = 'model_metadata'
-                logger.info(f"Auto-detected sport '{detected_sport}' from model {model_id} during bot creation")
+                logger.info(f"Auto-detected sport '{detected_sport.value}' from model {model_id} during bot creation")
             else:
                 # Fallback: try to extract sport from model_id pattern
                 model_parts = model_id.lower().split('_')
                 sport_mapping = {
-                    'nfl': 'NFL',
-                    'nba': 'NBA', 
-                    'mlb': 'MLB',
-                    'nhl': 'NHL',
-                    'ncaaf': 'NCAAF',
-                    'ncaab': 'NCAAB'
+                    'nfl': Sport.NFL,
+                    'nba': Sport.NBA, 
+                    'mlb': Sport.MLB,
+                    'nhl': Sport.NHL,
+                    'ncaaf': Sport.NCAAF,
+                    'ncaab': Sport.NCAAB
                 }
                 
                 for part in model_parts:
@@ -558,49 +563,70 @@ def add_bot():
                         detected_sport = sport_mapping[part]
                         sport_auto_detected = True
                         sport_detection_source = 'model_id_pattern'
-                        logger.info(f"Auto-detected sport '{detected_sport}' from model ID pattern during bot creation")
+                        logger.info(f"Auto-detected sport '{detected_sport.value}' from model ID pattern during bot creation")
                         break
         
-        initial_bot_data = {
-            'id': bot_id,
+        # Set sport filter
+        sport_filter = None
+        if data.get('sport'):
+            try:
+                sport_filter = Sport(data.get('sport').upper())
+            except ValueError:
+                pass  # Invalid sport, leave as None
+        elif detected_sport:
+            sport_filter = detected_sport
+        
+        # Create risk management configuration
+        risk_management = RiskManagement(
+            max_bet_percentage=bet_percentage,
+            max_bets_per_week=max_bets_per_week,
+            minimum_confidence=60.0,
+            kelly_fraction=0.25
+        )
+        
+        # Create bot using standardized schema
+        bot_data = {
             'name': data.get('name'),
             'current_balance': initial_balance,
             'starting_balance': initial_balance,
             'initial_balance': initial_balance,
-            'bet_percentage': bet_percentage,
-            'max_bets_per_week': max_bets_per_week,
-            'sport': detected_sport,
-            'sport_auto_detected': sport_auto_detected,
-            'sport_detection_source': sport_detection_source,
-            'bet_type': data.get('bet_type', 'Moneyline'),
-            'status': 'stopped',
-            'strategy_id': data.get('strategy_id', None),
-            'linked_strategy_id': data.get('linked_strategy_id', None),
+            'sport_filter': sport_filter,
             'assigned_model_id': model_id,
-            'total_profit': 0.0,
-            'total_bets': 0,
-            'total_wins': 0,
-            'total_losses': 0,
-            'total_wagered': 0.0,
-            'open_wagers': [],
-            'bets_this_week': 0,
-            'week_reset_date': datetime.datetime.now().isoformat(),
-            'created_at': datetime.datetime.now().isoformat(),
-            'last_updated': datetime.datetime.now().isoformat(),
-            'bet_history': [],
-            'created_by': g.current_user.get('user_id'),
-            'version': '2.0'
+            'assigned_strategy_id': data.get('strategy_id'),
+            'risk_management': risk_management.to_dict(),
+            'created_by': user_id,
+            'active_status': BotStatus.STOPPED.value,
+            'tags': ['auto-created'],
+            'description': f"Bot created for {sport_filter.value if sport_filter else 'multiple sports'} with ${initial_balance} starting balance"
         }
         
-        new_bot_ref.set(initial_bot_data)
+        # Create bot through data service
+        bot_id = data_service.create_bot(bot_data)
+        bot = data_service.get_bot(bot_id)
         
-        logger.info(f"Bot created successfully: {bot_id} by user {g.current_user.get('user_id')}")
+        # Also save to Firestore for compatibility
+        bot_ref = bots_collection.document(bot_id)
+        firestore_data = bot.to_dict()
+        # Convert complex objects to simple dict for Firestore
+        firestore_data['sport'] = sport_filter.value if sport_filter else None
+        firestore_data['status'] = bot.active_status.value
+        firestore_data['bet_percentage'] = risk_management.max_bet_percentage
+        firestore_data['max_bets_per_week'] = risk_management.max_bets_per_week
+        firestore_data['sport_auto_detected'] = sport_auto_detected
+        firestore_data['sport_detection_source'] = sport_detection_source
+        
+        bot_ref.set(firestore_data)
+        
+        logger.info(f"Bot created successfully: {bot_id} by user {user_id}")
         
         return jsonify({
             'success': True, 
-            'message': 'Bot created successfully with enhanced validation.', 
+            'message': 'Bot created successfully with standardized schema.', 
             'bot_id': bot_id,
-            'bot_data': initial_bot_data
+            'bot_data': bot.to_dict(),
+            'schema_version': '2.0',
+            'sport_auto_detected': sport_auto_detected,
+            'detected_sport': sport_filter.value if sport_filter else None
         }), 201
         
     except ValueError as e:
@@ -659,7 +685,7 @@ def simulate_bot_bet():
 
 @app.route('/api/strategies', methods=['POST'])
 def add_strategy():
-    """Adds a new strategy to the Firestore database (user-specific)."""
+    """Adds a new strategy using the standardized schema."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
     try:
@@ -667,23 +693,44 @@ def add_strategy():
         user_id = data.get('user_id')
         if not user_id:
             return jsonify({'success': False, 'message': 'User ID is required.'}), 400
-        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
-        new_strategy_ref = strategies_collection_user.document()
-        strategy_id = new_strategy_ref.id
-        initial_strategy_data = {
-            'id': strategy_id,
+        
+        # Create strategy using standardized schema
+        strategy_data = {
             'name': data.get('name', 'New Strategy'),
-            'type': data.get('type', 'basic'),
+            'strategy_type': data.get('type', 'basic'),
             'description': data.get('description', 'A custom betting strategy.'),
             'parameters': data.get('parameters', {}),
             'flow_definition': data.get('flow_definition', {}),
-            'linked_strategy_id': data.get('linked_strategy_id', None),
-            'created_from_template': data.get('created_from_template', None),
-            'created_at': datetime.datetime.now().isoformat(),
-            'updated_at': datetime.datetime.now().isoformat()
+            'created_by': user_id,
+            'bets_per_week_allowed': data.get('bets_per_week_allowed', 7),
+            'tags': data.get('tags', [])
         }
-        new_strategy_ref.set(initial_strategy_data)
-        return jsonify({'success': True, 'message': 'Strategy added successfully.', 'strategy_id': strategy_id}), 201
+        
+        # Create through data service
+        strategy_id = data_service.create_strategy(strategy_data)
+        strategy = data_service.get_strategy(strategy_id)
+        
+        # Also save to Firestore for compatibility
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        strategy_ref = strategies_collection_user.document(strategy_id)
+        
+        firestore_data = strategy.to_dict()
+        # Convert enums to strings for Firestore
+        firestore_data['type'] = strategy.strategy_type.value
+        firestore_data['id'] = strategy_id
+        firestore_data['linked_strategy_id'] = data.get('linked_strategy_id', None)
+        firestore_data['created_from_template'] = data.get('created_from_template', None)
+        
+        strategy_ref.set(firestore_data)
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Strategy added successfully with standardized schema.', 
+            'strategy_id': strategy_id,
+            'strategy_data': strategy.to_dict(),
+            'schema_version': '2.0'
+        }), 201
+        
     except Exception as e:
         print(f"Failed to add strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to add strategy: {e}'}), 500
@@ -3242,12 +3289,120 @@ def generate_demo_standings(sport_filter='all'):
     
     return standings
 
+@app.route('/api/schema/validate', methods=['POST'])
+@handle_errors
+def validate_schema():
+    """Validate data against our standardized schemas"""
+    try:
+        data = request.json
+        schema_type = data.get('schema_type')
+        schema_data = data.get('data')
+        
+        if not schema_type or not schema_data:
+            return jsonify({
+                'success': False, 
+                'message': 'schema_type and data are required'
+            }), 400
+        
+        validation_issues = []
+        
+        if schema_type == 'model':
+            try:
+                model = ModelSchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_model(model)
+            except Exception as e:
+                validation_issues.append(f"Schema parsing error: {str(e)}")
+                
+        elif schema_type == 'bot':
+            try:
+                bot = BotSchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_bot(bot)
+            except Exception as e:
+                validation_issues.append(f"Schema parsing error: {str(e)}")
+                
+        elif schema_type == 'strategy':
+            try:
+                strategy = StrategySchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_strategy(strategy)
+            except Exception as e:
+                validation_issues.append(f"Schema parsing error: {str(e)}")
+        else:
+            return jsonify({
+                'success': False,
+                'message': f'Unknown schema type: {schema_type}'
+            }), 400
+        
+        return jsonify({
+            'success': len(validation_issues) == 0,
+            'validation_issues': validation_issues,
+            'schema_type': schema_type,
+            'is_valid': len(validation_issues) == 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Schema validation failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Validation failed: {str(e)}'
+        }), 500
+
+@app.route('/api/schema/info', methods=['GET'])
+def get_schema_info():
+    """Get information about available schemas"""
+    try:
+        schema_info = {
+            'version': '2.0.0',
+            'schemas': {
+                'model': {
+                    'description': 'Machine learning model schema with performance tracking',
+                    'required_fields': ['model_id', 'name', 'version', 'sport', 'created_by'],
+                    'enums': {
+                        'sport': [sport.value for sport in Sport],
+                        'status': [status.value for status in ModelStatus],
+                        'market_types': [market.value for market in MarketType]
+                    }
+                },
+                'bot': {
+                    'description': 'Automated investor/bot schema with risk management',
+                    'required_fields': ['bot_id', 'name', 'current_balance', 'created_by'],
+                    'enums': {
+                        'active_status': [status.value for status in BotStatus],
+                        'sport_filter': [sport.value for sport in Sport]
+                    }
+                },
+                'strategy': {
+                    'description': 'Investment strategy schema with performance metrics',
+                    'required_fields': ['strategy_id', 'name', 'strategy_type', 'created_by'],
+                    'enums': {
+                        'strategy_type': [stype.value for stype in StrategyType]
+                    }
+                }
+            },
+            'features': [
+                'Schema validation',
+                'Legacy data migration',
+                'Performance metrics tracking',
+                'Risk management configuration',
+                'Type safety with enums'
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'schema_info': schema_info
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get schema info: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to get schema info: {str(e)}'
+        }), 500
+
 @app.route('/scores')
 def scores_page():
     """Render the scores and standings page"""
     return render_template('scores.html')
-
-# --- TRAINING QUEUE ENDPOINTS ---
 
 @app.route('/api/training/queue', methods=['GET'])
 @handle_errors
