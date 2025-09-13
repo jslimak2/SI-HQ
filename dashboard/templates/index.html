@@ -3855,6 +3855,20 @@
             }
         }
         
+        function toggleStrategySizingOptions() {
+            const sizingType = document.getElementById('strategy-sizing-type').value;
+            const kellyOptions = document.getElementById('strategy-kelly-options');
+            const flatOptions = document.getElementById('strategy-flat-options');
+            
+            if (sizingType === 'kelly-fraction') {
+                kellyOptions.classList.remove('hidden');
+                flatOptions.classList.add('hidden');
+            } else if (sizingType === 'flat-rate') {
+                kellyOptions.classList.add('hidden');
+                flatOptions.classList.remove('hidden');
+            }
+        }
+        
         // Initialize training queue when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listener for unified training form submission
