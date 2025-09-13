@@ -3127,6 +3127,14 @@ def generate_demo_recent_scores(sport_filter='all', days_back=7):
                     if home_score <= away_score:
                         home_score = away_score + random.randint(1, 3)
                 
+                # Generate realistic game times (typically evening games)
+                # Most games are between 7:00 PM and 10:30 PM
+                game_hour = random.choice([19, 20, 21, 22])  # 7-10 PM
+                game_minute = random.choice([0, 15, 30])     # Common start times
+                
+                # Create a datetime with the date but realistic game time
+                game_datetime = game_date.replace(hour=game_hour, minute=game_minute, second=0, microsecond=0)
+                
                 scores.append({
                     'id': f"{sport.lower()}_{game_date.strftime('%Y%m%d')}_{home_team}_{away_team}",
                     'sport': sport,
@@ -3136,7 +3144,7 @@ def generate_demo_recent_scores(sport_filter='all', days_back=7):
                     'home_score': home_score,
                     'away_score': away_score,
                     'winner': home_team if home_score > away_score else away_team,
-                    'game_time': game_date.strftime('%I:%M %p'),
+                    'game_time': game_datetime.strftime('%I:%M %p'),
                     'status': 'Final'
                 })
     
