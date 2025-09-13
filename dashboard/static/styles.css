@@ -204,6 +204,11 @@ body {
 }
 
 /* Special handling for large modals like analytics */
+.modal-content.max-w-4xl {
+    width: 90%;
+    max-width: 56rem; /* 4xl is 56rem */
+}
+
 .modal-content.max-w-6xl {
     width: 90%;
     max-width: 72rem; /* 6xl is 72rem */
@@ -340,6 +345,27 @@ th, td {
 /* Remove unwanted highlight from orange if needed */
 tr.post9-card:hover {
     background: #223a5e !important;
+}
+
+/* Fix for strategy template colors - override post9-card background for specific gradients */
+.post9-card .bg-gradient-to-br {
+    background: unset !important;
+}
+
+.post9-card .bg-gradient-to-br.from-orange-500.to-red-600 {
+    background: linear-gradient(to bottom right, #f97316, #dc2626) !important;
+}
+
+.post9-card .bg-gradient-to-br.from-green-500.to-green-700 {
+    background: linear-gradient(to bottom right, #22c55e, #15803d) !important;
+}
+
+.post9-card .bg-gradient-to-br.from-blue-500.to-blue-700 {
+    background: linear-gradient(to bottom right, #3b82f6, #1d4ed8) !important;
+}
+
+.post9-card .bg-gradient-to-br.from-purple-500.to-purple-700 {
+    background: linear-gradient(to bottom right, #a855f7, #7c3aed) !important;
 }
 
 .post9-accent {

@@ -486,7 +486,7 @@
         </div>
         <!-- Add Investor Modal -->
         <div id="add-bot-modal" class="modal">
-            <div class="modal-content post9-card">
+            <div class="modal-content post9-card max-w-4xl">
                 <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
                 <h3 class="text-xl font-bold mb-4 text-white">Add Automated Investor</h3>
                 <form id="add-bot-form" class="flex flex-col gap-4">
@@ -2804,7 +2804,12 @@
             if (betAmountEl) betAmountEl.textContent = `$${recommendedBet.toFixed(2)}`;
             if (percentageEl) percentageEl.textContent = `${recommendedPercentage.toFixed(2)}%`;
             if (growthEl) growthEl.textContent = `${expectedGrowth.toFixed(2)}%`;
-            if (infoEl) infoEl.textContent = strategyInfo;
+            if (infoEl) {
+                // Ensure strategyInfo is always a string to prevent "[object Object]" display
+                const infoText = typeof strategyInfo === 'string' ? strategyInfo : 
+                               (strategyInfo && strategyInfo.toString ? strategyInfo.toString() : 'Strategy information unavailable');
+                infoEl.textContent = infoText;
+            }
             if (resultsEl) resultsEl.classList.remove('hidden');
         };
         
@@ -3837,15 +3842,23 @@
                 // In a real implementation, this would make an API call to update the strategy
                 console.log(`Updating strategy ${strategyId}:`, { name: newName, description: newDescription });
                 
+                // Update the strategy in the global strategies array
+                const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+                if (strategyIndex !== -1) {
+                    strategies[strategyIndex].name = newName;
+                    strategies[strategyIndex].description = newDescription;
+                }
+                
                 // Update the modal header to reflect the change immediately
                 document.getElementById('strategy-modal-name').textContent = newName;
+                
+                // Refresh the strategies display to show the updated name
+                displayStrategies();
+                updateStrategySelects();
                 
                 // Close the modal and show success message
                 closeModal('strategy-details-modal');
                 showMessage(`Strategy "${newName}" updated successfully.`, 'success');
-                
-                // In a real implementation, we would refresh the strategies list here
-                // loadStrategies();
                 
                 return true;
             } catch (error) {
