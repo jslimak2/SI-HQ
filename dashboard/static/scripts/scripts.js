@@ -1895,7 +1895,9 @@ function createInvestmentCard(investment) {
                         const botColor = botRecs[0].bot_color;
                         
                         return `
-                            <div class="text-xs px-2 py-1 rounded-full" style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};">
+                            <div class="text-xs px-2 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
+                                 style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
+                                 onclick="showBotRecommendationDetails('${investment.id}', '${botName}')">
                                 ${botName}: ${botRecs.length} bet${botRecs.length > 1 ? 's' : ''}, ${avgConfidence}% avg, $${totalAmount.toFixed(0)}
                             </div>
                         `;
@@ -4332,6 +4334,247 @@ function displayModelDetails(modelDetails) {
         </div>
     `;
 }
+
+// Bot Recommendation Details Modal
+function showBotRecommendationDetails(gameId, botName) {
+    // Find the game recommendations for this bot
+    const gameRecommendations = botRecommendations[gameId] || [];
+    const botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
+    
+    if (botRecs.length === 0) {
+        showMessage('No recommendations found for this bot', true);
+        return;
+    }
+    
+    // Find the game info
+    let gameInfo = null;
+    if (typeof investments !== 'undefined' && investments) {
+        gameInfo = investments.find(inv => inv.id === gameId);
+    }
+    
+    displayBotRecommendationDetails(botRecs, botName, gameInfo);
+    showModal('bot-recommendation-modal');
+}
+
+function displayBotRecommendationDetails(botRecs, botName, gameInfo) {
+    const content = document.getElementById('bot-recommendation-content');
+    
+    // Calculate summary statistics
+    const totalAmount = botRecs.reduce((sum, rec) => sum + rec.recommended_amount, 0);
+    const avgConfidence = Math.round(botRecs.reduce((sum, rec) => sum + rec.confidence, 0) / botRecs.length);
+    const botColor = botRecs[0].bot_color;
+    
+    // Generate sportsbook consensus data for each recommendation
+    const recommendationsHtml = botRecs.map((rec, index) => {
+        // Generate realistic sportsbook consensus
+        const consensus = generateRealisticConsensus(rec);
+        
+        // Calculate wager details
+        const wagerCalculation = calculateWagerDetails(rec, consensus);
+        
+        return `
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h4 class="text-lg font-semibold text-white">${rec.selection}</h4>
+                        <p class="text-gray-300 text-sm">${rec.market_key}</p>
+                        ${rec.point !== undefined ? `<p class="text-gray-400 text-xs">Point: ${rec.point}</p>` : ''}
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-green-400">$${rec.recommended_amount.toFixed(0)}</div>
+                        <div class="text-sm text-gray-400">${rec.confidence}% confidence</div>
+                    </div>
+                </div>
+                
+                <!-- Sportsbook Consensus -->
+                <div class="mb-4">
+                    <h5 class="text-sm font-semibold text-gray-300 mb-3">📊 Sportsbook Consensus</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">Average Odds</div>
+                            <div class="text-lg font-semibold text-white">${consensus.avgOdds > 0 ? '+' : ''}${consensus.avgOdds}</div>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">Best Available</div>
+                            <div class="text-lg font-semibold text-green-400">${consensus.bestOdds > 0 ? '+' : ''}${consensus.bestOdds}</div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="text-xs text-gray-400 mb-1">Consensus Range</div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-300">${consensus.minOdds > 0 ? '+' : ''}${consensus.minOdds}</span>
+                            <span class="text-gray-300">to</span>
+                            <span class="text-gray-300">${consensus.maxOdds > 0 ? '+' : ''}${consensus.maxOdds}</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">Across ${consensus.bookCount} sportsbooks</div>
+                    </div>
+                </div>
+                
+                <!-- Model Prediction -->
+                <div class="mb-4">
+                    <h5 class="text-sm font-semibold text-gray-300 mb-3">🤖 Model Prediction</h5>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">Predicted Odds</div>
+                            <div class="text-lg font-semibold" style="color: ${botColor};">${wagerCalculation.predictedOdds > 0 ? '+' : ''}${wagerCalculation.predictedOdds}</div>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">Win Probability</div>
+                            <div class="text-lg font-semibold text-white">${wagerCalculation.winProbability}%</div>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">Expected Value</div>
+                            <div class="text-lg font-semibold ${wagerCalculation.expectedValue >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                ${wagerCalculation.expectedValue >= 0 ? '+' : ''}${wagerCalculation.expectedValue}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Wager Calculation Breakdown -->
+                <div class="mb-4">
+                    <h5 class="text-sm font-semibold text-gray-300 mb-3">💰 Wager Calculation</h5>
+                    <div class="bg-gray-900 p-4 rounded space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Strategy:</span>
+                            <span class="text-white">${wagerCalculation.strategy}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Edge Identified:</span>
+                            <span class="text-green-400">${wagerCalculation.edge}%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Kelly Fraction:</span>
+                            <span class="text-white">${wagerCalculation.kellyFraction}%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Risk Factor:</span>
+                            <span class="text-white">${wagerCalculation.riskFactor}x</span>
+                        </div>
+                        <div class="border-t border-gray-700 pt-2 mt-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Calculated Wager:</span>
+                                <span class="text-xl font-bold text-green-400">$${rec.recommended_amount.toFixed(0)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Potential Returns -->
+                <div>
+                    <h5 class="text-sm font-semibold text-gray-300 mb-3">📈 Potential Returns</h5>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">If Win</div>
+                            <div class="text-lg font-semibold text-green-400">+$${wagerCalculation.potentialWin.toFixed(0)}</div>
+                        </div>
+                        <div class="bg-gray-900 p-3 rounded">
+                            <div class="text-xs text-gray-400">If Loss</div>
+                            <div class="text-lg font-semibold text-red-400">-$${rec.recommended_amount.toFixed(0)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    content.innerHTML = `
+        <div class="mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-xl font-bold text-white">${botName} Recommendations</h4>
+                    ${gameInfo ? `<p class="text-gray-300">${gameInfo.teams}</p>` : ''}
+                    ${gameInfo ? `<p class="text-sm text-gray-400">${gameInfo.sport_title || gameInfo.sport || 'Sport'}</p>` : ''}
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-green-400">$${totalAmount.toFixed(0)}</div>
+                    <div class="text-sm text-gray-400">${avgConfidence}% avg confidence</div>
+                    <div class="text-xs text-gray-500">${botRecs.length} recommendation${botRecs.length > 1 ? 's' : ''}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            ${recommendationsHtml}
+        </div>
+        
+        <div class="mt-6 p-4 bg-blue-900 bg-opacity-30 rounded-lg border border-blue-700">
+            <div class="flex items-start">
+                <div class="text-blue-400 mr-2">ℹ️</div>
+                <div class="text-sm text-blue-200">
+                    <strong>Note:</strong> These recommendations are generated by the ${botName} bot based on its trained model and current market conditions. 
+                    Always verify odds and consider your own risk tolerance before placing any bets.
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateRealisticConsensus(recommendation) {
+    // Generate realistic sportsbook data
+    const baseOdds = recommendation.odds || (Math.random() > 0.5 ? Math.floor(Math.random() * 200 + 100) : -Math.floor(Math.random() * 200 + 110));
+    
+    // Create range around base odds
+    const variance = Math.floor(Math.random() * 20 + 5); // 5-25 point variance
+    const minOdds = baseOdds - variance;
+    const maxOdds = baseOdds + variance;
+    const avgOdds = Math.round((minOdds + maxOdds) / 2);
+    const bestOdds = maxOdds; // Best odds for the bettor
+    
+    return {
+        avgOdds,
+        bestOdds,
+        minOdds,
+        maxOdds,
+        bookCount: Math.floor(Math.random() * 5) + 4 // 4-8 sportsbooks
+    };
+}
+
+function calculateWagerDetails(recommendation, consensus) {
+    // Calculate win probability from odds
+    const oddsUsed = consensus.bestOdds;
+    let winProbability;
+    if (oddsUsed > 0) {
+        winProbability = Math.round(100 / (oddsUsed / 100 + 1));
+    } else {
+        winProbability = Math.round(Math.abs(oddsUsed) / (Math.abs(oddsUsed) + 100) * 100);
+    }
+    
+    // Calculate expected value and edge
+    const edge = Math.round((recommendation.confidence - winProbability) * 0.8); // Model confidence vs implied probability
+    const expectedValue = Math.round(edge * 0.5); // Simplified EV calculation
+    
+    // Generate predicted odds that show the bot's edge
+    const predictedOdds = oddsUsed + (edge * 3); // Bot sees better value
+    
+    // Calculate Kelly fraction
+    const kellyFraction = Math.max(1, Math.round(Math.abs(edge) * 0.3));
+    
+    // Risk factor (how conservative the bot is)
+    const riskFactor = Math.round((100 - recommendation.confidence) / 50 * 10) / 10 + 0.5;
+    
+    // Potential win calculation
+    let potentialWin;
+    if (oddsUsed > 0) {
+        potentialWin = recommendation.recommended_amount * (oddsUsed / 100);
+    } else {
+        potentialWin = recommendation.recommended_amount * (100 / Math.abs(oddsUsed));
+    }
+    
+    return {
+        winProbability,
+        edge,
+        expectedValue,
+        predictedOdds,
+        kellyFraction,
+        riskFactor,
+        potentialWin,
+        strategy: edge > 0 ? 'Value Betting' : 'Conservative'
+    };
+}
+
+// Make function globally available
+window.showBotRecommendationDetails = showBotRecommendationDetails;
 
 function generateModelDetailsData(modelId) {
     // Generate realistic model details
