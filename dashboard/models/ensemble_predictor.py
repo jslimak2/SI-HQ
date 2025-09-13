@@ -18,7 +18,7 @@ from typing import Dict, List, Tuple, Optional
 import warnings
 warnings.filterwarnings('ignore')
 
-from .neural_predictor import SportsNeuralPredictor, generate_demo_training_data
+from neural_predictor import SportsNeuralPredictor, generate_demo_training_data
 
 
 class SportsEnsemblePredictor:
