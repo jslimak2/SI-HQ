@@ -8,20 +8,20 @@ import hashlib
 import time
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
-from enum import Enum
+from dataclasses import dataclass
 import logging
+
+# Import the new standardized schemas
+from .schemas import (
+    ModelSchema, ModelStatus, Sport, MarketType, PerformanceMetrics, 
+    ModelInputOutput, SchemaValidator, migrate_legacy_model
+)
+
 logger = logging.getLogger(__name__)
 
-class ModelStatus(Enum):
-    TRAINING = "training"
-    READY = "ready"
-    DEPLOYED = "deployed"
-    DEPRECATED = "deprecated"
-    FAILED = "failed"
-
+# Keep legacy ModelMetadata for backward compatibility during migration
 @dataclass
-class ModelMetadata:
+class LegacyModelMetadata:
     model_id: str
     name: str
     sport: str
@@ -45,8 +45,11 @@ class ModelMetadata:
         if self.training_config is None:
             self.training_config = {}
 
+# For backward compatibility
+ModelMetadata = ModelSchema
+
 class ModelRegistry:
-    """Professional model registry with versioning and metadata management"""
+    """Professional model registry with versioning and metadata management using standardized schemas"""
     
     def __init__(self, storage_path: str = "./models"):
         self.storage_path = storage_path
@@ -61,21 +64,34 @@ class ModelRegistry:
         os.makedirs(os.path.join(self.storage_path, "metadata"), exist_ok=True)
     
     def _load_registry(self):
-        """Load model registry from disk"""
+        """Load model registry from disk with schema migration"""
         if os.path.exists(self.metadata_file):
             try:
                 with open(self.metadata_file, 'r') as f:
                     registry_data = json.load(f)
                     
-                    # Convert string status back to enum when loading
-                    for model_data in registry_data.values():
-                        if isinstance(model_data.get('status'), str):
-                            model_data['status'] = ModelStatus(model_data['status'])
-                    
-                    self.models = {
-                        model_id: ModelMetadata(**model_data) 
-                        for model_id, model_data in registry_data.items()
-                    }
+                self.models = {}
+                for model_id, model_data in registry_data.items():
+                    try:
+                        # Try to load as new schema first
+                        if 'inputs_outputs' in model_data or 'current_performance' in model_data:
+                            # New schema format
+                            self.models[model_id] = ModelSchema.from_dict(model_data)
+                        else:
+                            # Legacy format - migrate
+                            logger.info(f"Migrating legacy model {model_id} to new schema")
+                            self.models[model_id] = migrate_legacy_model(model_data)
+                    except Exception as e:
+                        logger.error(f"Failed to load model {model_id}: {e}")
+                        # Fall back to creating a minimal model
+                        self.models[model_id] = ModelSchema(
+                            model_id=model_id,
+                            name=model_data.get('name', 'Unknown'),
+                            version=model_data.get('version', '1.0.0'),
+                            sport=Sport(model_data.get('sport', 'NBA')),
+                            model_type=model_data.get('model_type', 'unknown'),
+                            created_by=model_data.get('created_by', '')
+                        )
             except Exception as e:
                 logger.error(f"Failed to load model registry: {e}")
                 self.models = {}
@@ -83,17 +99,12 @@ class ModelRegistry:
             self.models = {}
     
     def _save_registry(self):
-        """Save model registry to disk"""
+        """Save model registry to disk using new schema format"""
         try:
             registry_data = {
-                model_id: asdict(metadata) 
-                for model_id, metadata in self.models.items()
+                model_id: model.to_dict() 
+                for model_id, model in self.models.items()
             }
-            
-            # Convert enum to string
-            for model_data in registry_data.values():
-                if isinstance(model_data['status'], ModelStatus):
-                    model_data['status'] = model_data['status'].value
             
             with open(self.metadata_file, 'w') as f:
                 json.dump(registry_data, f, indent=2)
@@ -107,8 +118,10 @@ class ModelRegistry:
                       model_type: str,
                       created_by: str,
                       description: str = "",
-                      hyperparameters: Dict[str, Any] = None) -> str:
-        """Register a new model and return model ID"""
+                      hyperparameters: Dict[str, Any] = None,
+                      inputs: List[str] = None,
+                      outputs: List[str] = None) -> str:
+        """Register a new model using the standardized schema"""
         
         # Generate model ID
         timestamp = str(int(time.time()))
@@ -117,20 +130,32 @@ class ModelRegistry:
         # Generate version
         version = self._generate_version(name, sport, model_type)
         
-        metadata = ModelMetadata(
-            model_id=model_id,
-            name=name,
-            sport=sport,
-            model_type=model_type,
-            version=version,
-            status=ModelStatus.TRAINING,
-            created_at=datetime.utcnow().isoformat(),
-            created_by=created_by,
-            description=description,
-            hyperparameters=hyperparameters or {}
+        # Create inputs/outputs structure
+        inputs_outputs = ModelInputOutput(
+            inputs=inputs or [],
+            outputs=outputs or ['home_win_probability', 'away_win_probability', 'predicted_outcome']
         )
         
-        self.models[model_id] = metadata
+        # Create model using new schema
+        model = ModelSchema(
+            model_id=model_id,
+            name=name,
+            version=version,
+            sport=Sport(sport.upper()),
+            model_type=model_type,
+            status=ModelStatus.TRAINING,
+            created_by=created_by,
+            description=description,
+            hyperparameters=hyperparameters or {},
+            inputs_outputs=inputs_outputs
+        )
+        
+        # Validate the model
+        validation_issues = SchemaValidator.validate_model(model)
+        if validation_issues:
+            raise ValueError(f"Model validation failed: {', '.join(validation_issues)}")
+        
+        self.models[model_id] = model
         self._save_registry()
         
         logger.info(f"Registered new model: {model_id} v{version}")
@@ -164,9 +189,20 @@ class ModelRegistry:
             raise ValueError(f"Model {model_id} not found")
         
         self.models[model_id].status = status
+        self.models[model_id].last_updated = datetime.now().isoformat()
         
         if performance_metrics:
-            self.models[model_id].performance_metrics.update(performance_metrics)
+            # Update current performance metrics
+            for key, value in performance_metrics.items():
+                if hasattr(self.models[model_id].current_performance, key):
+                    setattr(self.models[model_id].current_performance, key, value)
+            
+            # Add to performance log
+            new_performance = PerformanceMetrics()
+            for key, value in performance_metrics.items():
+                if hasattr(new_performance, key):
+                    setattr(new_performance, key, value)
+            self.models[model_id].performance_log.append(new_performance)
         
         self._save_registry()
         logger.info(f"Updated model {model_id} status to {status.value}")
@@ -190,6 +226,7 @@ class ModelRegistry:
             # Update metadata
             self.models[model_id].file_path = file_path
             self.models[model_id].file_checksum = checksum
+            self.models[model_id].last_updated = datetime.now().isoformat()
             
             if training_config:
                 self.models[model_id].training_config.update(training_config)
@@ -208,18 +245,18 @@ class ModelRegistry:
         if model_id not in self.models:
             raise ValueError(f"Model {model_id} not found")
         
-        metadata = self.models[model_id]
+        model = self.models[model_id]
         
-        if not metadata.file_path or not os.path.exists(metadata.file_path):
+        if not model.file_path or not os.path.exists(model.file_path):
             raise ValueError(f"Model artifact not found for {model_id}")
         
         # Verify checksum
-        current_checksum = self._calculate_file_checksum(metadata.file_path)
-        if current_checksum != metadata.file_checksum:
+        current_checksum = self._calculate_file_checksum(model.file_path)
+        if current_checksum != model.file_checksum:
             logger.warning(f"Checksum mismatch for model {model_id}")
         
         try:
-            with open(metadata.file_path, 'rb') as f:
+            with open(model.file_path, 'rb') as f:
                 return pickle.load(f)
         except Exception as e:
             logger.error(f"Failed to load model artifact for {model_id}: {e}")
@@ -237,12 +274,12 @@ class ModelRegistry:
                    sport: str = None,
                    model_type: str = None, 
                    status: ModelStatus = None,
-                   created_by: str = None) -> List[ModelMetadata]:
+                   created_by: str = None) -> List[ModelSchema]:
         """List models with optional filtering"""
         models = list(self.models.values())
         
         if sport:
-            models = [m for m in models if m.sport.lower() == sport.lower()]
+            models = [m for m in models if m.sport.value.lower() == sport.lower()]
         
         if model_type:
             models = [m for m in models if m.model_type == model_type]
@@ -258,21 +295,21 @@ class ModelRegistry:
         
         return models
     
-    def get_model_metadata(self, model_id: str) -> Optional[ModelMetadata]:
+    def get_model_metadata(self, model_id: str) -> Optional[ModelSchema]:
         """Get metadata for specific model"""
         return self.models.get(model_id)
     
-    def get_latest_model(self, name: str, sport: str, model_type: str, status: ModelStatus = None) -> Optional[ModelMetadata]:
+    def get_latest_model(self, name: str, sport: str, model_type: str, status: ModelStatus = None) -> Optional[ModelSchema]:
         """Get latest version of a model"""
         matching_models = []
         
-        for metadata in self.models.values():
-            if (metadata.name == name and 
-                metadata.sport == sport and 
-                metadata.model_type == model_type):
+        for model in self.models.values():
+            if (model.name == name and 
+                model.sport.value == sport and 
+                model.model_type == model_type):
                 
-                if status is None or metadata.status == status:
-                    matching_models.append(metadata)
+                if status is None or model.status == status:
+                    matching_models.append(model)
         
         if not matching_models:
             return None
@@ -295,13 +332,14 @@ class ModelRegistry:
             raise ValueError(f"Model {model_id} not found")
         
         self.models[model_id].status = ModelStatus.DEPRECATED
+        self.models[model_id].last_updated = datetime.now().isoformat()
         if reason:
             self.models[model_id].description += f" [DEPRECATED: {reason}]"
         
         self._save_registry()
         logger.info(f"Deprecated model {model_id}: {reason}")
     
-    def get_model_lineage(self, model_id: str) -> List[ModelMetadata]:
+    def get_model_lineage(self, model_id: str) -> List[ModelSchema]:
         """Get all versions of a model (lineage)"""
         if model_id not in self.models:
             raise ValueError(f"Model {model_id} not found")
@@ -310,11 +348,11 @@ class ModelRegistry:
         
         # Find all models with same name, sport, and type
         lineage = []
-        for metadata in self.models.values():
-            if (metadata.name == base_model.name and 
-                metadata.sport == base_model.sport and 
-                metadata.model_type == base_model.model_type):
-                lineage.append(metadata)
+        for model in self.models.values():
+            if (model.name == base_model.name and 
+                model.sport == base_model.sport and 
+                model.model_type == base_model.model_type):
+                lineage.append(model)
         
         # Sort by version
         try:
@@ -329,11 +367,11 @@ class ModelRegistry:
         model_groups = {}
         
         # Group models by name, sport, and type
-        for metadata in self.models.values():
-            key = (metadata.name, metadata.sport, metadata.model_type)
+        for model in self.models.values():
+            key = (model.name, model.sport.value, model.model_type)
             if key not in model_groups:
                 model_groups[key] = []
-            model_groups[key].append(metadata)
+            model_groups[key].append(model)
         
         cleaned_count = 0
         
@@ -345,19 +383,19 @@ class ModelRegistry:
                 group.sort(key=lambda m: m.created_at, reverse=True)
             
             # Mark old models for cleanup
-            for metadata in group[keep_latest_n:]:
-                if metadata.status != ModelStatus.DEPLOYED:
+            for model in group[keep_latest_n:]:
+                if model.status != ModelStatus.DEPLOYED:
                     # Remove artifact file
-                    if metadata.file_path and os.path.exists(metadata.file_path):
+                    if model.file_path and os.path.exists(model.file_path):
                         try:
-                            os.remove(metadata.file_path)
-                            logger.info(f"Removed old model artifact: {metadata.file_path}")
+                            os.remove(model.file_path)
+                            logger.info(f"Removed old model artifact: {model.file_path}")
                         except Exception as e:
-                            logger.error(f"Failed to remove {metadata.file_path}: {e}")
+                            logger.error(f"Failed to remove {model.file_path}: {e}")
                     
                     # Remove from registry
-                    if metadata.model_id in self.models:
-                        del self.models[metadata.model_id]
+                    if model.model_id in self.models:
+                        del self.models[model.model_id]
                         cleaned_count += 1
         
         if cleaned_count > 0:
