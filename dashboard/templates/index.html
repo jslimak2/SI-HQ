@@ -54,10 +54,57 @@
             padding: 0.5rem 1.5rem;
             border-radius: 2rem;
             transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
         }
         .nav-btn:hover {
             background: #ff9900;
             color: #0a1a2f;
+        }
+        
+        /* Dropdown Styles */
+        .nav-dropdown {
+            display: inline-block;
+        }
+        .dropdown-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dropdown-arrow {
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: rgba(10, 26, 47, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid #ff9900;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0;
+            min-width: 200px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .dropdown-menu.hidden {
+            display: none;
+        }
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            color: #fff;
+            background: none;
+            border: none;
+            text-align: left;
+            font-size: 1rem;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .dropdown-item:hover {
+            background: rgba(255, 153, 0, 0.2);
+            color: #ff9900;
         }
         .post9-btn {
             background: linear-gradient(90deg, #ff9900 0%, #ffb84d 100%);
@@ -343,6 +390,53 @@
                 loadPredictiveAnalyticsStats();
             }
         }
+        
+        // Dropdown functionality
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            
+            // Close all other dropdowns
+            allDropdowns.forEach(d => {
+                if (d.id !== dropdownId) {
+                    d.classList.add('hidden');
+                    const arrow = d.parentElement.querySelector('.dropdown-arrow');
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                }
+            });
+            
+            // Toggle current dropdown
+            dropdown.classList.toggle('hidden');
+            const arrow = dropdown.parentElement.querySelector('.dropdown-arrow');
+            if (arrow) {
+                arrow.style.transform = dropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        }
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.nav-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+                    dropdown.classList.add('hidden');
+                    const arrow = dropdown.parentElement.querySelector('.dropdown-arrow');
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                });
+            }
+        });
+        
+        // Modified showPage function to also close dropdowns when page changes
+        const originalShowPage = showPage;
+        showPage = function(pageId) {
+            // Close all dropdowns
+            document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+                dropdown.classList.add('hidden');
+                const arrow = dropdown.parentElement.querySelector('.dropdown-arrow');
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            });
+            
+            // Call original function
+            originalShowPage(pageId);
+        };
     </script>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-8">
@@ -360,17 +454,35 @@
     </div>
     <div class="h-20"></div> <!-- Spacer for fixed banner -->
     {% endif %}
-    <nav class="flex space-x-4 mb-6 flex-wrap">
+    <nav class="flex justify-center space-x-6 mb-6">
         <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
-        <button onclick="showPage('investments-page')" class="nav-btn">Available Investments</button>
+        <button onclick="showPage('investments-page')" class="nav-btn">Investments</button>
         <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button>
-        <button onclick="showPage('model-gallery-page')" class="nav-btn">Model Gallery</button>
-        <button onclick="showPage('training-queue-page')" class="nav-btn">🔥 Training Queue</button>
-        <button onclick="showPage('predictive-analytics-page')" class="nav-btn">🔮 Predictive Analytics</button>
-        <button onclick="showPage('analytics-page')" class="nav-btn">Advanced Analytics</button>
-        <a href="/scores" class="nav-btn">🏆 Scores & Standings</a>
-        <button onclick="showPage('admin-page')" class="nav-btn">⚙️ System Status</button>
-        <button onclick="showPage('account-page')" class="nav-btn">Account</button>
+        
+        <!-- Analytics Dropdown -->
+        <div class="relative nav-dropdown">
+            <button class="nav-btn dropdown-btn" onclick="toggleDropdown('analytics-dropdown')">
+                Analytics <span class="dropdown-arrow">▼</span>
+            </button>
+            <div id="analytics-dropdown" class="dropdown-menu hidden">
+                <button onclick="showPage('model-gallery-page')" class="dropdown-item">Model Gallery</button>
+                <button onclick="showPage('training-queue-page')" class="dropdown-item">Training Queue</button>
+                <button onclick="showPage('predictive-analytics-page')" class="dropdown-item">Predictive Analytics</button>
+                <button onclick="showPage('analytics-page')" class="dropdown-item">Advanced Analytics</button>
+            </div>
+        </div>
+        
+        <!-- More Dropdown -->
+        <div class="relative nav-dropdown">
+            <button class="nav-btn dropdown-btn" onclick="toggleDropdown('more-dropdown')">
+                More <span class="dropdown-arrow">▼</span>
+            </button>
+            <div id="more-dropdown" class="dropdown-menu hidden">
+                <a href="/scores" class="dropdown-item">Scores & Standings</a>
+                <button onclick="showPage('admin-page')" class="dropdown-item">System Status</button>
+                <button onclick="showPage('account-page')" class="dropdown-item">Account</button>
+            </div>
+        </div>
     </nav>
     <div id="message-box" class="message-box"></div>
     <div id="loading-spinner" class="spinner hidden"></div>
