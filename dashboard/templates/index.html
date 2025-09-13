@@ -437,93 +437,6 @@
             // Call original function
             originalShowPage(pageId);
         };
-
-        // New Auto-Investor Modal Functions
-        function onSportSelected(sport) {
-            const marketSelect = document.getElementById('market-select');
-            const createBtn = document.getElementById('create-investor-btn');
-            
-            if (sport) {
-                marketSelect.disabled = false;
-                // Auto-select best model for sport
-                const modelSelect = document.getElementById('model-select');
-                const sportOptions = {
-                    'NBA': 'nba_ensemble',
-                    'NFL': 'nfl_ensemble_v2', 
-                    'MLB': 'mlb_statistical'
-                };
-                if (sportOptions[sport]) {
-                    modelSelect.value = sportOptions[sport];
-                }
-            } else {
-                marketSelect.disabled = true;
-                marketSelect.value = '';
-            }
-            checkFormCompletion();
-        }
-
-        function selectStrategy(strategyType) {
-            // Remove selection from all strategy cards
-            document.querySelectorAll('#add-bot-modal .border-2').forEach(card => {
-                card.classList.remove('border-blue-500', 'bg-blue-50');
-                card.classList.add('border-gray-200');
-            });
-            
-            // Highlight selected strategy
-            event.target.closest('.border-2').classList.remove('border-gray-200');
-            event.target.closest('.border-2').classList.add('border-blue-500', 'bg-blue-50');
-            
-            // Set hidden input value
-            document.getElementById('selected-strategy').value = strategyType;
-            
-            checkFormCompletion();
-        }
-
-        function toggleAdvancedOptions() {
-            const advancedDiv = document.getElementById('advanced-options');
-            const toggleText = document.getElementById('advanced-toggle');
-            
-            if (advancedDiv.classList.contains('hidden')) {
-                advancedDiv.classList.remove('hidden');
-                toggleText.textContent = '▲ Hide Advanced Settings';
-            } else {
-                advancedDiv.classList.add('hidden'); 
-                toggleText.textContent = '▼ Show Advanced Settings';
-            }
-        }
-
-        function updateConfidenceDisplay(value) {
-            document.getElementById('confidence-display').textContent = value;
-        }
-
-        function checkFormCompletion() {
-            const name = document.querySelector('#add-bot-form input[name="name"]').value;
-            const budget = document.querySelector('#add-bot-form input[name="starting_balance"]').value;
-            const sport = document.querySelector('#add-bot-form select[name="sport"]').value;
-            const betType = document.querySelector('#add-bot-form select[name="bet_type"]').value;
-            const strategy = document.getElementById('selected-strategy').value;
-            const createBtn = document.getElementById('create-investor-btn');
-            
-            if (name && budget && sport && betType && strategy) {
-                createBtn.disabled = false;
-                createBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                createBtn.disabled = true;
-                createBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        // Add event listeners for form validation
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('add-bot-form');
-            if (form) {
-                const inputs = form.querySelectorAll('input, select');
-                inputs.forEach(input => {
-                    input.addEventListener('change', checkFormCompletion);
-                    input.addEventListener('input', checkFormCompletion);
-                });
-            }
-        });
     </script>
 </head>
 <body class="flex flex-col items-center justify-start min-h-screen p-8">
@@ -542,32 +455,32 @@
     <div class="h-20"></div> <!-- Spacer for fixed banner -->
     {% endif %}
     <nav class="flex justify-center space-x-6 mb-6">
-        <button onclick="showPage('dashboard-page')" class="nav-btn">📊 Dashboard</button>
-        <button onclick="showPage('investments-page')" class="nav-btn">💰 My Investments</button>
-        <button onclick="showPage('strategy-builder-page')" class="nav-btn">⚙️ Strategies</button>
+        <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
+        <button onclick="showPage('investments-page')" class="nav-btn">Investments</button>
+        <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button>
         
         <!-- Analytics Dropdown -->
         <div class="relative nav-dropdown">
             <button class="nav-btn dropdown-btn" onclick="toggleDropdown('analytics-dropdown')">
-                📈 Analytics <span class="dropdown-arrow">▼</span>
+                Analytics <span class="dropdown-arrow">▼</span>
             </button>
             <div id="analytics-dropdown" class="dropdown-menu hidden">
-                <button onclick="showPage('predictive-analytics-page')" class="dropdown-item">🎯 Predictions</button>
-                <button onclick="showPage('model-gallery-page')" class="dropdown-item">🤖 AI Models</button>
-                <button onclick="showPage('analytics-page')" class="dropdown-item">📊 Performance</button>
-                <button onclick="showPage('training-queue-page')" class="dropdown-item">⚡ Model Training</button>
+                <button onclick="showPage('model-gallery-page')" class="dropdown-item">Model Gallery</button>
+                <button onclick="showPage('training-queue-page')" class="dropdown-item">Training Queue</button>
+                <button onclick="showPage('predictive-analytics-page')" class="dropdown-item">Predictive Analytics</button>
+                <button onclick="showPage('analytics-page')" class="dropdown-item">Advanced Analytics</button>
             </div>
         </div>
         
-        <!-- Sports & Tools Dropdown -->
+        <!-- More Dropdown -->
         <div class="relative nav-dropdown">
-            <button class="nav-btn dropdown-btn" onclick="toggleDropdown('sports-dropdown')">
-                🏀 Sports <span class="dropdown-arrow">▼</span>
+            <button class="nav-btn dropdown-btn" onclick="toggleDropdown('more-dropdown')">
+                More <span class="dropdown-arrow">▼</span>
             </button>
-            <div id="sports-dropdown" class="dropdown-menu hidden">
-                <a href="/scores" class="dropdown-item">🏆 Live Scores</a>
-                <button onclick="showPage('admin-page')" class="dropdown-item">⚙️ System Status</button>
-                <button onclick="showPage('account-page')" class="dropdown-item">👤 Account</button>
+            <div id="more-dropdown" class="dropdown-menu hidden">
+                <a href="/scores" class="dropdown-item">Scores & Standings</a>
+                <button onclick="showPage('admin-page')" class="dropdown-item">System Status</button>
+                <button onclick="showPage('account-page')" class="dropdown-item">Account</button>
             </div>
         </div>
     </nav>
@@ -579,77 +492,9 @@
                 <span class="post9-title">Post<span class="post9-accent">9</span></span>
             </div>
             <div class="post9-tagline">Stop Betting. Start Investing.</div>
-            <p class="text-xl text-gray-300 mt-2">Turn Your Sports Knowledge Into Consistent Profits</p>
-            <p class="text-base text-gray-400 mt-2">Professional sports analytics with automated betting strategies - backed by machine learning</p>
-            <p class="text-sm text-gray-500 mt-2">User ID: <span id="user-id">Loading...</span></p>
+            <p class="text-xl text-gray-300 mt-2">Professional Analytics & Automated Investor Management</p>
+            <p class="text-sm text-gray-400 mt-2">User ID: <span id="user-id">Loading...</span></p>
         </header>
-
-        <!-- Value Proposition & Getting Started Section -->
-        <section id="getting-started-section" class="mb-12 table-container post9-card">
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 mb-6">
-                <div class="text-center text-white">
-                    <h2 class="text-2xl font-bold mb-3">🎯 What is Post9?</h2>
-                    <p class="text-lg mb-4">Post9 transforms sports betting into systematic investing using professional-grade analytics and automated strategies.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                            <div class="text-3xl mb-2">📊</div>
-                            <h3 class="font-bold mb-2">1. Advanced Analytics</h3>
-                            <p class="text-sm">AI models analyze thousands of data points to identify profitable opportunities</p>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                            <div class="text-3xl mb-2">🤖</div>
-                            <h3 class="font-bold mb-2">2. Automated Strategies</h3>
-                            <p class="text-sm">Set up automated investors to execute your strategies 24/7 with disciplined risk management</p>
-                        </div>
-                        <div class="bg-white bg-opacity-10 rounded-lg p-4">
-                            <div class="text-3xl mb-2">💰</div>
-                            <h3 class="font-bold mb-2">3. Consistent Profits</h3>
-                            <p class="text-sm">Track performance, optimize strategies, and grow your bankroll systematically</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Quick Start Guide -->
-            <div class="bg-gray-50 rounded-lg p-6">
-                <h3 class="text-xl font-bold mb-4 text-gray-800">🚀 Quick Start Guide</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="text-center">
-                        <div class="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                            <span class="text-blue-600 font-bold">1</span>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Pick Your Sport</h4>
-                        <p class="text-sm text-gray-600">Choose NBA, NFL, or MLB</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                            <span class="text-green-600 font-bold">2</span>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Select Strategy</h4>
-                        <p class="text-sm text-gray-600">Conservative, Aggressive, or Custom</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                            <span class="text-orange-600 font-bold">3</span>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Create Auto-Investor</h4>
-                        <p class="text-sm text-gray-600">Set budget and risk preferences</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                            <span class="text-purple-600 font-bold">4</span>
-                        </div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Watch It Work</h4>
-                        <p class="text-sm text-gray-600">Monitor profits and performance</p>
-                    </div>
-                </div>
-                <div class="text-center mt-6">
-                    <button onclick="showModal('add-bot-modal')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
-                        🎯 Start Your First Investment
-                    </button>
-                </div>
-            </div>
-        </section>
         <div id="dashboard-page">
             <section id="overall-stats-section" class="mb-12">
                 <h2 class="text-2xl font-bold mb-6 text-white">Overall Stats</h2>
@@ -672,108 +517,76 @@
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🚀</span>
-                        <span class="stats-label">Top Performer</span>
+                        <span class="stats-label">Best Investor</span>
                         <span id="best-bot-name" class="stats-value">-</span>
                         <span id="best-bot-profit" class="stats-trend"></span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">⚠️</span>
-                        <span class="stats-label">Needs Attention</span>
+                        <span class="stats-label">Worst Investor</span>
                         <span id="worst-bot-name" class="stats-value">-</span>
                         <span id="worst-bot-profit" class="stats-trend negative"></span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🤖</span>
-                        <span class="stats-label">AI Models Active</span>
+                        <span class="stats-label">ML Models</span>
                         <span id="ml-models-active" class="stats-value">3</span>
-                        <span class="stats-trend positive" id="ml-models-trend">Running</span>
+                        <span class="stats-trend positive" id="ml-models-trend">Active</span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🎯</span>
-                        <span class="stats-label">Prediction Accuracy</span>
+                        <span class="stats-label">ML Accuracy</span>
                         <span id="ml-accuracy" class="stats-value">99.9%</span>
-                        <span class="stats-trend positive" id="ml-accuracy-trend">▲ +2.1%</span>
+                        <span class="stats-trend positive" id="ml-accuracy-trend">▲ +9.9%</span>
                     </div>
                 </div>
                 <div id="stats-breakdown-inline"></div>
             </section>
             <section class="table-container mb-12 post9-card">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-white">🚀 Your Active Auto-Investors</h2>
-                    <div class="text-sm text-gray-300">
-                        <span class="tooltip">
-                            ℹ️ What are Auto-Investors?
-                            <span class="tooltiptext">
-                                <strong>Auto-Investors</strong> are automated systems that place bets for you based on your chosen strategy and AI predictions. They run 24/7 and follow strict risk management rules you set.
-                            </span>
-                        </span>
-                    </div>
-                </div>
+                <h2 class="text-2xl font-bold mb-4 text-white">Active Investors</h2>
                 <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="active-bots-loading" class="text-center text-gray-500">Loading your active auto-investors...</p>
+                    <p id="active-bots-loading" class="text-center text-gray-500">Loading active investors...</p>
                 </div>
             </section>
             <section class="table-container mb-12 post9-card">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-white">⚙️ Auto-Investor Setup</h2>
-                    <div class="text-sm text-gray-300">
-                        <span class="tooltip">
-                            💡 New User Tip
-                            <span class="tooltiptext">
-                                Start with one <strong>Conservative</strong> auto-investor on your favorite sport with a small budget. Watch how it works before creating more!
-                            </span>
-                        </span>
-                    </div>
-                </div>
-                <button type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mb-4" onclick="showModal('add-bot-modal')">
-                    🎯 Create New Auto-Investor
-                </button>
+                <h2 class="text-2xl font-bold mb-4 text-white">Investor Manager</h2>
+                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Investor</button>
                 <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading your configured auto-investors...</p>
+                    <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive investors...</p>
                 </div>
             </section>
             <section class="table-container post9-card">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-white">📋 Betting Strategies</h2>
+                    <h2 class="text-2xl font-bold text-white">Strategy Manager</h2>
                     <div class="flex gap-3">
-                        <button type="button" class="post9-btn p-3" onclick="showModal('strategy-templates-modal')">📋 Browse Templates</button>
-                        <button type="button" class="post9-btn p-3" onclick="showModal('add-strategy-modal')">⚙️ Build Custom Strategy</button>
+                        <button type="button" class="post9-btn p-3" onclick="showModal('strategy-templates-modal')">📋 Templates</button>
+                        <button type="button" class="post9-btn p-3" onclick="showModal('add-strategy-modal')">+ Custom Strategy</button>
                     </div>
                 </div>
                 
                 <!-- Quick Strategy Templates -->
                 <div class="mb-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-lg font-semibold text-white">🎯 Popular Strategy Templates</h3>
-                        <span class="text-sm text-gray-300">
-                            <span class="tooltip">
-                                ℹ️ How do strategies work?
-                                <span class="tooltiptext">
-                                    <strong>Strategies</strong> define how your auto-investors make decisions: when to bet, how much to risk, and which games to target. Each auto-investor uses one strategy.
-                                </span>
-                            </span>
-                        </span>
-                    </div>
+                    <h3 class="text-lg font-semibold mb-3 text-white">Quick Templates</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-gradient-to-br from-green-500 to-green-700 p-4 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('positive_ev')">
                             <div class="text-2xl mb-2">💰</div>
-                            <div class="font-bold">Value Hunter</div>
-                            <div class="text-sm opacity-90">Find undervalued betting opportunities</div>
+                            <div class="font-bold">+eV Template</div>
+                            <div class="text-sm opacity-90">Expected Value based betting</div>
                         </div>
                         <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('conservative')">
                             <div class="text-2xl mb-2">🛡️</div>
-                            <div class="font-bold">Safe & Steady</div>
-                            <div class="text-sm opacity-90">Low risk, consistent small wins</div>
+                            <div class="font-bold">Conservative</div>
+                            <div class="text-sm opacity-90">Low risk, steady gains</div>
                         </div>
                         <div class="bg-gradient-to-br from-orange-500 to-red-600 p-4 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('aggressive')">
                             <div class="text-2xl mb-2">🚀</div>
-                            <div class="font-bold">High Roller</div>
-                            <div class="text-sm opacity-90">High risk for bigger payouts</div>
+                            <div class="font-bold">Aggressive</div>
+                            <div class="text-sm opacity-90">High risk, high reward</div>
                         </div>
                         <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-4 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('recovery')">
                             <div class="text-2xl mb-2">🔄</div>
-                            <div class="font-bold">Comeback</div>
-                            <div class="text-sm opacity-90">Smart recovery from losing streaks</div>
+                            <div class="font-bold">Loss Recovery</div>
+                            <div class="text-sm opacity-90">Recover from losses</div>
                         </div>
                     </div>
                 </div>
@@ -783,147 +596,95 @@
                 </div>
             </section>
         </div>
-        <!-- Add Auto-Investor Modal -->
+        <!-- Add Investor Modal -->
         <div id="add-bot-modal" class="modal">
-            <div class="modal-content post9-card max-w-5xl">
+            <div class="modal-content post9-card max-w-4xl">
                 <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
-                
-                <!-- Header with clear explanation -->
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 mb-6 text-white">
-                    <h3 class="text-2xl font-bold mb-3">🎯 Create Your Auto-Investor</h3>
-                    <p class="text-lg mb-2">An Auto-Investor automatically places bets for you using AI predictions and your risk preferences.</p>
-                    <p class="text-sm opacity-90">It runs 24/7, follows your strategy, and never gets emotional or makes impulsive decisions.</p>
-                </div>
-                
-                <form id="add-bot-form" class="space-y-6">
-                    <!-- Step 1: Basic Setup -->
-                    <div class="bg-white rounded-lg p-6 border-l-4 border-blue-500">
-                        <h4 class="text-lg font-bold text-gray-800 mb-4">📝 Step 1: Basic Info</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Give your Auto-Investor a name</label>
-                                <input type="text" name="name" placeholder="e.g., NBA Conservative, NFL Value Hunter" class="w-full p-3 border border-gray-300 rounded-lg" required>
-                                <small class="text-gray-600">Choose a memorable name that describes your strategy</small>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Starting Budget ($)</label>
-                                <input type="number" name="starting_balance" placeholder="1000" min="100" class="w-full p-3 border border-gray-300 rounded-lg" required>
-                                <small class="text-gray-600">How much money to start with (minimum $100)</small>
-                            </div>
-                        </div>
+                <h3 class="text-xl font-bold mb-4 text-white">Add Automated Investor</h3>
+                <form id="add-bot-form" class="flex flex-col gap-4">
+                    <input type="text" name="name" placeholder="Investor Name" required>
+                    
+                    <!-- Step 1: Model Selection (Primary) -->
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">1. Select Model</label>
+                        <select name="model_id" id="model-select" required onchange="onModelSelected(this.value)">
+                            <option value="">Choose a trained model...</option>
+                            <option value="nba_advanced_lstm" data-sport="NBA">NBA Advanced LSTM (68.2% accuracy)</option>
+                            <option value="nfl_ensemble_v2" data-sport="NFL">NFL Ensemble v2.0 (64.8% accuracy)</option>
+                            <option value="mlb_statistical" data-sport="MLB">MLB Statistical (61.5% accuracy)</option>
+                            <option value="nba_ensemble" data-sport="NBA">NBA Ensemble (71.4% accuracy)</option>
+                            <option value="nfl_neural" data-sport="NFL">NFL Neural Network (66.1% accuracy)</option>
+                        </select>
+                        <small class="text-gray-600">The model determines the sport and prediction capabilities</small>
                     </div>
-
-                    <!-- Step 2: Sport & Betting Type -->
-                    <div class="bg-white rounded-lg p-6 border-l-4 border-green-500">
-                        <h4 class="text-lg font-bold text-gray-800 mb-4">🏀 Step 2: Choose Your Sport & Betting Style</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Step 2: Sport (Auto-populated) -->
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">2. Sport (Auto-selected from Model)</label>
+                        <input type="text" name="sport" id="sport-display" readonly placeholder="Select a model first..." class="bg-gray-100 cursor-not-allowed">
+                        <small class="text-gray-600">Automatically determined by the selected model</small>
+                    </div>
+                    
+                    <!-- Step 3: Market Selection -->
+                    <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">3. Select Market</label>
+                        <select name="bet_type" id="market-select" required disabled>
+                            <option value="">Choose market type...</option>
+                            <option value="Moneyline">Moneyline (Win/Loss)</option>
+                            <option value="Spread">Spread (Point Spread)</option>
+                            <option value="Totals">Totals (Over/Under)</option>
+                        </select>
+                        <small class="text-gray-600">Choose which market to bet on</small>
+                    </div>
+                    
+                    <!-- Risk Management Configuration -->
+                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Risk Management</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Which sport do you want to bet on?</label>
-                                <select name="sport" id="sport-select" class="w-full p-3 border border-gray-300 rounded-lg" required onchange="onSportSelected(this.value)">
-                                    <option value="">Choose your sport...</option>
-                                    <option value="NBA">🏀 NBA Basketball</option>
-                                    <option value="NFL">🏈 NFL Football</option>
-                                    <option value="MLB">⚾ MLB Baseball</option>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Starting Balance ($)</label>
+                                <input type="number" name="starting_balance" placeholder="e.g., 1000" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Max Bet Percentage (1-10%)</label>
+                                <input type="number" name="bet_percentage" placeholder="e.g., 2.0" min="0.1" max="10" step="0.1" value="2.0" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Max Bets per Week</label>
+                                <input type="number" name="max_bets_per_week" placeholder="e.g., 5" min="1" max="50" value="5" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Max Bets per Day</label>
+                                <input type="number" name="max_bets_per_day" placeholder="e.g., 2" min="1" max="10" value="2">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Minimum Confidence (%)</label>
+                                <input type="number" name="minimum_confidence" placeholder="e.g., 65" min="50" max="95" value="65" step="1">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Stop Loss Percentage (%)</label>
+                                <input type="number" name="stop_loss_percentage" placeholder="e.g., 10" min="5" max="50" value="10" step="1">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Kelly Fraction (0.1-1.0)</label>
+                                <input type="number" name="kelly_fraction" placeholder="e.g., 0.25" min="0.1" max="1.0" value="0.25" step="0.05">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Strategy (Optional)</label>
+                                <select name="strategy_id" id="strategy-select">
+                                    <option value="">Select Strategy (Optional)</option>
                                 </select>
-                                <small class="text-gray-600">Pick the sport you know best or want to focus on</small>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">What type of bets to place?</label>
-                                <select name="bet_type" id="market-select" class="w-full p-3 border border-gray-300 rounded-lg" required disabled>
-                                    <option value="">Choose bet type...</option>
-                                    <option value="Moneyline">🎯 Moneyline (Pick the winner)</option>
-                                    <option value="Spread">📊 Point Spread (Cover the spread)</option>
-                                    <option value="Totals">🔢 Totals (Over/Under points)</option>
-                                </select>
-                                <small class="text-gray-600">Moneyline is simplest for beginners</small>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Step 3: Strategy Selection -->
-                    <div class="bg-white rounded-lg p-6 border-l-4 border-orange-500">
-                        <h4 class="text-lg font-bold text-gray-800 mb-4">⚙️ Step 3: Pick Your Strategy</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" onclick="selectStrategy('conservative')">
-                                <div class="text-center">
-                                    <div class="text-3xl mb-2">🛡️</div>
-                                    <h5 class="font-bold text-gray-800">Safe & Steady</h5>
-                                    <p class="text-sm text-gray-600 mt-2">Small, consistent wins. Perfect for beginners.</p>
-                                    <ul class="text-xs text-gray-500 mt-2 text-left">
-                                        <li>• Max bet: 2% of bankroll</li>
-                                        <li>• Only high-confidence bets</li>
-                                        <li>• Conservative risk management</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" onclick="selectStrategy('balanced')">
-                                <div class="text-center">
-                                    <div class="text-3xl mb-2">⚖️</div>
-                                    <h5 class="font-bold text-gray-800">Balanced</h5>
-                                    <p class="text-sm text-gray-600 mt-2">Good mix of safety and growth potential.</p>
-                                    <ul class="text-xs text-gray-500 mt-2 text-left">
-                                        <li>• Max bet: 3% of bankroll</li>
-                                        <li>• Medium confidence threshold</li>
-                                        <li>• Balanced approach</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" onclick="selectStrategy('aggressive')">
-                                <div class="text-center">
-                                    <div class="text-3xl mb-2">🚀</div>
-                                    <h5 class="font-bold text-gray-800">High Roller</h5>
-                                    <p class="text-sm text-gray-600 mt-2">Higher risk for bigger potential returns.</p>
-                                    <ul class="text-xs text-gray-500 mt-2 text-left">
-                                        <li>• Max bet: 5% of bankroll</li>
-                                        <li>• More aggressive betting</li>
-                                        <li>• Higher risk tolerance</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" name="strategy_type" id="selected-strategy" required>
-                        <p class="text-sm text-gray-600 mt-3">💡 <strong>Tip:</strong> Start with "Safe & Steady" if you're new to automated betting.</p>
-                    </div>
-
-                    <!-- Step 4: Advanced Options (Collapsed by Default) -->
-                    <div class="bg-gray-50 rounded-lg p-6 border-l-4 border-gray-400">
-                        <div class="flex justify-between items-center cursor-pointer" onclick="toggleAdvancedOptions()">
-                            <h4 class="text-lg font-bold text-gray-800">🔧 Advanced Options</h4>
-                            <span id="advanced-toggle" class="text-gray-500">▼ Show Advanced Settings</span>
-                        </div>
-                        <div id="advanced-options" class="hidden mt-4 space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">AI Model</label>
-                                    <select name="model_id" id="model-select" class="w-full p-2 border border-gray-300 rounded">
-                                        <option value="">Auto-select best model</option>
-                                        <option value="nba_ensemble" data-sport="NBA">NBA Ensemble (Best)</option>
-                                        <option value="nfl_ensemble_v2" data-sport="NFL">NFL Ensemble v2.0</option>
-                                        <option value="mlb_statistical" data-sport="MLB">MLB Statistical</option>
-                                    </select>
-                                    <small class="text-gray-600">Usually auto-select is best</small>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Confidence Threshold (%)</label>
-                                    <input type="range" name="confidence_threshold" min="60" max="90" value="70" class="w-full" oninput="updateConfidenceDisplay(this.value)">
-                                    <small class="text-gray-600">Only bet when AI is <span id="confidence-display">70</span>% confident</small>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Stop Loss (%)</label>
-                                    <input type="number" name="stop_loss" min="5" max="30" value="15" class="w-full p-2 border border-gray-300 rounded">
-                                    <small class="text-gray-600">Pause when down this much</small>
-                                </div>
-                            </div>
+                        <div class="mt-3 text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                            <p><strong>💡 Quick Guide:</strong></p>
+                            <p><strong>Kelly Fraction:</strong> Fraction of full Kelly Criterion to use (0.25 = 25% of Kelly recommendation)</p>
+                            <p><strong>Stop Loss:</strong> Automatically pause investor if balance drops by this percentage</p>
+                            <p><strong>Confidence:</strong> Only place bets when model confidence exceeds this threshold</p>
                         </div>
                     </div>
-
-                    <!-- Submit Button -->
-                    <div class="text-center pt-4">
-                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-colors" id="create-investor-btn" disabled>
-                            🎯 Create My Auto-Investor
-                        </button>
-                        <p class="text-sm text-gray-600 mt-2">You can always edit or pause your auto-investor later</p>
-                    </div>
+                    
+                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Investor</button>
                 </form>
             </div>
         </div>
