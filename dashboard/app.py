@@ -915,7 +915,24 @@ def delete_strategy(strategy_id):
 def get_strategy_picks(strategy_id):
     """Get recommended investments from a strategy for a bot (user-specific)."""
     if not db:
-        return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
+        # Demo mode: generate mock strategy picks
+        user_id = request.args.get('user_id', 'demo_user')
+        bot_id = request.args.get('bot_id', 'demo_bot')
+        
+        if not user_id:
+            return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+        if not bot_id:
+            return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
+            
+        # Generate demo picks for demo mode
+        demo_picks = generate_demo_strategy_picks(strategy_id)
+        return jsonify({
+            'success': True,
+            'picks': demo_picks,
+            'remaining_bets': 3,
+            'strategy_name': f'Demo Strategy {strategy_id[-8:]}',
+            'demo_mode': True
+        })
     
     user_id = request.args.get('user_id')
     bot_id = request.args.get('bot_id')
@@ -1723,6 +1740,49 @@ def generate_demo_bot_recommendations():
         recommendations[game['game_id']] = game_recommendations
     
     return recommendations
+
+def generate_demo_strategy_picks(strategy_id):
+    """
+    🚨 FAKE STRATEGY PICKS GENERATOR 🚨
+    Generate demo strategy picks for testing - NOT REAL BETTING RECOMMENDATIONS
+    All picks, odds, and amounts are fake for demonstration only
+    """
+    print(f"🟡 GENERATING FAKE STRATEGY PICKS for strategy {strategy_id}")
+    import random
+    
+    # Demo games for different sports
+    demo_games = [
+        {'teams': 'Lakers vs Warriors', 'sport': 'NBA', 'odds': 1.85, 'bet_type': 'Moneyline'},
+        {'teams': 'Celtics vs Heat', 'sport': 'NBA', 'odds': 2.10, 'bet_type': 'Spread'},
+        {'teams': 'Chiefs vs Bills', 'sport': 'NFL', 'odds': 1.90, 'bet_type': 'Moneyline'},
+        {'teams': 'Cowboys vs Eagles', 'sport': 'NFL', 'odds': 1.95, 'bet_type': 'Total Points'},
+        {'teams': 'Yankees vs Red Sox', 'sport': 'MLB', 'odds': 1.75, 'bet_type': 'Moneyline'},
+    ]
+    
+    # Generate 2-4 picks for demo
+    num_picks = random.randint(2, 4)
+    selected_games = random.sample(demo_games, min(len(demo_games), num_picks))
+    
+    picks = []
+    for game in selected_games:
+        bet_amount = random.uniform(25.0, 150.0)  # Demo bet amounts
+        potential_payout = bet_amount * game['odds']
+        confidence = random.randint(60, 85)
+        
+        pick = {
+            'teams': game['teams'],
+            'sport': game['sport'],
+            'bet_type': game['bet_type'],
+            'odds': game['odds'],
+            'recommended_amount': round(bet_amount, 2),
+            'potential_payout': round(potential_payout, 2),
+            'confidence': confidence,
+            'strategy_reason': f"Demo strategy match: {confidence}% confidence",
+            'demo_mode': True
+        }
+        picks.append(pick)
+    
+    return picks
 
 @app.route('/api/place-bets', methods=['POST'])
 def place_bets():
@@ -3601,18 +3661,51 @@ def get_training_queue():
 @app.route('/api/training/submit', methods=['POST'])
 @handle_errors
 @require_authentication
-@sanitize_request_data(required_fields=['model_id', 'model_type', 'sport'], optional_fields=['epochs', 'batch_size', 'learning_rate'])
+@sanitize_request_data(required_fields=['model_name', 'model_type', 'sport'], optional_fields=['epochs', 'batch_size', 'learning_rate', 'training_period', 'training_samples', 'features', 'description'])
 def submit_training_job():
     """Submit a new training job to the queue"""
     if not TRAINING_QUEUE_AVAILABLE:
-        return jsonify({'success': False, 'message': 'Training queue not available'}), 500
+        # Demo mode: simulate training job submission
+        try:
+            data = g.sanitized_request_data
+            user_id = g.current_user.get('user_id', 'demo_user')
+            
+            # Validate basic inputs for demo mode
+            model_name = data.get('model_name', 'Demo Model')
+            model_type = data.get('model_type', 'neural')
+            sport = data.get('sport', 'NBA')
+            
+            if sport not in ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']:
+                raise ValidationError("Invalid sport", field='sport')
+            
+            if model_type not in ['lstm_weather', 'ensemble', 'neural', 'statistical']:
+                raise ValidationError("Invalid model type", field='model_type')
+            
+            # Generate demo job ID
+            import time
+            demo_job_id = f"demo_job_{int(time.time())}"
+            
+            logger.info(f"Demo training job {demo_job_id} simulated for user {user_id}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Training job submitted successfully (demo mode)',
+                'job_id': demo_job_id,
+                'queue_position': 1,
+                'demo_mode': True
+            }), 201
+            
+        except Exception as e:
+            logger.error(f"Demo training job submission failed: {e}")
+            raise ValidationError(f'Demo training job submission failed: {e}')
+    
     
     try:
         data = g.sanitized_request_data
         user_id = g.current_user.get('user_id')
         
         # Validate inputs
-        model_id = data.get('model_id')
+        model_name = data.get('model_name')
         model_type = data.get('model_type')
         sport = data.get('sport')
         
@@ -3622,12 +3715,16 @@ def submit_training_job():
         if model_type not in ['lstm_weather', 'ensemble', 'neural', 'statistical']:
             raise ValidationError("Invalid model type", field='model_type')
         
+        # Generate model_id from model_name
+        import re
+        model_id = re.sub(r'[^a-zA-Z0-9_]', '_', model_name.lower()) if model_name else f"{sport.lower()}_{model_type}"
+        
         # Build training configuration
         training_config = {
             'epochs': int(data.get('epochs', 50)),
             'batch_size': int(data.get('batch_size', 32)),
             'learning_rate': float(data.get('learning_rate', 0.001)),
-            'model_name': f"{sport}_{model_type}_{model_id}",
+            'model_name': model_name or f"{sport}_{model_type}_model",
             'optimizer': data.get('optimizer', 'adam'),
             'validation_split': data.get('validation_split', 0.2)
         }
