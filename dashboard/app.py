@@ -2,6 +2,7 @@ import os
 import sys
 import random
 import datetime
+from datetime import timedelta
 import time
 import requests
 import numpy as np
@@ -3687,6 +3688,399 @@ def compare_models():
     except Exception as e:
         logger.error(f"Failed to compare models: {e}")
         raise ValidationError(f'Failed to compare models: {e}')
+
+@app.route('/api/models/comparison-data', methods=['GET'])
+@handle_errors
+def get_model_comparison_data():
+    """Get comprehensive model comparison data for the comparison modal"""
+    try:
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        # Get all available models for selection
+        all_models = []
+        model_lookup = {}
+        
+        for entry in performance_matrix.performance_data:
+            if entry.model_id not in model_lookup:
+                model_lookup[entry.model_id] = entry
+                all_models.append({
+                    'model_id': entry.model_id,
+                    'display_name': f"{entry.sport} {entry.model_type.replace('_', ' ').title()} v{entry.version}",
+                    'sport': entry.sport,
+                    'model_type': entry.model_type,
+                    'version': entry.version,
+                    'accuracy': round(entry.accuracy * 100, 1),
+                    'training_date': entry.training_date.strftime('%Y-%m-%d'),
+                    'evaluation_date': entry.evaluation_date.strftime('%Y-%m-%d')
+                })
+        
+        # Sort by sport then by accuracy descending
+        all_models.sort(key=lambda x: (x['sport'], -x['accuracy']))
+        
+        return jsonify({
+            'success': True,
+            'available_models': all_models,
+            'total_models': len(all_models)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get model comparison data: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get model data: {e}'}), 500
+
+@app.route('/api/models/detailed-comparison', methods=['POST'])
+@handle_errors
+@sanitize_request_data(required_fields=['model_ids'])
+def get_detailed_model_comparison():
+    """Get detailed comparison between selected models"""
+    try:
+        data = g.sanitized_request_data
+        model_ids = data.get('model_ids', [])
+        
+        if len(model_ids) != 2:
+            raise ValidationError("Exactly 2 model IDs required for detailed comparison")
+        
+        # Generate demo data if empty
+        if not performance_matrix.performance_data:
+            performance_matrix.generate_demo_data()
+        
+        comparison_result = {}
+        
+        for model_id in model_ids:
+            # Find the model entry
+            model_entries = [entry for entry in performance_matrix.performance_data if entry.model_id == model_id]
+            
+            if not model_entries:
+                continue
+                
+            latest_entry = max(model_entries, key=lambda x: x.evaluation_date)
+            
+            # Get model architecture details
+            architecture_info = get_model_architecture_info(latest_entry.model_type, latest_entry.parameters)
+            
+            # Get training data information
+            training_info = get_training_data_info(latest_entry.sport, latest_entry.training_date)
+            
+            # Get input features matrix
+            input_features = get_model_input_features(latest_entry.sport, latest_entry.model_type)
+            
+            # Performance trends (simulate historical data)
+            performance_trends = generate_performance_trends(latest_entry, len(model_entries))
+            
+            comparison_result[model_id] = {
+                'basic_info': {
+                    'model_id': model_id,
+                    'display_name': f"{latest_entry.sport} {latest_entry.model_type.replace('_', ' ').title()} v{latest_entry.version}",
+                    'sport': latest_entry.sport,
+                    'model_type': latest_entry.model_type,
+                    'version': latest_entry.version,
+                    'tags': latest_entry.tags
+                },
+                'performance_metrics': {
+                    'accuracy': round(latest_entry.accuracy * 100, 1),
+                    'precision': round(latest_entry.precision * 100, 1),
+                    'recall': round(latest_entry.recall * 100, 1),
+                    'f1_score': round(latest_entry.f1_score * 100, 1),
+                    'roi_percentage': round(latest_entry.roi_percentage, 1),
+                    'sharpe_ratio': round(latest_entry.sharpe_ratio, 2),
+                    'max_drawdown': round(latest_entry.max_drawdown, 1),
+                    'win_rate': round(latest_entry.win_rate * 100, 1),
+                    'total_predictions': latest_entry.total_predictions,
+                    'correct_predictions': latest_entry.correct_predictions,
+                    'profit_loss': round(latest_entry.profit_loss, 2)
+                },
+                'architecture': architecture_info,
+                'training_data': training_info,
+                'input_features': input_features,
+                'performance_trends': performance_trends,
+                'parameters': latest_entry.parameters
+            }
+        
+        return jsonify({
+            'success': True,
+            'comparison': comparison_result,
+            'models_compared': len(comparison_result)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get detailed comparison: {e}")
+        raise ValidationError(f'Failed to get detailed comparison: {e}')
+
+
+def get_model_architecture_info(model_type: str, parameters: dict) -> dict:
+    """Get detailed architecture information for a model type"""
+    base_architectures = {
+        'lstm_weather': {
+            'type': 'Recurrent Neural Network (LSTM)',
+            'description': 'Long Short-Term Memory network with weather integration',
+            'layers': [
+                'Input Layer (Features + Weather)',
+                'LSTM Layer with Dropout',
+                'Dense Layer (Fully Connected)',
+                'Output Layer (Probability)'
+            ],
+            'strengths': ['Temporal patterns', 'Weather correlation', 'Sequence modeling'],
+            'optimal_for': ['Weather-dependent sports', 'Time series patterns', 'NFL/MLB outdoor games']
+        },
+        'ensemble': {
+            'type': 'Ensemble Method',
+            'description': 'Combines multiple base models for improved prediction',
+            'layers': [
+                'Base Model 1 (Random Forest)',
+                'Base Model 2 (XGBoost)',
+                'Base Model 3 (Neural Network)',
+                'Meta-Learner (Voting/Stacking)'
+            ],
+            'strengths': ['High accuracy', 'Reduced overfitting', 'Robust predictions'],
+            'optimal_for': ['Complex patterns', 'High-stakes predictions', 'Tournament play']
+        },
+        'neural': {
+            'type': 'Deep Neural Network',
+            'description': 'Multi-layer feedforward neural network',
+            'layers': [
+                'Input Layer (Features)',
+                f"Hidden Layer 1 ({parameters.get('neurons_per_layer', 64)} neurons)",
+                f"Hidden Layer 2 ({parameters.get('neurons_per_layer', 64)} neurons)",
+                'Output Layer (Probability)'
+            ],
+            'strengths': ['Pattern recognition', 'Non-linear relationships', 'Feature learning'],
+            'optimal_for': ['Complex data patterns', 'Large datasets', 'Feature interactions']
+        },
+        'statistical': {
+            'type': 'Statistical Model',
+            'description': 'Traditional statistical approach with feature engineering',
+            'layers': [
+                'Feature Engineering',
+                'Statistical Analysis',
+                'Linear/Logistic Regression',
+                'Probability Output'
+            ],
+            'strengths': ['Interpretability', 'Fast training', 'Stable performance'],
+            'optimal_for': ['Simple patterns', 'Limited data', 'Baseline models']
+        }
+    }
+    
+    architecture = base_architectures.get(model_type, {
+        'type': 'Unknown Model Type',
+        'description': 'Architecture information not available',
+        'layers': ['Input', 'Processing', 'Output'],
+        'strengths': ['Unknown'],
+        'optimal_for': ['General prediction']
+    })
+    
+    # Add parameter-specific details
+    if model_type == 'lstm_weather':
+        architecture['parameter_details'] = {
+            'LSTM Units': parameters.get('lstm_units', 64),
+            'Dropout Rate': f"{parameters.get('dropout_rate', 0.3)*100:.1f}%",
+            'Sequence Length': f"{parameters.get('sequence_length', 10)} games",
+            'Weather Features': parameters.get('weather_features', 7),
+            'Learning Rate': parameters.get('learning_rate', 0.001)
+        }
+    elif model_type == 'ensemble':
+        architecture['parameter_details'] = {
+            'Number of Models': parameters.get('n_models', 3),
+            'Voting Strategy': parameters.get('voting_strategy', 'soft').title(),
+            'Cross-Validation': f"{parameters.get('cv_folds', 5)} folds",
+            'Meta-Learner': parameters.get('meta_learner', 'logistic').title()
+        }
+    elif model_type == 'neural':
+        architecture['parameter_details'] = {
+            'Hidden Layers': parameters.get('hidden_layers', 2),
+            'Neurons per Layer': parameters.get('neurons_per_layer', 64),
+            'Activation Function': parameters.get('activation', 'relu').upper(),
+            'Batch Size': parameters.get('batch_size', 32),
+            'Training Epochs': parameters.get('epochs', 100)
+        }
+    else:  # statistical
+        architecture['parameter_details'] = {
+            'Regularization': parameters.get('regularization', 'l2').upper(),
+            'Cross-Validation': parameters.get('cv_method', 'kfold').replace('_', ' ').title(),
+            'Feature Selection': parameters.get('feature_selection', 'rfe').upper()
+        }
+    
+    return architecture
+
+
+def get_training_data_info(sport: str, training_date: datetime) -> dict:
+    """Get information about training data timeframe and sources"""
+    # Calculate training period based on sport
+    training_periods = {
+        'NBA': {'games_per_season': 82, 'season_months': 8, 'seasons_used': 3},
+        'NFL': {'games_per_season': 17, 'season_months': 6, 'seasons_used': 5},
+        'MLB': {'games_per_season': 162, 'season_months': 6, 'seasons_used': 3},
+        'NCAAF': {'games_per_season': 12, 'season_months': 4, 'seasons_used': 4},
+        'NCAAB': {'games_per_season': 35, 'season_months': 6, 'seasons_used': 3}
+    }
+    
+    sport_info = training_periods.get(sport, training_periods['NBA'])
+    
+    # Calculate data timeframe
+    end_date = training_date
+    start_date = end_date - timedelta(days=sport_info['seasons_used'] * 365)
+    
+    total_games = sport_info['games_per_season'] * sport_info['seasons_used'] * 30  # Assume 30 teams
+    
+    return {
+        'training_period': {
+            'start_date': start_date.strftime('%Y-%m-%d'),
+            'end_date': end_date.strftime('%Y-%m-%d'),
+            'duration_years': sport_info['seasons_used'],
+            'total_days': (end_date - start_date).days
+        },
+        'data_volume': {
+            'total_games': total_games,
+            'seasons_included': sport_info['seasons_used'],
+            'games_per_season': sport_info['games_per_season'],
+            'estimated_teams': 30
+        },
+        'data_sources': [
+            'Official league statistics',
+            'Team performance metrics',
+            'Player statistics',
+            'Historical matchup data',
+            'Venue information',
+            'Weather data (if applicable)' if sport in ['NFL', 'MLB', 'NCAAF'] else None
+        ],
+        'data_quality': {
+            'completeness': f"{np.random.randint(92, 99)}%",
+            'accuracy': f"{np.random.randint(95, 99)}%",
+            'recency': 'Updated after each game',
+            'validation': 'Cross-validated on holdout set'
+        }
+    }
+
+
+def get_model_input_features(sport: str, model_type: str) -> dict:
+    """Get the input feature matrix for a model"""
+    base_features = {
+        'NBA': [
+            'Team Offensive Rating', 'Team Defensive Rating', 'Pace Factor',
+            'Field Goal %', 'Three Point %', 'Free Throw %',
+            'Rebounds per Game', 'Assists per Game', 'Turnovers per Game',
+            'Home/Away Indicator', 'Rest Days', 'Back-to-Back Games',
+            'Head-to-Head Record', 'Current Win Streak', 'Recent Form (L10)'
+        ],
+        'NFL': [
+            'Passing Yards per Game', 'Rushing Yards per Game', 'Points per Game',
+            'Passing Yards Allowed', 'Rushing Yards Allowed', 'Points Allowed',
+            'Turnover Differential', 'Red Zone Efficiency', 'Third Down %',
+            'Home/Away Indicator', 'Division Opponent', 'Rest Days',
+            'Strength of Schedule', 'Injury Report Impact', 'Head-to-Head Record'
+        ],
+        'MLB': [
+            'Team ERA', 'Team Batting Average', 'On-Base Percentage',
+            'Slugging Percentage', 'Runs per Game', 'Runs Allowed per Game',
+            'Home/Away Indicator', 'Starting Pitcher ERA', 'Bullpen ERA',
+            'Recent Form (L10)', 'Head-to-Head Record', 'Divisional Matchup',
+            'Rest Days', 'Ballpark Factor', 'Team Streak'
+        ],
+        'NCAAF': [
+            'Points per Game', 'Points Allowed per Game', 'Yards per Play',
+            'Yards Allowed per Play', 'Turnover Margin', 'Red Zone %',
+            'Home/Away Indicator', 'Conference Opponent', 'Ranking Differential',
+            'Strength of Schedule', 'Recent Form', 'Head-to-Head Record',
+            'Bye Week Advantage', 'Coaching Experience', 'Recruiting Ranking'
+        ],
+        'NCAAB': [
+            'Adjusted Offensive Efficiency', 'Adjusted Defensive Efficiency',
+            'Effective Field Goal %', 'Turnover %', 'Offensive Rebound %',
+            'Free Throw Rate', 'Home/Away Indicator', 'Conference Opponent',
+            'NET Ranking', 'Strength of Schedule', 'Recent Form (L10)',
+            'Head-to-Head Record', 'Coaching Experience', 'Key Player Injuries'
+        ]
+    }
+    
+    sport_features = base_features.get(sport, base_features['NBA'])
+    
+    # Add weather features for weather-dependent models
+    weather_features = []
+    if model_type == 'lstm_weather' and sport in ['NFL', 'MLB', 'NCAAF']:
+        weather_features = [
+            'Temperature (°F)', 'Humidity (%)', 'Wind Speed (mph)',
+            'Wind Direction', 'Precipitation (%)', 'Barometric Pressure',
+            'Weather Condition Category'
+        ]
+    
+    # Add advanced features for ensemble models
+    advanced_features = []
+    if model_type == 'ensemble':
+        advanced_features = [
+            'Historical Performance vs Similar Teams',
+            'Momentum Indicators', 'Fatigue Metrics',
+            'Situational Performance', 'Clutch Performance Rating'
+        ]
+    
+    all_features = sport_features + weather_features + advanced_features
+    
+    return {
+        'total_features': len(all_features),
+        'feature_categories': {
+            'team_performance': len(sport_features),
+            'weather_data': len(weather_features),
+            'advanced_metrics': len(advanced_features)
+        },
+        'features': all_features,
+        'feature_importance': generate_feature_importance(all_features),
+        'data_preprocessing': [
+            'Z-score normalization',
+            'Missing value imputation',
+            'Outlier detection',
+            'Feature scaling'
+        ]
+    }
+
+
+def generate_feature_importance(features: list) -> dict:
+    """Generate mock feature importance scores"""
+    importance_scores = {}
+    
+    # Generate realistic importance scores that sum to 100%
+    scores = np.random.dirichlet(np.ones(len(features))) * 100
+    
+    for i, feature in enumerate(features):
+        importance_scores[feature] = round(scores[i], 1)
+    
+    return importance_scores
+
+
+def generate_performance_trends(entry, num_points: int = 10) -> dict:
+    """Generate performance trends over time"""
+    dates = []
+    accuracies = []
+    rois = []
+    
+    # Generate dates going backwards from evaluation date
+    for i in range(num_points):
+        date = entry.evaluation_date - timedelta(days=i*7)  # Weekly intervals
+        dates.append(date.strftime('%Y-%m-%d'))
+        
+        # Generate realistic trends around the actual performance
+        accuracy_noise = np.random.normal(0, 0.02)
+        accuracy = max(0.4, min(0.9, entry.accuracy + accuracy_noise))
+        accuracies.append(round(accuracy * 100, 1))
+        
+        roi_noise = np.random.normal(0, 1.5)
+        roi = entry.roi_percentage + roi_noise
+        rois.append(round(roi, 1))
+    
+    # Reverse to chronological order
+    dates.reverse()
+    accuracies.reverse()
+    rois.reverse()
+    
+    return {
+        'dates': dates,
+        'accuracy_trend': accuracies,
+        'roi_trend': rois,
+        'trend_analysis': {
+            'accuracy_direction': 'improving' if accuracies[-1] > accuracies[0] else 'declining',
+            'roi_direction': 'improving' if rois[-1] > rois[0] else 'declining',
+            'volatility': 'low' if np.std(accuracies) < 2 else 'moderate' if np.std(accuracies) < 4 else 'high',
+            'consistency_score': round(100 - (np.std(accuracies) / np.mean(accuracies) * 100), 1)
+        }
+    }
 
 @app.route('/api/performance/leaderboard/<sport>', methods=['GET'])
 @handle_errors

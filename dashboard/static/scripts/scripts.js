@@ -4968,3 +4968,559 @@ function checkFormCompletion() {
 // Make functions globally available
 window.onModelSelected = onModelSelected;
 window.checkFormCompletion = checkFormCompletion;
+
+// --- MODEL COMPARISON FUNCTIONALITY ---
+
+// Global variables for model comparison
+let availableModels = [];
+let selectedModels = [];
+
+// Initialize model comparison when modal is opened
+function initializeModelComparison() {
+    // Fetch available models for selection
+    fetchAvailableModels();
+    
+    // Set up event listeners
+    setupModelComparisonEventListeners();
+}
+
+// Fetch available models from the server
+async function fetchAvailableModels() {
+    try {
+        const response = await fetch('/api/models/comparison-data');
+        const result = await response.json();
+        
+        if (result.success) {
+            availableModels = result.available_models;
+            populateModelSelectionDropdowns();
+        } else {
+            console.error('Failed to fetch available models:', result.message);
+            showMessage('Failed to load model data', true);
+        }
+    } catch (error) {
+        console.error('Error fetching models:', error);
+        showMessage('Error loading model data', true);
+    }
+}
+
+// Populate the model selection dropdowns
+function populateModelSelectionDropdowns() {
+    const dropdown1 = document.getElementById('comparison-model-1');
+    const dropdown2 = document.getElementById('comparison-model-2');
+    
+    if (!dropdown1 || !dropdown2) {
+        console.error('Model comparison dropdowns not found');
+        return;
+    }
+    
+    // Clear existing options (except the first placeholder)
+    dropdown1.innerHTML = '<option value="">Choose a model...</option>';
+    dropdown2.innerHTML = '<option value="">Choose a model...</option>';
+    
+    // Group models by sport for better organization
+    const modelsBySport = {};
+    availableModels.forEach(model => {
+        if (!modelsBySport[model.sport]) {
+            modelsBySport[model.sport] = [];
+        }
+        modelsBySport[model.sport].push(model);
+    });
+    
+    // Add options grouped by sport
+    Object.keys(modelsBySport).sort().forEach(sport => {
+        const optgroup1 = document.createElement('optgroup');
+        const optgroup2 = document.createElement('optgroup');
+        optgroup1.label = sport;
+        optgroup2.label = sport;
+        
+        modelsBySport[sport].forEach(model => {
+            const option1 = document.createElement('option');
+            const option2 = document.createElement('option');
+            
+            option1.value = model.model_id;
+            option1.textContent = model.display_name;
+            option2.value = model.model_id;
+            option2.textContent = model.display_name;
+            
+            optgroup1.appendChild(option1);
+            optgroup2.appendChild(option2);
+        });
+        
+        dropdown1.appendChild(optgroup1);
+        dropdown2.appendChild(optgroup2);
+    });
+}
+
+// Set up event listeners for model comparison
+function setupModelComparisonEventListeners() {
+    const dropdown1 = document.getElementById('comparison-model-1');
+    const dropdown2 = document.getElementById('comparison-model-2');
+    
+    if (dropdown1 && dropdown2) {
+        dropdown1.addEventListener('change', handleModelSelectionChange);
+        dropdown2.addEventListener('change', handleModelSelectionChange);
+    }
+}
+
+// Handle model selection changes
+function handleModelSelectionChange() {
+    const dropdown1 = document.getElementById('comparison-model-1');
+    const dropdown2 = document.getElementById('comparison-model-2');
+    
+    const model1Id = dropdown1.value;
+    const model2Id = dropdown2.value;
+    
+    if (model1Id && model2Id && model1Id !== model2Id) {
+        // Both models selected and different - fetch comparison
+        fetchDetailedComparison([model1Id, model2Id]);
+    } else {
+        // Clear comparison results
+        clearComparisonResults();
+    }
+}
+
+// Fetch detailed comparison data
+async function fetchDetailedComparison(modelIds) {
+    try {
+        showMessage('Loading model comparison...', false);
+        
+        const response = await fetch('/api/models/detailed-comparison', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model_ids: modelIds
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayDetailedComparison(result.comparison);
+        } else {
+            console.error('Failed to fetch detailed comparison:', result.message);
+            showMessage('Failed to load comparison data', true);
+        }
+    } catch (error) {
+        console.error('Error fetching comparison:', error);
+        showMessage('Error loading comparison data', true);
+    }
+}
+
+// Display the detailed comparison results
+function displayDetailedComparison(comparisonData) {
+    const resultContainer = document.getElementById('model-comparison-results');
+    
+    if (!resultContainer) {
+        console.error('Model comparison results container not found');
+        return;
+    }
+    
+    const modelIds = Object.keys(comparisonData);
+    if (modelIds.length !== 2) {
+        console.error('Expected exactly 2 models in comparison data');
+        return;
+    }
+    
+    const model1Data = comparisonData[modelIds[0]];
+    const model2Data = comparisonData[modelIds[1]];
+    
+    resultContainer.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Model 1 Details -->
+            <div class="space-y-6">
+                ${generateModelComparisonCard(model1Data, 'Model 1')}
+            </div>
+            
+            <!-- Model 2 Details -->
+            <div class="space-y-6">
+                ${generateModelComparisonCard(model2Data, 'Model 2')}
+            </div>
+        </div>
+        
+        <!-- Architecture Comparison -->
+        <div class="mt-8">
+            ${generateArchitectureComparison(model1Data.architecture, model2Data.architecture)}
+        </div>
+        
+        <!-- Performance Trends Chart -->
+        <div class="mt-8">
+            ${generatePerformanceTrendsSection(model1Data.performance_trends, model2Data.performance_trends, model1Data.basic_info.display_name, model2Data.basic_info.display_name)}
+        </div>
+        
+        <!-- Input Features Matrix -->
+        <div class="mt-8">
+            ${generateInputFeaturesComparison(model1Data.input_features, model2Data.input_features)}
+        </div>
+        
+        <!-- Training Data Comparison -->
+        <div class="mt-8">
+            ${generateTrainingDataComparison(model1Data.training_data, model2Data.training_data)}
+        </div>
+    `;
+    
+    // Initialize any interactive elements
+    setTimeout(() => {
+        drawPerformanceTrendsChart(model1Data.performance_trends, model2Data.performance_trends, model1Data.basic_info.display_name, model2Data.basic_info.display_name);
+    }, 100);
+}
+
+// Generate individual model comparison card
+function generateModelComparisonCard(modelData, title) {
+    const performance = modelData.performance_metrics;
+    const info = modelData.basic_info;
+    
+    return `
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-4">${title}: ${info.display_name}</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Accuracy:</span>
+                    <span class="text-green-400 font-bold">${performance.accuracy}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Precision:</span>
+                    <span class="text-blue-400 font-bold">${performance.precision}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Recall:</span>
+                    <span class="text-purple-400 font-bold">${performance.recall}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">ROI:</span>
+                    <span class="${performance.roi_percentage >= 0 ? 'text-green-400' : 'text-red-400'} font-bold">${performance.roi_percentage >= 0 ? '+' : ''}${performance.roi_percentage}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Sharpe Ratio:</span>
+                    <span class="text-white">${performance.sharpe_ratio}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Max Drawdown:</span>
+                    <span class="text-red-400">-${performance.max_drawdown}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Total Predictions:</span>
+                    <span class="text-white">${performance.total_predictions.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-300">Win Rate:</span>
+                    <span class="text-yellow-400 font-bold">${performance.win_rate}%</span>
+                </div>
+            </div>
+            
+            <!-- Model Tags -->
+            <div class="mt-4">
+                <span class="text-sm text-gray-400">Tags:</span>
+                <div class="flex flex-wrap gap-2 mt-2">
+                    ${info.tags.map(tag => `<span class="px-2 py-1 bg-blue-600 text-blue-100 text-xs rounded">${tag}</span>`).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate architecture comparison section
+function generateArchitectureComparison(arch1, arch2) {
+    return `
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-6">Architecture Comparison</h4>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h5 class="text-md font-semibold text-blue-400 mb-3">${arch1.type}</h5>
+                    <p class="text-gray-300 text-sm mb-4">${arch1.description}</p>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Architecture Layers:</h6>
+                        <ul class="list-disc list-inside text-sm text-gray-400 space-y-1">
+                            ${arch1.layers.map(layer => `<li>${layer}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Key Strengths:</h6>
+                        <div class="flex flex-wrap gap-2">
+                            ${arch1.strengths.map(strength => `<span class="px-2 py-1 bg-green-600 text-green-100 text-xs rounded">${strength}</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Parameters:</h6>
+                        <div class="text-sm text-gray-400 space-y-1">
+                            ${Object.entries(arch1.parameter_details).map(([key, value]) => `<div><span class="text-gray-300">${key}:</span> ${value}</div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h5 class="text-md font-semibold text-purple-400 mb-3">${arch2.type}</h5>
+                    <p class="text-gray-300 text-sm mb-4">${arch2.description}</p>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Architecture Layers:</h6>
+                        <ul class="list-disc list-inside text-sm text-gray-400 space-y-1">
+                            ${arch2.layers.map(layer => `<li>${layer}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Key Strengths:</h6>
+                        <div class="flex flex-wrap gap-2">
+                            ${arch2.strengths.map(strength => `<span class="px-2 py-1 bg-green-600 text-green-100 text-xs rounded">${strength}</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Parameters:</h6>
+                        <div class="text-sm text-gray-400 space-y-1">
+                            ${Object.entries(arch2.parameter_details).map(([key, value]) => `<div><span class="text-gray-300">${key}:</span> ${value}</div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate performance trends section
+function generatePerformanceTrendsSection(trends1, trends2, name1, name2) {
+    return `
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-4">Performance Trends</h4>
+            <div id="performance-trends-chart" class="h-80 mb-4">
+                <div class="flex items-center justify-center h-full text-gray-400">
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">📈</div>
+                        <div>Loading performance trends chart...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Trend Analysis -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="bg-gray-700 p-4 rounded">
+                    <h5 class="text-blue-400 font-semibold mb-2">${name1} Trend</h5>
+                    <div class="text-sm text-gray-300 space-y-1">
+                        <div>Accuracy: <span class="${trends1.trend_analysis.accuracy_direction === 'improving' ? 'text-green-400' : 'text-red-400'}">${trends1.trend_analysis.accuracy_direction}</span></div>
+                        <div>ROI: <span class="${trends1.trend_analysis.roi_direction === 'improving' ? 'text-green-400' : 'text-red-400'}">${trends1.trend_analysis.roi_direction}</span></div>
+                        <div>Volatility: <span class="text-yellow-400">${trends1.trend_analysis.volatility}</span></div>
+                        <div>Consistency: <span class="text-blue-400">${trends1.trend_analysis.consistency_score}%</span></div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-700 p-4 rounded">
+                    <h5 class="text-purple-400 font-semibold mb-2">${name2} Trend</h5>
+                    <div class="text-sm text-gray-300 space-y-1">
+                        <div>Accuracy: <span class="${trends2.trend_analysis.accuracy_direction === 'improving' ? 'text-green-400' : 'text-red-400'}">${trends2.trend_analysis.accuracy_direction}</span></div>
+                        <div>ROI: <span class="${trends2.trend_analysis.roi_direction === 'improving' ? 'text-green-400' : 'text-red-400'}">${trends2.trend_analysis.roi_direction}</span></div>
+                        <div>Volatility: <span class="text-yellow-400">${trends2.trend_analysis.volatility}</span></div>
+                        <div>Consistency: <span class="text-purple-400">${trends2.trend_analysis.consistency_score}%</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate input features comparison
+function generateInputFeaturesComparison(features1, features2) {
+    return `
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-4">Input Features Matrix</h4>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h5 class="text-blue-400 font-semibold mb-3">Model 1 Features (${features1.total_features} total)</h5>
+                    <div class="bg-gray-700 p-4 rounded mb-4">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Feature Categories:</h6>
+                        <div class="text-sm text-gray-400 space-y-1">
+                            <div>Team Performance: ${features1.feature_categories.team_performance}</div>
+                            <div>Weather Data: ${features1.feature_categories.weather_data}</div>
+                            <div>Advanced Metrics: ${features1.feature_categories.advanced_metrics}</div>
+                        </div>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">All Features:</h6>
+                        <div class="text-sm text-gray-400 space-y-1">
+                            ${features1.features.map(feature => `<div class="flex justify-between"><span>${feature}</span><span class="text-yellow-400">${features1.feature_importance[feature]}%</span></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h5 class="text-purple-400 font-semibold mb-3">Model 2 Features (${features2.total_features} total)</h5>
+                    <div class="bg-gray-700 p-4 rounded mb-4">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">Feature Categories:</h6>
+                        <div class="text-sm text-gray-400 space-y-1">
+                            <div>Team Performance: ${features2.feature_categories.team_performance}</div>
+                            <div>Weather Data: ${features2.feature_categories.weather_data}</div>
+                            <div>Advanced Metrics: ${features2.feature_categories.advanced_metrics}</div>
+                        </div>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto">
+                        <h6 class="text-sm font-semibold text-gray-300 mb-2">All Features:</h6>
+                        <div class="text-sm text-gray-400 space-y-1">
+                            ${features2.features.map(feature => `<div class="flex justify-between"><span>${feature}</span><span class="text-yellow-400">${features2.feature_importance[feature]}%</span></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate training data comparison
+function generateTrainingDataComparison(training1, training2) {
+    return `
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h4 class="text-lg font-semibold text-white mb-4">Training Data Comparison</h4>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h5 class="text-blue-400 font-semibold mb-3">Model 1 Training Data</h5>
+                    <div class="space-y-4">
+                        <div class="bg-gray-700 p-4 rounded">
+                            <h6 class="text-sm font-semibold text-gray-300 mb-2">Training Period:</h6>
+                            <div class="text-sm text-gray-400 space-y-1">
+                                <div>From: ${training1.training_period.start_date}</div>
+                                <div>To: ${training1.training_period.end_date}</div>
+                                <div>Duration: ${training1.training_period.duration_years} years</div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700 p-4 rounded">
+                            <h6 class="text-sm font-semibold text-gray-300 mb-2">Data Volume:</h6>
+                            <div class="text-sm text-gray-400 space-y-1">
+                                <div>Total Games: ${training1.data_volume.total_games.toLocaleString()}</div>
+                                <div>Seasons: ${training1.data_volume.seasons_included}</div>
+                                <div>Games/Season: ${training1.data_volume.games_per_season}</div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700 p-4 rounded">
+                            <h6 class="text-sm font-semibold text-gray-300 mb-2">Data Quality:</h6>
+                            <div class="text-sm text-gray-400 space-y-1">
+                                <div>Completeness: ${training1.data_quality.completeness}</div>
+                                <div>Accuracy: ${training1.data_quality.accuracy}</div>
+                                <div>Validation: ${training1.data_quality.validation}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h5 class="text-purple-400 font-semibold mb-3">Model 2 Training Data</h5>
+                    <div class="space-y-4">
+                        <div class="bg-gray-700 p-4 rounded">
+                            <h6 class="text-sm font-semibold text-gray-300 mb-2">Training Period:</h6>
+                            <div class="text-sm text-gray-400 space-y-1">
+                                <div>From: ${training2.training_period.start_date}</div>
+                                <div>To: ${training2.training_period.end_date}</div>
+                                <div>Duration: ${training2.training_period.duration_years} years</div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700 p-4 rounded">
+                            <h6 class="text-sm font-semibold text-gray-300 mb-2">Data Volume:</h6>
+                            <div class="text-sm text-gray-400 space-y-1">
+                                <div>Total Games: ${training2.data_volume.total_games.toLocaleString()}</div>
+                                <div>Seasons: ${training2.data_volume.seasons_included}</div>
+                                <div>Games/Season: ${training2.data_volume.games_per_season}</div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-700 p-4 rounded">
+                            <h6 class="text-sm font-semibold text-gray-300 mb-2">Data Quality:</h6>
+                            <div class="text-sm text-gray-400 space-y-1">
+                                <div>Completeness: ${training2.data_quality.completeness}</div>
+                                <div>Accuracy: ${training2.data_quality.accuracy}</div>
+                                <div>Validation: ${training2.data_quality.validation}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Draw performance trends chart using basic HTML/CSS (since we don't have access to chart libraries)
+function drawPerformanceTrendsChart(trends1, trends2, name1, name2) {
+    const chartContainer = document.getElementById('performance-trends-chart');
+    if (!chartContainer) return;
+    
+    const dates = trends1.dates;
+    const maxAccuracy = Math.max(...trends1.accuracy_trend, ...trends2.accuracy_trend);
+    const minAccuracy = Math.min(...trends1.accuracy_trend, ...trends2.accuracy_trend);
+    const accuracyRange = maxAccuracy - minAccuracy;
+    
+    // Create a simple ASCII-style chart
+    chartContainer.innerHTML = `
+        <div class="h-full flex flex-col">
+            <div class="flex justify-between text-sm text-gray-400 mb-2">
+                <span>📊 Accuracy Trends Over Time</span>
+                <div class="flex gap-4">
+                    <span><span class="w-3 h-3 bg-blue-500 inline-block rounded mr-1"></span>${name1}</span>
+                    <span><span class="w-3 h-3 bg-purple-500 inline-block rounded mr-1"></span>${name2}</span>
+                </div>
+            </div>
+            <div class="flex-1 relative bg-gray-700 rounded p-4">
+                <div class="absolute inset-4 border-l-2 border-b-2 border-gray-500">
+                    <!-- Y-axis labels -->
+                    <div class="absolute left-0 top-0 -ml-8 text-xs text-gray-400">${maxAccuracy.toFixed(1)}%</div>
+                    <div class="absolute left-0 bottom-0 -ml-8 text-xs text-gray-400">${minAccuracy.toFixed(1)}%</div>
+                    
+                    <!-- Chart points and lines -->
+                    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <!-- Model 1 line -->
+                        <polyline
+                            fill="none"
+                            stroke="rgb(59, 130, 246)"
+                            stroke-width="2"
+                            points="${trends1.accuracy_trend.map((acc, i) => {
+                                const x = (i / (trends1.accuracy_trend.length - 1)) * 100;
+                                const y = 100 - ((acc - minAccuracy) / accuracyRange) * 100;
+                                return `${x},${y}`;
+                            }).join(' ')}"
+                        />
+                        <!-- Model 2 line -->
+                        <polyline
+                            fill="none"
+                            stroke="rgb(147, 51, 234)"
+                            stroke-width="2"
+                            points="${trends2.accuracy_trend.map((acc, i) => {
+                                const x = (i / (trends2.accuracy_trend.length - 1)) * 100;
+                                const y = 100 - ((acc - minAccuracy) / accuracyRange) * 100;
+                                return `${x},${y}`;
+                            }).join(' ')}"
+                        />
+                    </svg>
+                </div>
+                
+                <!-- X-axis labels -->
+                <div class="absolute bottom-0 left-4 right-4 flex justify-between text-xs text-gray-400 mt-2">
+                    <span>${dates[0]}</span>
+                    <span>${dates[Math.floor(dates.length / 2)]}</span>
+                    <span>${dates[dates.length - 1]}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Clear comparison results
+function clearComparisonResults() {
+    const resultContainer = document.getElementById('model-comparison-results');
+    if (resultContainer) {
+        resultContainer.innerHTML = `
+            <div class="text-center py-8">
+                <div class="text-4xl mb-4">🔍</div>
+                <div class="text-gray-400">Select two different models to see detailed comparison</div>
+            </div>
+        `;
+    }
+}
+
+// Override the existing showModal function to initialize model comparison when modal is shown
+const originalShowModal = window.showModal;
+window.showModal = function(modalId) {
+    originalShowModal(modalId);
+    
+    if (modalId === 'model-comparison-modal') {
+        initializeModelComparison();
+    }
+};
