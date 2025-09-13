@@ -417,5 +417,5 @@ for issue in issues:
 ---
 
 **Schema Version**: 2.0.0  
-**Last Updated**: December 2024  
+**Last Updated**: 9/13/2025  
 **Compatibility**: SI-HQ v2.0+
