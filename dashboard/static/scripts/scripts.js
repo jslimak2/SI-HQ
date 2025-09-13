@@ -2415,7 +2415,9 @@ window.addToCart = function(wagerData) {
         return;
     }
     wagerData.wagerAmount = 10;
-    wagerData.payout = calculatePayout(wagerData.wagerAmount, wagerData.odds) + wagerData.wagerAmount;
+    const totalPayout = calculatePayout(wagerData.wagerAmount, wagerData.odds) + wagerData.wagerAmount;
+    wagerData.payout = totalPayout; // Keep for backward compatibility
+    wagerData.potentialPayout = totalPayout; // Use consistent naming
     wagerData.addedAt = new Date().toISOString();
     betCart.push(wagerData);
     setTimeout(updateCartUI, 0); // Ensure UI updates after adding
@@ -2578,7 +2580,9 @@ function updateWagerAmount(wagerId, newAmount) {
     const wager = betCart.find(item => item.id === wagerId);
     if (wager) {
         wager.wagerAmount = parseFloat(newAmount) || 0;
-        wager.payout = calculatePayout(wager.wagerAmount, wager.odds) + wager.wagerAmount;
+        const totalPayout = calculatePayout(wager.wagerAmount, wager.odds) + wager.wagerAmount;
+        wager.payout = totalPayout; // Keep for backward compatibility
+        wager.potentialPayout = totalPayout; // Use consistent naming
         updateCartTotals();
     }
 }
