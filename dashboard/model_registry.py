@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import logging
 
 # Import the new standardized schemas
-from .schemas import (
+from schemas import (
     ModelSchema, ModelStatus, Sport, MarketType, PerformanceMetrics, 
     ModelInputOutput, SchemaValidator, migrate_legacy_model
 )

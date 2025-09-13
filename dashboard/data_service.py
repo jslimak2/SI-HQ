@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import logging
 
-from .schemas import (
+from schemas import (
     BotSchema, StrategySchema, BotStatus, StrategyType, 
     TransactionLog, OpenWager, PerformanceMetrics, RiskManagement,
     SchemaValidator, migrate_legacy_bot, migrate_legacy_strategy
@@ -196,7 +196,7 @@ class DataService:
                 bots = [b for b in bots if b.active_status == status]
             
             if 'sport_filter' in filters and filters['sport_filter']:
-                from .schemas import Sport
+                from schemas import Sport
                 sport = Sport(filters['sport_filter'])
                 bots = [b for b in bots if b.sport_filter == sport]
         
@@ -276,7 +276,7 @@ class DataService:
             raise ValueError(f"Open wager {wager_id} not found for bot {bot_id}")
         
         # Create transaction log entry
-        from .schemas import BetOutcome
+        from schemas import BetOutcome
         transaction = TransactionLog(
             transaction_id=wager_id,
             timestamp=datetime.now().isoformat(),

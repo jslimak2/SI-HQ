@@ -50,11 +50,11 @@ except ImportError as e:
     firestore = MockFirestore()
 
 # Import standardized schemas
-from .schemas import (
+from schemas import (
     BotSchema, StrategySchema, ModelSchema, BotStatus, StrategyType, Sport,
     RiskManagement, PerformanceMetrics, SchemaValidator
 )
-from .data_service import data_service
+from data_service import data_service
 
 # Professional imports
 from config import ConfigManager, setup_logging, validate_config
