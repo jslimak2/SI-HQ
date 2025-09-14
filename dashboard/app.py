@@ -9,6 +9,14 @@ import numpy as np
 import uuid
 from flask import Flask, request, jsonify, render_template, g
 
+# Import real sports API service
+try:
+    from real_sports_api import get_real_sports_service, initialize_real_sports_service
+    REAL_SPORTS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"🟡 WARNING: Real sports API not available: {e}")
+    REAL_SPORTS_API_AVAILABLE = False
+
 # Import firebase_admin optionally
 try:
     import firebase_admin
@@ -138,6 +146,22 @@ except ImportError as e:
 # Load environment variables from .env file
 config = ConfigManager.load_config()
 logger = setup_logging(config)
+
+# Initialize real sports API service if available
+if REAL_SPORTS_API_AVAILABLE and config.api.sports_api_key:
+    try:
+        real_sports_service = initialize_real_sports_service(
+            odds_api_key=config.api.sports_api_key,
+            espn_api_key=None  # ESPN doesn't require API key
+        )
+        logger.info("Real sports API service initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize real sports API service: {e}")
+        real_sports_service = None
+else:
+    real_sports_service = None
+    if config.disable_demo_mode:
+        logger.error("Demo mode disabled but no sports API key configured!")
 
 # Validate configuration
 config_warnings = validate_config(config)
@@ -306,6 +330,113 @@ def get_user_collections(user_id):
         'user_settings': db.collection(f'users/{user_id}/settings'),
         'bets': db.collection(f'users/{user_id}/bets')
     }
+
+# --- Sports Data Helper Functions ---
+def get_sports_games_data(sport='NBA', max_games=10):
+    """
+    Get sports games data - uses real API when available, falls back to demo data
+    
+    Args:
+        sport: Sport type (NBA, NFL, etc.)
+        max_games: Maximum number of games to return
+    
+    Returns:
+        List of game dictionaries with odds and metadata
+    """
+    try:
+        # Try to use real sports API first
+        if real_sports_service and config.api.sports_api_key and not config.disable_demo_mode:
+            logger.info(f"Fetching real sports data for {sport}")
+            real_games = real_sports_service.get_current_games(sport.lower())
+            
+            if real_games and len(real_games) > 0:
+                # Limit to max_games and add calculated fields
+                limited_games = real_games[:max_games]
+                for game in limited_games:
+                    # Add true probability estimation (placeholder - would be from ML models)
+                    game['true_probability'] = 0.50 + (random.random() - 0.5) * 0.2  # 0.4-0.6 range
+                    game['expected_value'] = ((game['odds'] * game['true_probability']) - 1) * 100
+                
+                logger.info(f"Successfully fetched {len(limited_games)} real games for {sport}")
+                return limited_games
+        
+        # Fallback to demo data
+        logger.info(f"Using demo sports data for {sport}")
+        return get_demo_games_data(sport, max_games)
+        
+    except Exception as e:
+        logger.error(f"Error fetching sports data: {e}")
+        return get_demo_games_data(sport, max_games)
+
+def get_demo_games_data(sport='NBA', max_games=10):
+    """
+    Get demo sports games data for testing/fallback purposes
+    """
+    demo_games_by_sport = {
+        'NBA': [
+            {
+                'id': 'demo_nba_1',
+                'teams': 'Lakers @ Warriors',
+                'sport': 'NBA',
+                'odds': 2.25,
+                'away_odds': 1.85,
+                'bet_type': 'Moneyline',
+                'true_probability': 0.50,
+                'expected_value': ((2.25 * 0.50) - 1) * 100,
+                'over_under': 215.5,
+                'over_odds': 1.90,
+                'under_odds': 1.90,
+                'real_data': False
+            },
+            {
+                'id': 'demo_nba_2',
+                'teams': 'Celtics @ Heat',
+                'sport': 'NBA',
+                'odds': 1.85,
+                'away_odds': 2.10,
+                'bet_type': 'Moneyline',
+                'true_probability': 0.60,
+                'expected_value': ((1.85 * 0.60) - 1) * 100,
+                'over_under': 208.5,
+                'over_odds': 1.85,
+                'under_odds': 1.95,
+                'real_data': False
+            }
+        ],
+        'NFL': [
+            {
+                'id': 'demo_nfl_1',
+                'teams': 'Chiefs @ Bills',
+                'sport': 'NFL',
+                'odds': 2.75,
+                'away_odds': 1.65,
+                'bet_type': 'Spread',
+                'true_probability': 0.42,
+                'expected_value': ((2.75 * 0.42) - 1) * 100,
+                'over_under': 47.5,
+                'over_odds': 1.90,
+                'under_odds': 1.90,
+                'real_data': False
+            },
+            {
+                'id': 'demo_nfl_2',
+                'teams': 'Cowboys @ Eagles',
+                'sport': 'NFL',
+                'odds': 1.95,
+                'away_odds': 1.95,
+                'bet_type': 'Moneyline',
+                'true_probability': 0.55,
+                'expected_value': ((1.95 * 0.55) - 1) * 100,
+                'over_under': 44.5,
+                'over_odds': 1.85,
+                'under_odds': 1.95,
+                'real_data': False
+            }
+        ]
+    }
+    
+    sport_games = demo_games_by_sport.get(sport, demo_games_by_sport['NBA'])
+    return sport_games[:max_games]
 
 # --- API Endpoints ---
 @app.route('/api/docs')
@@ -1096,44 +1227,12 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
     max_odds = safe_float_extract(params.get('max_odds', 3.0), 3.0)
     kelly_fraction = safe_float_extract(params.get('kelly_fraction', 0.25), 0.25)
     
-    # Demo games with calculated expected values
-    demo_games = [
-        {
-            'teams': 'Lakers vs Warriors', 
-            'sport': 'NBA', 
-            'odds': 2.25, 
-            'bet_type': 'Moneyline',
-            'true_probability': 0.50,  # 50% estimated true probability
-            'expected_value': ((2.25 * 0.50) - 1) * 100  # Calculate EV percentage
-        },
-        {
-            'teams': 'Celtics vs Heat', 
-            'sport': 'NBA', 
-            'odds': 1.85, 
-            'bet_type': 'Moneyline',
-            'true_probability': 0.60,  # 60% estimated true probability  
-            'expected_value': ((1.85 * 0.60) - 1) * 100
-        },
-        {
-            'teams': 'Chiefs vs Bills', 
-            'sport': 'NFL', 
-            'odds': 2.75, 
-            'bet_type': 'Spread',
-            'true_probability': 0.42,  # 42% estimated true probability
-            'expected_value': ((2.75 * 0.42) - 1) * 100
-        },
-        {
-            'teams': 'Cowboys vs Eagles', 
-            'sport': 'NFL', 
-            'odds': 1.95, 
-            'bet_type': 'Moneyline',
-            'true_probability': 0.55,  # 55% estimated true probability
-            'expected_value': ((1.95 * 0.55) - 1) * 100
-        }
-    ]
+    # Get sports games data (real or demo depending on configuration)
+    bot_sport = bot_data.get('sport_filter', 'NBA')
+    all_games = get_sports_games_data(bot_sport, max_picks * 2)  # Get more than needed for filtering
     
     # Filter games based on +eV criteria
-    for game in demo_games:
+    for game in all_games:
         ev = game['expected_value']
         confidence = int(game['true_probability'] * 100)
         
@@ -1152,13 +1251,14 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
             pick = {
                 'teams': game['teams'],
                 'sport': game['sport'],
-                'bet_type': game['bet_type'],
+                'bet_type': game.get('bet_type', 'Moneyline'),
                 'odds': game['odds'],
                 'recommended_amount': round(bet_amount, 2),
                 'potential_payout': round(potential_payout, 2),
                 'confidence': confidence,
                 'expected_value': round(ev, 2),
-                'strategy_reason': f"+eV: {ev:.1f}% (Kelly: {optimal_fraction:.2%}, Bet: {bet_fraction:.1%})"
+                'strategy_reason': f"+eV: {ev:.1f}% (Kelly: {optimal_fraction:.2%}, Bet: {bet_fraction:.1%})",
+                'real_data': game.get('real_data', False)  # Flag to show if this is real data
             }
             picks.append(pick)
             
