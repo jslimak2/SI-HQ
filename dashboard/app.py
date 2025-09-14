@@ -1263,27 +1263,31 @@ def get_available_investments():
     """
     Fetches and returns available sports games and odds.
     Supports caching with 'refresh' parameter.
+    Now prioritizes real data over demo data when possible.
     """
     user_id = request.args.get('user_id', 'anonymous')
     refresh = request.args.get('refresh', 'false').lower() == 'true'
     
-    # Demo mode handling
-    if demo_mode or not db:
+    # Check if we can fetch real data (prioritize real data over demo)
+    can_fetch_real_data = external_api_key and 'demo' not in external_api_key.lower()
+    
+    # Only use demo mode if we cannot fetch real data
+    if not can_fetch_real_data:
         return jsonify({
             'success': True,
             'investments': generate_demo_investments(),
             'cached': False,
             'last_refresh': datetime.datetime.now().isoformat(),
             'api_calls_made': 0,
-            'demo_mode': True
+            'demo_mode': True,
+            'message': 'Demo mode: Set SPORTS_API_KEY for real data.'
         }), 200
     
-    collections = get_user_collections(user_id)
-    if not collections:
-        return jsonify({'success': False, 'message': 'Database not available.'}), 500
+    # Try to use database caching if available, but don't require it for real data
+    collections = get_user_collections(user_id) if db else None
     
-    # If not refreshing, try to get cached data first
-    if not refresh:
+    # If not refreshing and database is available, try to get cached data first
+    if not refresh and collections:
         try:
             cached_doc_ref = collections['cached_investments'].document('latest')
             cached_doc = cached_doc_ref.get()
@@ -1301,18 +1305,6 @@ def get_available_investments():
         except Exception as e:
             print(f"Error fetching cached investments: {e}")
             # Continue to fetch fresh data if cache fails
-    
-    # Fetch fresh data from API
-    if not external_api_key or 'demo' in external_api_key:
-        return jsonify({
-            'success': True,
-            'investments': generate_demo_investments(),
-            'cached': False,
-            'last_refresh': datetime.datetime.now().isoformat(),
-            'api_calls_made': 0,
-            'demo_mode': True,
-            'message': 'Demo mode: Using simulated data. Set SPORTS_API_KEY for real data.'
-        }), 200
 
     # These are the sports leagues we will be fetching data for
     sports = ['basketball_nba', 'americanfootball_nfl', 'baseball_mlb', 'americanfootball_ncaaf', 'basketball_ncaab']
@@ -1330,13 +1322,15 @@ def get_available_investments():
             games = odds_response.json()
             all_games.extend(games)
 
-        # Fetch user's placed bets
+        # Fetch user's placed bets (only if database is available)
         placed_bets = []
-        try:
-            placed_bets_snapshot = collections['bets'].get()
-            placed_bets = [bet.to_dict() for bet in placed_bets_snapshot]
-        except Exception as e:
-            print(f"Error fetching placed bets: {e}")
+        if collections:
+            try:
+                placed_bets_snapshot = collections['bets'].get()
+                placed_bets = [bet.to_dict() for bet in placed_bets_snapshot]
+            except Exception as e:
+                print(f"Error fetching placed bets: {e}")
+                # Continue without placed bets data
 
         investments = []
         for game in all_games:
@@ -1360,32 +1354,69 @@ def get_available_investments():
                 'placed_bets': game_bets
             })
         
-        # Cache the fresh data
-        try:
-            cache_data = {
-                'investments': investments,
-                'timestamp': datetime.datetime.now().isoformat(),
-                'api_calls_made': api_calls_made,
-                'total_games': len(investments)
-            }
-            collections['cached_investments'].document('latest').set(cache_data)
-        except Exception as e:
-            print(f"Error caching investments: {e}")
+        # Cache the fresh data (only if database is available)
+        if collections:
+            try:
+                cache_data = {
+                    'investments': investments,
+                    'timestamp': datetime.datetime.now().isoformat(),
+                    'api_calls_made': api_calls_made,
+                    'total_games': len(investments)
+                }
+                collections['cached_investments'].document('latest').set(cache_data)
+            except Exception as e:
+                print(f"Error caching investments: {e}")
+                # Continue without caching
             
         return jsonify({
             'success': True,
             'investments': investments,
             'cached': False,
             'last_refresh': datetime.datetime.now().isoformat(),
-            'api_calls_made': api_calls_made
+            'api_calls_made': api_calls_made,
+            'database_available': collections is not None,
+            'real_data': True
         }), 200
 
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error fetching sports data: {e}")
-        return jsonify({'success': False, 'message': f'HTTP Error: {e.response.text}'}), e.response.status_code
+        # Fallback to demo data if real API fails
+        logger.warning(f"Sports API failed, falling back to demo data: {e}")
+        return jsonify({
+            'success': True,
+            'investments': generate_demo_investments(),
+            'cached': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'api_calls_made': api_calls_made,
+            'demo_mode': True,
+            'message': f'API temporarily unavailable, showing demo data. Error: {e.response.text if hasattr(e, "response") else str(e)}'
+        }), 200
+    except requests.exceptions.RequestException as e:
+        print(f"Network Error fetching sports data: {e}")
+        # Fallback to demo data on network errors
+        logger.warning(f"Network error accessing sports API, falling back to demo data: {e}")
+        return jsonify({
+            'success': True,
+            'investments': generate_demo_investments(),
+            'cached': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'api_calls_made': 0,
+            'demo_mode': True,
+            'message': f'Network error, showing demo data. Error: {str(e)}'
+        }), 200
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return jsonify({'success': False, 'message': f'An unexpected error occurred: {e}'}), 500
+        logger.error(f"Unexpected error in investments API: {e}")
+        # Fallback to demo data on any unexpected error
+        return jsonify({
+            'success': True,
+            'investments': generate_demo_investments(),
+            'cached': False,
+            'last_refresh': datetime.datetime.now().isoformat(),
+            'api_calls_made': 0,
+            'demo_mode': True,
+            'message': f'Service temporarily unavailable, showing demo data. Error: {str(e)}'
+        }), 200
 
 # ████████████████████████████████████████████████████████████████████████████████
 # 🚨                           MOCK/DEMO DATA SECTION                         🚨
