@@ -535,12 +535,27 @@
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🎯</span>
-                        <span class="stats-label">ML Accuracy</span>
+                        <span class="stats-label">
+                            <span class="tooltip">Model Accuracy
+                                <span class="tooltiptext">
+                                    <strong>Model Prediction Accuracy:</strong> Technical performance of AI models in backtesting. This measures how often models correctly predict outcomes, not investment profitability.
+                                </span>
+                            </span>
+                        </span>
                         <span id="ml-accuracy" class="stats-value">99.9%</span>
                         <span class="stats-trend positive" id="ml-accuracy-trend">▲ +9.9%</span>
                     </div>
                 </div>
                 <div id="stats-breakdown-inline"></div>
+                
+                <!-- Performance Domain Quick Guide -->
+                <div class="bg-gray-800 border border-gray-600 rounded-lg p-3 mt-4">
+                    <div class="text-sm text-gray-300">
+                        <strong class="text-white">📊 Performance Domains:</strong> 
+                        Above stats show <span class="text-green-400">investor performance</span> (profits, win rates). 
+                        For <span class="text-purple-400">model prediction accuracy</span>, see Predictive Analytics.
+                    </div>
+                </div>
             </section>
             <section class="table-container mb-12 post9-card">
                 <h2 class="text-2xl font-bold mb-4 text-white">Active Investors</h2>
@@ -1291,27 +1306,58 @@
                     <button onclick="showModal('settings-modal')" class="post9-btn px-4 py-2">⚙️ Settings</button>
                 </div>
             </div>
+
+            <!-- Performance Domain Explanation -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start space-x-3">
+                    <div class="text-blue-600 text-xl">📊</div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-blue-800 mb-2">Analytics Overview</h4>
+                        <p class="text-blue-700 text-sm mb-2">These analytics focus on <strong>investor strategy performance</strong> - your real financial results from executing strategies that use model predictions.</p>
+                        <div class="text-xs text-blue-600">💡 For model prediction accuracy and technical performance, see the Predictive Analytics section.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Investor Strategy Performance Summary -->
+            <div class="mb-4">
+                <div class="flex items-center space-x-2 mb-4">
+                    <h3 class="text-xl font-bold text-green-600">💼 Investor Strategy Performance</h3>
+                    <div class="tooltip">
+                        <span class="text-green-400 cursor-help">ⓘ</span>
+                        <span class="tooltiptext">
+                            <strong>Investor Performance:</strong> These metrics show your actual financial results from executing strategies, including profit/loss, win rates, and ROI from real investments.
+                        </span>
+                    </div>
+                </div>
+            </div>
             
             <!-- Summary Metrics -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-green-100 p-4 rounded-lg">
+                <div class="bg-green-100 p-4 rounded-lg border-l-4 border-green-500">
                     <div class="text-2xl font-bold text-green-800" id="analytics-total-profit">+$1,247</div>
-                    <div class="text-sm text-green-600">Total Profit (30d)</div>
+                    <div class="text-sm text-green-600">Strategy Profit (30d)</div>
                     <div class="text-xs text-green-500">▲ +5.2% vs last month</div>
                 </div>
-                <div class="bg-blue-100 p-4 rounded-lg">
+                <div class="bg-blue-100 p-4 rounded-lg border-l-4 border-green-500">
                     <div class="text-2xl font-bold text-blue-800" id="analytics-win-rate">68.4%</div>
-                    <div class="text-sm text-blue-600">Win Rate</div>
+                    <div class="text-sm text-blue-600">
+                        <span class="tooltip">Investment Win Rate
+                            <span class="tooltiptext">
+                                <strong>Investment Win Rate:</strong> Percentage of profitable investments. Different from model prediction accuracy as it includes bet sizing, timing, and risk management effects.
+                            </span>
+                        </span>
+                    </div>
                     <div class="text-xs text-blue-500">▲ +2.1% vs last month</div>
                 </div>
-                <div class="bg-purple-100 p-4 rounded-lg">
+                <div class="bg-purple-100 p-4 rounded-lg border-l-4 border-green-500">
                     <div class="text-2xl font-bold text-purple-800" id="analytics-roi">+12.3%</div>
-                    <div class="text-sm text-purple-600">ROI</div>
+                    <div class="text-sm text-purple-600">Strategy ROI</div>
                     <div class="text-xs text-purple-500">▲ +1.8% vs last month</div>
                 </div>
-                <div class="bg-orange-100 p-4 rounded-lg">
+                <div class="bg-orange-100 p-4 rounded-lg border-l-4 border-green-500">
                     <div class="text-2xl font-bold text-orange-800" id="analytics-bets-count">89</div>
-                    <div class="text-sm text-orange-600">Total Bets</div>
+                    <div class="text-sm text-orange-600">Investments Made</div>
                     <div class="text-xs text-orange-500">▲ +12 vs last month</div>
                 </div>
             </div>
@@ -1320,7 +1366,15 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <!-- Profit Over Time Chart -->
                 <div class="bg-white p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Profit Over Time</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                        💰 Strategy Profit Over Time
+                        <div class="tooltip inline-block ml-1">
+                            <span class="text-gray-500 cursor-help text-sm">ⓘ</span>
+                            <span class="tooltiptext">
+                                <strong>Strategy Profit:</strong> Shows actual investment returns over time from executing strategies, not model prediction performance.
+                            </span>
+                        </div>
+                    </h3>
                     <div id="profit-over-time-chart" class="h-64 flex items-center justify-center text-gray-500">
                         Chart will be rendered here
                     </div>
@@ -1328,7 +1382,15 @@
                 
                 <!-- Strategy Performance Chart -->
                 <div class="bg-white p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Strategy Performance</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                        📈 Investment Strategy Performance
+                        <div class="tooltip inline-block ml-1">
+                            <span class="text-gray-500 cursor-help text-sm">ⓘ</span>
+                            <span class="tooltiptext">
+                                <strong>Investment Strategy Performance:</strong> Compares financial performance of different investment strategies and their real-world profitability.
+                            </span>
+                        </div>
+                    </h3>
                     <div id="strategy-performance-chart" class="h-64 flex items-center justify-center text-gray-500">
                         Chart will be rendered here
                     </div>
@@ -1339,9 +1401,17 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Performance Heatmap -->
                 <div class="bg-white p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Performance Heatmap</h3>
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">
+                        🔥 Investment Performance Heatmap
+                        <div class="tooltip inline-block ml-1">
+                            <span class="text-gray-500 cursor-help text-sm">ⓘ</span>
+                            <span class="tooltiptext">
+                                <strong>Investment Performance Heatmap:</strong> Shows actual profit/loss patterns by day and time from investment strategy execution.
+                            </span>
+                        </div>
+                    </h3>
                     <div id="performance-heatmap" class="h-64">
-                        <div class="text-sm text-gray-600 mb-2">Profit by Day & Time</div>
+                        <div class="text-sm text-gray-600 mb-2">Strategy Profit by Day & Time</div>
                         <div class="grid grid-cols-7 gap-1 text-xs">
                             <!-- Heatmap grid will be rendered here -->
                             <div class="text-center font-medium">Mon</div>
@@ -1412,42 +1482,101 @@
 
             <!-- Models Tab -->
             <div id="models-tab-content" class="predictive-tab-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- Model Status Cards -->
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold text-gray-800">Active Models</h3>
-                            <span class="text-2xl">🤖</span>
+                <!-- Performance Domain Explanation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <div class="text-blue-600 text-xl">ℹ️</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-blue-800 mb-2">Understanding Performance Metrics</h4>
+                            <p class="text-blue-700 text-sm mb-2">This dashboard shows <strong>two distinct domains of performance</strong>:</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div class="bg-white p-3 rounded border-l-4 border-purple-500">
+                                    <div class="font-semibold text-purple-800 mb-1">🤖 Model Prediction Performance</div>
+                                    <div class="text-gray-700">Technical accuracy, backtest results, and prediction quality of the AI models themselves</div>
+                                </div>
+                                <div class="bg-white p-3 rounded border-l-4 border-green-500">
+                                    <div class="font-semibold text-green-800 mb-1">💼 Investor Strategy Performance</div>
+                                    <div class="text-gray-700">Real-world profitability, ROI, and financial results from executing strategies with those models</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="text-2xl font-bold text-blue-600" id="active-models-count">3</div>
-                        <div class="text-sm text-gray-600">Running</div>
                     </div>
-                    
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold text-gray-800">Avg Accuracy</h3>
-                            <span class="text-2xl">🎯</span>
+                </div>
+
+                <!-- Model Prediction Performance Section -->
+                <div class="mb-8">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <h3 class="text-xl font-bold text-purple-800">🤖 Model Prediction Performance</h3>
+                        <div class="tooltip">
+                            <span class="text-purple-600 cursor-help">ⓘ</span>
+                            <span class="tooltiptext">
+                                <strong>Model Performance:</strong> Technical metrics showing how well the AI models predict game outcomes, measured against historical data through backtesting. High accuracy doesn't guarantee profit.
+                            </span>
                         </div>
-                        <div class="text-2xl font-bold text-green-600" id="avg-accuracy">68.2%</div>
-                        <div class="text-sm text-gray-600">Last 30 days</div>
                     </div>
-                    
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold text-gray-800">Predictions</h3>
-                            <span class="text-2xl">📊</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-bold text-gray-800">Active Models</h4>
+                                <span class="text-2xl">🤖</span>
+                            </div>
+                            <div class="text-2xl font-bold text-purple-600" id="active-models-count">3</div>
+                            <div class="text-sm text-gray-600">Running & Trained</div>
                         </div>
-                        <div class="text-2xl font-bold text-purple-600" id="predictions-count">156</div>
-                        <div class="text-sm text-gray-600">This month</div>
+                        
+                        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-bold text-gray-800">
+                                    <span class="tooltip">Prediction Accuracy
+                                        <span class="tooltiptext">
+                                            <strong>Prediction Accuracy:</strong> The percentage of correct predictions made by models in backtesting. This measures technical model performance, not investment returns.
+                                        </span>
+                                    </span>
+                                </h4>
+                                <span class="text-2xl">🎯</span>
+                            </div>
+                            <div class="text-2xl font-bold text-purple-600" id="avg-accuracy">68.2%</div>
+                            <div class="text-sm text-gray-600">Backtest Results (30d)</div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-bold text-gray-800">Predictions Made</h4>
+                                <span class="text-2xl">📊</span>
+                            </div>
+                            <div class="text-2xl font-bold text-purple-600" id="predictions-count">156</div>
+                            <div class="text-sm text-gray-600">Model outputs this month</div>
+                        </div>
                     </div>
-                    
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold text-gray-800">Profit</h3>
-                            <span class="text-2xl">💰</span>
+                </div>
+
+                <!-- Investor Strategy Performance Section -->
+                <div class="mb-8">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <h3 class="text-xl font-bold text-green-800">💼 Investor Strategy Performance</h3>
+                        <div class="tooltip">
+                            <span class="text-green-600 cursor-help">ⓘ</span>
+                            <span class="tooltiptext">
+                                <strong>Investor Performance:</strong> Real financial results from executing strategies that use model predictions. This includes profit/loss, ROI, and risk metrics from actual investments.
+                            </span>
                         </div>
-                        <div class="text-2xl font-bold text-green-600" id="model-profit">+$1,234</div>
-                        <div class="text-sm text-gray-600">From predictions</div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-bold text-gray-800">
+                                    <span class="tooltip">Strategy Profits
+                                        <span class="tooltiptext">
+                                            <strong>Strategy Profits:</strong> Actual financial returns from executing investment strategies that use model predictions. This represents real-world performance including bet sizing, timing, and risk management.
+                                        </span>
+                                    </span>
+                                </h4>
+                                <span class="text-2xl">💰</span>
+                            </div>
+                            <div class="text-2xl font-bold text-green-600" id="model-profit">+$1,234</div>
+                            <div class="text-sm text-gray-600">From strategy execution</div>
+                            <div class="text-xs text-gray-500 mt-1">⚠️ Different from model accuracy - includes bet sizing, timing & risk management</div>
+                        </div>
                     </div>
                 </div>
 
