@@ -839,7 +839,7 @@
                 <h2 class="text-2xl font-bold text-white">Available Investments</h2>
                 <div class="flex items-center gap-4">
                     <button id="cart-toggle-btn" class="post9-btn px-4 py-2 relative" onclick="toggleBetCart()">
-                        <span class="inline-block mr-2">📊</span>Investment Holdings
+                        <span class="inline-block mr-2">🎯</span>Investor Holdings
                         <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs px-2 py-1 hidden">0</span>
                     </button>
                 </div>
@@ -856,22 +856,23 @@
                 <div class="h-full flex flex-col">
                     <div class="p-4 border-b bg-gray-50">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-xl font-bold text-gray-900">Investment Holdings</h3>
+                            <h3 class="text-xl font-bold text-gray-900">Investor Holdings</h3>
                             <button onclick="closeBetCart()" class="text-gray-500 hover:text-gray-700">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </button>
                         </div>
-                        <p class="text-sm text-gray-600 mt-1">Pending: <span id="cart-items-count">0</span> investments</p>
+                        <p class="text-sm text-gray-600 mt-1">Pending: <span id="cart-items-count">0</span> investor recommendations</p>
                     </div>
                     
                     <div class="flex-1 overflow-y-auto p-4">
                         <div id="cart-items-container" class="space-y-3">
                             <div id="empty-cart-message" class="text-center text-gray-500 mt-8">
-                                <p class="text-lg">📊</p>
-                                <p>No investments on hold</p>
-                                <p class="text-sm">Add recommended wagers from the investment options</p>
+                                <p class="text-lg">🎯</p>
+                                <p>No investor recommendations on hold</p>
+                                <p class="text-sm">Accept automated investor recommendations from the investment analysis</p>
+                                <p class="text-xs text-orange-600 mt-2">💡 Manual investment selection has been disabled - only automated investors can recommend investments</p>
                             </div>
                         </div>
                     </div>
@@ -883,7 +884,7 @@
                         </div>
                         <div class="space-y-2">
                             <button id="place-bets-btn" onclick="showHoldInvestments()" class="w-full post9-btn py-3" disabled>
-                                Hold Investments
+                                Hold Investor Recommendations
                             </button>
                             <button id="verify-investments-btn" onclick="showVerificationModal()" class="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700" disabled>
                                 🔍 Verify Placed Bets
@@ -2281,6 +2282,62 @@
         </div>
     </div>
     
+    <!-- Investment Details Modal -->
+    <div id="investment-details-modal" class="modal">
+        <div class="modal-content post9-card max-w-6xl">
+            <span class="modal-close" onclick="closeModal('investment-details-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white" id="investment-details-title">Investment Analysis</h3>
+            
+            <!-- Game Information Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-lg mb-6 text-white">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <div class="text-sm opacity-80">Teams</div>
+                        <div class="text-lg font-semibold" id="investment-details-teams">-</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">Sport</div>
+                        <div class="text-lg font-semibold" id="investment-details-sport">-</div>
+                    </div>
+                    <div>
+                        <div class="text-sm opacity-80">Game Time</div>
+                        <div class="text-lg font-semibold" id="investment-details-time">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Consensus & Model Predictions -->
+                <div class="space-y-6">
+                    <!-- Consensus Analysis -->
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 text-white">Consensus Odds Analysis</h4>
+                        <div id="consensus-analysis-content">
+                            <!-- Consensus data will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Model Predictions -->
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 text-white">Model Predictions</h4>
+                        <div id="model-predictions-content">
+                            <!-- Model predictions will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Investor Recommendations -->
+                <div>
+                    <h4 class="text-xl font-bold mb-4 text-white">Investor Recommendations</h4>
+                    <div id="investor-recommendations-content">
+                        <!-- Investor recommendations will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bot Recommendation Details Modal -->
     <div id="bot-recommendation-modal" class="modal">
         <div class="modal-content post9-card max-w-5xl">
