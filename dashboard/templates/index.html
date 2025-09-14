@@ -4405,14 +4405,31 @@
             const modeIndicator = document.getElementById('overall-mode-indicator');
             const modeText = document.getElementById('overall-mode-text');
             
+            // Check if demo mode is explicitly disabled
+            const demoDisabled = status.demo_config && status.demo_config.disable_demo_mode;
+            
             if (status.overall_mode === 'demo') {
-                modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-yellow-500 text-white';
-                modeIndicator.textContent = '⚠️';
-                modeText.textContent = 'Demo Mode';
+                if (demoDisabled) {
+                    // Critical: Demo disabled but still in demo mode
+                    modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-red-500 text-white';
+                    modeIndicator.textContent = '🚨';
+                    modeText.textContent = 'ERROR: Demo Disabled';
+                } else {
+                    modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-yellow-500 text-white';
+                    modeIndicator.textContent = '⚠️';
+                    modeText.textContent = 'Demo Mode';
+                }
             } else {
-                modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-green-500 text-white';
-                modeIndicator.textContent = '✅';
-                modeText.textContent = 'Production Mode';
+                if (demoDisabled) {
+                    // Production mode with demo explicitly disabled
+                    modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-blue-500 text-white';
+                    modeIndicator.textContent = '🔒';
+                    modeText.textContent = 'Production Only';
+                } else {
+                    modeIndicator.className = 'w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-2xl font-bold bg-green-500 text-white';
+                    modeIndicator.textContent = '✅';
+                    modeText.textContent = 'Production Mode';
+                }
             }
 
             // Update counts
@@ -4443,6 +4460,28 @@
                 });
             } else {
                 warningsContainer.style.display = 'none';
+            }
+
+            // Add demo configuration info to warnings if available
+            if (status.demo_config) {
+                if (status.demo_config.disable_demo_mode && status.demo_config.demo_mode_active) {
+                    const criticalWarning = document.createElement('div');
+                    criticalWarning.className = 'bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-3 mt-4';
+                    criticalWarning.innerHTML = `
+                        <h4 class="text-red-400 font-semibold">🚨 CONFIGURATION ERROR</h4>
+                        <p class="text-red-300 text-sm">Demo mode is disabled but system is still running in demo mode. Check Firebase configuration.</p>
+                    `;
+                    warningsContainer.parentNode.insertBefore(criticalWarning, warningsContainer.nextSibling);
+                } else if (status.demo_config.disable_demo_mode) {
+                    const infoBox = document.createElement('div');
+                    infoBox.className = 'bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-3 mt-4';
+                    infoBox.innerHTML = `
+                        <h4 class="text-blue-400 font-semibold">🔒 PRODUCTION ONLY MODE</h4>
+                        <p class="text-blue-300 text-sm">Demo mode is disabled. Only production features and real data are available.</p>
+                        <p class="text-blue-300 text-sm">Set DISABLE_DEMO_MODE=false to re-enable demo features.</p>
+                    `;
+                    warningsContainer.parentNode.insertBefore(infoBox, warningsContainer.nextSibling);
+                }
             }
 
             // Update timestamp

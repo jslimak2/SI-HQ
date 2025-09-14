@@ -46,6 +46,7 @@ class AppConfig:
     host: str = "127.0.0.1"
     port: int = 5000
     log_level: str = "INFO"
+    disable_demo_mode: bool = False
 
 class ConfigManager:
     """Professional configuration management with validation"""
@@ -108,7 +109,8 @@ class ConfigManager:
             database=database,
             api=api,
             ml=ml,
-            log_level=os.getenv('LOG_LEVEL', 'INFO')
+            log_level=os.getenv('LOG_LEVEL', 'INFO'),
+            disable_demo_mode=os.getenv('DISABLE_DEMO_MODE', 'false').lower() == 'true'
         )
 
 def setup_logging(config: AppConfig):

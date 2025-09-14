@@ -148,7 +148,35 @@ for warning in config_warnings:
 # Load the path to the service account key from an environment variable
 demo_mode = False
 try:
-    if not FIREBASE_AVAILABLE:
+    # Check if demo mode is explicitly disabled
+    if config.disable_demo_mode:
+        print("[INFO] DISABLE_DEMO_MODE=true - Forcing production mode")
+        logger.info("[CONFIG] Demo mode explicitly disabled via configuration")
+        if not FIREBASE_AVAILABLE:
+            print("[ERROR] Demo mode disabled but Firebase not available - cannot run in production mode")
+            logger.error("[CONFIG] Demo mode disabled but Firebase dependencies missing")
+            raise ValueError("Cannot disable demo mode without Firebase dependencies")
+        
+        cred_path = config.database.service_account_path
+        if not cred_path or not os.path.exists(cred_path):
+            print("[ERROR] Demo mode disabled but no valid Firebase credentials found")
+            logger.error(f"[CONFIG] Demo mode disabled but credentials missing or invalid: {cred_path}")
+            raise ValueError("Cannot disable demo mode without valid Firebase credentials")
+        
+        if 'demo' in cred_path:
+            print("[ERROR] Demo mode disabled but using demo credentials")
+            logger.error(f"[CONFIG] Demo mode disabled but demo credentials detected: {cred_path}")
+            raise ValueError("Cannot disable demo mode while using demo credentials")
+        
+        # Force production mode
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        demo_mode = False
+        logger.info("[SUCCESS] PRODUCTION MODE: Demo mode disabled, using real database")
+        print("[SUCCESS] PRODUCTION MODE: Demo mode disabled, real database connection established")
+    
+    elif not FIREBASE_AVAILABLE:
         print("[WARNING] Running in DEMO MODE - Firebase not available")
         print("[WARNING] All data operations will use MOCK/FAKE data")
         logger.warning("[DEMO MODE] Firebase not available, running with mock data")
@@ -169,16 +197,27 @@ try:
             logger.info("[SUCCESS] PRODUCTION MODE: Firestore client initialized successfully")
             print("[SUCCESS] PRODUCTION MODE: Real database connection established")
 except Exception as e:
-    print("[ERROR] Firebase initialization failed - falling back to DEMO MODE")
-    logger.error(f"[DEMO MODE] Firebase initialization failed, running with mock data: {e}")
-    demo_mode = True
-    db = None
+    if config.disable_demo_mode:
+        print(f"[ERROR] Demo mode disabled but initialization failed: {e}")
+        logger.error(f"[CONFIG] Demo mode disabled but Firebase initialization failed: {e}")
+        raise
+    else:
+        print("[ERROR] Firebase initialization failed - falling back to DEMO MODE")
+        logger.error(f"[DEMO MODE] Firebase initialization failed, running with mock data: {e}")
+        demo_mode = True
+        db = None
 
 # Additional demo mode warnings
 if demo_mode:
     print("=" + "="*60 + "=")
     print("= RUNNING IN DEMO MODE - NOT PRODUCTION DATA =")
     print("= All investments, bots, and analytics are FAKE =") 
+    print("=" + "="*60 + "=")
+elif config.disable_demo_mode:
+    print("=" + "="*60 + "=")
+    print("= PRODUCTION MODE ENABLED (Demo mode disabled) =")
+    print("= Using REAL data and live connections =") 
+    print("= Set DISABLE_DEMO_MODE=false to re-enable demo mode =")
     print("=" + "="*60 + "=")
 
 app = Flask(__name__)
@@ -416,9 +455,14 @@ def system_status():
             else:
                 system_status['summary']['disabled_features'] += 1
         
-        # Add warnings for demo features
+        # Add warnings for demo features and configuration
         if demo_mode:
-            system_status['warnings'].append('System is running in DEMO MODE - no real data or transactions')
+            if config.disable_demo_mode:
+                system_status['warnings'].append('CRITICAL: Demo mode disabled but still running in demo mode - check configuration')
+            else:
+                system_status['warnings'].append('System is running in DEMO MODE - no real data or transactions')
+        elif config.disable_demo_mode:
+            system_status['warnings'].append('Demo mode explicitly DISABLED - using production data only')
         
         if not external_api_key:
             system_status['warnings'].append('Sports API key not configured - using mock data')
@@ -429,9 +473,33 @@ def system_status():
         if system_status['summary']['disabled_features'] > 0:
             system_status['warnings'].append(f'{system_status["summary"]["disabled_features"]} features are currently disabled')
         
+        # Add demo mode configuration info
+        system_status['demo_config'] = {
+            'disable_demo_mode': config.disable_demo_mode,
+            'demo_mode_active': demo_mode,
+            'firebase_available': FIREBASE_AVAILABLE,
+            'database_connected': db is not None
+        }
+        
         return jsonify({
             'success': True,
             'system_status': system_status
+        })
+    except Exception as e:
+        return create_error_response(e)
+
+@app.route('/api/system/demo-mode', methods=['GET'])
+def get_demo_mode_status():
+    """Get current demo mode status and configuration"""
+    try:
+        return jsonify({
+            'success': True,
+            'demo_mode': demo_mode,
+            'demo_mode_disabled': config.disable_demo_mode,
+            'firebase_available': FIREBASE_AVAILABLE,
+            'database_connected': db is not None,
+            'can_disable_demo': FIREBASE_AVAILABLE and config.database.service_account_path and os.path.exists(config.database.service_account_path or '') and 'demo' not in (config.database.service_account_path or ''),
+            'message': 'Production mode enabled (demo disabled)' if config.disable_demo_mode else ('Demo mode active' if demo_mode else 'Production mode active')
         })
     except Exception as e:
         return create_error_response(e)
