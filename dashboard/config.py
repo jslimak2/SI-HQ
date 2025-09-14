@@ -25,8 +25,15 @@ class DatabaseConfig:
 @dataclass
 class APIConfig:
     sports_api_key: Optional[str] = None
+    odds_api_key: Optional[str] = None
+    weather_api_key: Optional[str] = None
+    # Sportsbook APIs for real betting
+    draftkings_api_key: Optional[str] = None
+    fanduel_api_key: Optional[str] = None
+    betmgm_api_key: Optional[str] = None
     rate_limit_per_hour: int = 500
     timeout_seconds: int = 30
+    enable_real_betting: bool = False
 
 @dataclass
 class MLConfig:
@@ -88,8 +95,14 @@ class ConfigManager:
         # API configuration
         api = APIConfig(
             sports_api_key=os.getenv('SPORTS_API_KEY'),
+            odds_api_key=os.getenv('ODDS_API_KEY'),
+            weather_api_key=os.getenv('WEATHER_API_KEY'),
+            draftkings_api_key=os.getenv('DRAFTKINGS_API_KEY'),
+            fanduel_api_key=os.getenv('FANDUEL_API_KEY'),
+            betmgm_api_key=os.getenv('BETMGM_API_KEY'),
             rate_limit_per_hour=int(os.getenv('RATE_LIMIT_PER_HOUR', '500')),
-            timeout_seconds=int(os.getenv('API_TIMEOUT_SECONDS', '30'))
+            timeout_seconds=int(os.getenv('API_TIMEOUT_SECONDS', '30')),
+            enable_real_betting=os.getenv('ENABLE_REAL_BETTING', 'false').lower() == 'true'
         )
         
         # ML configuration
