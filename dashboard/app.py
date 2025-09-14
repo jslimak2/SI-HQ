@@ -143,6 +143,18 @@ except ImportError as e:
     print(f"Data pipeline not available: {e}")
     DATA_PIPELINE_AVAILABLE = False
 
+# Import and initialize betting service
+try:
+    from sportsbook_api import BettingExecutionService
+    # Initialize with live betting disabled for safety
+    betting_service = BettingExecutionService(enabled=False)
+    BETTING_SERVICE_AVAILABLE = True
+    print("Betting service initialized (live betting disabled for safety)")
+except ImportError as e:
+    print(f"Betting service not available: {e}")
+    BETTING_SERVICE_AVAILABLE = False
+    betting_service = None
+
 # Load environment variables from .env file
 config = ConfigManager.load_config()
 logger = setup_logging(config)
@@ -5205,6 +5217,427 @@ def explain_model_features():
     except Exception as e:
         logger.error(f"Failed to explain features: {e}")
         raise ValidationError(f'Failed to explain features: {e}')
+
+# --- NEW PROFESSIONAL DATA PIPELINE ENDPOINTS ---
+
+@app.route('/api/data-pipeline/sources', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_data_sources():
+    """Get available data sources and their status"""
+    try:
+        from professional_data_pipeline import pipeline_manager
+        
+        sources_status = pipeline_manager.get_data_source_status()
+        
+        return jsonify({
+            'success': True,
+            'data_sources': sources_status,
+            'total_sources': len(sources_status),
+            'enabled_sources': sum(1 for s in sources_status.values() if s['enabled'])
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get data sources: {e}")
+        raise ValidationError(f'Failed to get data sources: {e}')
+
+
+@app.route('/api/data-pipeline/sources/<source_name>/toggle', methods=['POST'])
+@handle_errors
+@require_authentication
+def toggle_data_source_endpoint(source_name):
+    """Toggle a data source on/off"""
+    try:
+        from professional_data_pipeline import toggle_data_source
+        
+        data = request.get_json() or {}
+        enabled = data.get('enabled', True)
+        
+        success = toggle_data_source(source_name, enabled)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f"Data source {source_name} {'enabled' if enabled else 'disabled'}",
+                'source': source_name,
+                'enabled': enabled
+            })
+        else:
+            raise ValidationError(f"Unknown data source: {source_name}")
+            
+    except Exception as e:
+        logger.error(f"Failed to toggle data source: {e}")
+        raise ValidationError(f'Failed to toggle data source: {e}')
+
+
+@app.route('/api/data-pipeline/jobs', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['sport', 'model_type', 'data_sources'])
+def submit_data_job():
+    """Submit a data processing job"""
+    try:
+        from professional_data_pipeline import submit_data_job
+        
+        data = request.get_json()
+        sport = data['sport']
+        model_type = data['model_type']
+        data_sources = data['data_sources']
+        user_id = g.current_user.get('user_id', 'demo_user')
+        
+        # Validate inputs
+        valid_sports = ['NBA', 'NFL', 'MLB', 'NCAAF', 'NCAAB']
+        if sport not in valid_sports:
+            raise ValidationError(f"Invalid sport. Must be one of: {valid_sports}")
+            
+        valid_model_types = ['lstm_weather', 'ensemble', 'neural_network', 'statistical']
+        if model_type not in valid_model_types:
+            raise ValidationError(f"Invalid model type. Must be one of: {valid_model_types}")
+            
+        if not isinstance(data_sources, list) or not data_sources:
+            raise ValidationError("data_sources must be a non-empty list")
+        
+        job_id = submit_data_job(sport, model_type, data_sources, user_id)
+        
+        return jsonify({
+            'success': True,
+            'job_id': job_id,
+            'message': 'Data processing job submitted successfully',
+            'sport': sport,
+            'model_type': model_type,
+            'data_sources': data_sources,
+            'estimated_completion': '10 minutes'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to submit data job: {e}")
+        raise ValidationError(f'Failed to submit job: {e}')
+
+
+@app.route('/api/data-pipeline/jobs/<job_id>', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_job_status(job_id):
+    """Get the status of a data processing job"""
+    try:
+        from professional_data_pipeline import pipeline_manager
+        
+        job = pipeline_manager.get_job_status(job_id)
+        
+        if not job:
+            raise ValidationError(f"Job {job_id} not found")
+        
+        # Convert job to dict for JSON serialization
+        job_data = {
+            'job_id': job.job_id,
+            'sport': job.sport,
+            'model_type': job.model_type,
+            'data_sources': [ds.value for ds in job.data_sources],
+            'status': job.status.value,
+            'progress_percent': job.progress_percent,
+            'created_at': job.created_at.isoformat(),
+            'estimated_completion': job.estimated_completion.isoformat() if job.estimated_completion else None,
+            'error_message': job.error_message,
+            'logs': job.logs[-10:],  # Last 10 log entries
+            'results_available': job.status.value == 'completed' and bool(job.results)
+        }
+        
+        return jsonify({
+            'success': True,
+            'job': job_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get job status: {e}")
+        raise ValidationError(f'Failed to get job status: {e}')
+
+
+@app.route('/api/data-pipeline/jobs', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_user_jobs():
+    """Get all jobs for the current user"""
+    try:
+        from professional_data_pipeline import pipeline_manager
+        
+        user_id = g.current_user.get('user_id', 'demo_user')
+        jobs = pipeline_manager.get_user_jobs(user_id)
+        
+        jobs_data = []
+        for job in jobs:
+            job_data = {
+                'job_id': job.job_id,
+                'sport': job.sport,
+                'model_type': job.model_type,
+                'status': job.status.value,
+                'progress_percent': job.progress_percent,
+                'created_at': job.created_at.isoformat(),
+                'data_sources_count': len(job.data_sources),
+                'has_results': bool(job.results)
+            }
+            jobs_data.append(job_data)
+            
+        return jsonify({
+            'success': True,
+            'jobs': jobs_data,
+            'total_jobs': len(jobs_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get user jobs: {e}")
+        raise ValidationError(f'Failed to get user jobs: {e}')
+
+
+# --- INVESTMENT MANAGEMENT ENDPOINTS ---
+
+@app.route('/api/investments/hold', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['game_id', 'bet_type', 'selection', 'odds', 'amount'])
+def hold_investment():
+    """Hold an investment for manual export and placement"""
+    try:
+        from sportsbook_api import BetRequest, BetType
+        
+        # Use global betting service
+        global betting_service
+        if not betting_service:
+            raise ValidationError("Betting service not initialized")
+        
+        data = request.get_json()
+        user_id = g.current_user.get('user_id', 'demo_user')
+        
+        # Create bet request
+        bet_request = BetRequest(
+            game_id=data['game_id'],
+            bet_type=BetType(data['bet_type']),
+            selection=data['selection'],
+            odds=float(data['odds']),
+            amount=float(data['amount']),
+            line=data.get('line'),
+            sportsbook=data.get('sportsbook'),
+            notes=data.get('notes', ''),
+            confidence=data.get('confidence'),
+            model_prediction=data.get('model_prediction', {})
+        )
+        
+        result = betting_service.hold_investment(bet_request, user_id)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Failed to hold investment: {e}")
+        raise ValidationError(f'Failed to hold investment: {e}')
+
+
+@app.route('/api/investments/pending', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_pending_investments():
+    """Get pending investments for the current user"""
+    try:
+        # Use global betting service
+        global betting_service
+        if not betting_service:
+            raise ValidationError("Betting service not initialized")
+        
+        user_id = g.current_user.get('user_id', 'demo_user')
+        investments = betting_service.get_pending_investments(user_id)
+        
+        # Convert datetime objects to ISO strings
+        for inv in investments:
+            inv['created_at'] = inv['created_at'].isoformat()
+            if 'confirmed_at' in inv:
+                inv['confirmed_at'] = inv['confirmed_at'].isoformat()
+        
+        return jsonify({
+            'success': True,
+            'investments': investments,
+            'total_count': len(investments),
+            'total_amount': sum(inv['amount'] for inv in investments),
+            'total_potential_payout': sum(inv['potential_payout'] for inv in investments)
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get pending investments: {e}")
+        raise ValidationError(f'Failed to get pending investments: {e}')
+
+
+@app.route('/api/investments/export', methods=['GET'])
+@handle_errors
+@require_authentication
+def export_investments():
+    """Export pending investments to CSV"""
+    try:
+        from flask import Response
+        
+        # Use global betting service
+        global betting_service
+        if not betting_service:
+            raise ValidationError("Betting service not initialized")
+        
+        user_id = g.current_user.get('user_id', 'demo_user')
+        csv_content = betting_service.export_investments_to_csv(user_id)
+        
+        return Response(
+            csv_content,
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename=investments_{user_id}_{datetime.datetime.now().strftime("%Y%m%d")}.csv'}
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to export investments: {e}")
+        raise ValidationError(f'Failed to export investments: {e}')
+
+
+@app.route('/api/investments/<investment_id>/confirm', methods=['POST'])
+@handle_errors
+@require_authentication
+def confirm_investment(investment_id):
+    """Confirm that an investment was manually placed"""
+    try:
+        # Use global betting service
+        global betting_service
+        if not betting_service:
+            raise ValidationError("Betting service not initialized")
+        
+        data = request.get_json() or {}
+        user_id = g.current_user.get('user_id', 'demo_user')
+        
+        result = betting_service.confirm_investment(
+            investment_id=investment_id,
+            user_id=user_id,
+            actual_odds=data.get('actual_odds'),
+            actual_amount=data.get('actual_amount'),
+            bet_slip_id=data.get('bet_slip_id')
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Failed to confirm investment: {e}")
+        raise ValidationError(f'Failed to confirm investment: {e}')
+
+
+@app.route('/api/investments/<investment_id>/edit', methods=['PUT'])
+@handle_errors
+@require_authentication
+def edit_investment(investment_id):
+    """Edit a pending investment"""
+    try:
+        # Use global betting service
+        global betting_service
+        if not betting_service:
+            raise ValidationError("Betting service not initialized")
+        
+        data = request.get_json() or {}
+        user_id = g.current_user.get('user_id', 'demo_user')
+        
+        result = betting_service.edit_investment(investment_id, user_id, data)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Failed to edit investment: {e}")
+        raise ValidationError(f'Failed to edit investment: {e}')
+
+
+@app.route('/api/investments/<investment_id>/reject', methods=['POST'])
+@handle_errors
+@require_authentication
+def reject_investment(investment_id):
+    """Reject/cancel a pending investment"""
+    try:
+        # Use global betting service
+        global betting_service
+        if not betting_service:
+            raise ValidationError("Betting service not initialized")
+        
+        data = request.get_json() or {}
+        user_id = g.current_user.get('user_id', 'demo_user')
+        reason = data.get('reason', 'User cancelled')
+        
+        result = betting_service.reject_investment(investment_id, user_id, reason)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Failed to reject investment: {e}")
+        raise ValidationError(f'Failed to reject investment: {e}')
+
+
+# --- ENHANCED TRAINING ENDPOINTS ---
+
+@app.route('/api/training/real-training', methods=['POST'])
+@handle_errors
+@require_authentication
+@sanitize_request_data(required_fields=['sport', 'model_type'])
+def start_real_training():
+    """Start real model training with GPU infrastructure"""
+    try:
+        from training_queue import training_queue_manager
+        
+        data = request.get_json()
+        sport = data['sport']
+        model_type = data['model_type']
+        user_id = g.current_user.get('user_id', 'demo_user')
+        
+        # Enhanced training configuration
+        training_config = {
+            'sport': sport,
+            'model_type': model_type,
+            'use_real_data': True,
+            'use_weather_features': model_type == 'lstm_weather',
+            'epochs': data.get('epochs', 50),
+            'batch_size': data.get('batch_size', 32),
+            'learning_rate': data.get('learning_rate', 0.001),
+            'hidden_units': data.get('hidden_units', 128),
+            'dropout_rate': data.get('dropout_rate', 0.2)
+        }
+        
+        # Submit training job
+        job_id = training_queue_manager.submit_training_job(
+            model_name=f"{sport}_{model_type}_model",
+            sport=sport,
+            epochs=training_config['epochs'],
+            user_id=user_id,
+            training_config=training_config
+        )
+        
+        return jsonify({
+            'success': True,
+            'job_id': job_id,
+            'message': f'Real training started for {sport} {model_type} model',
+            'training_config': training_config,
+            'estimated_duration': f"{training_config['epochs'] * 10} seconds"
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to start real training: {e}")
+        raise ValidationError(f'Failed to start training: {e}')
+
+
+@app.route('/api/training/gpu-status', methods=['GET'])
+@handle_errors
+@require_authentication
+def get_gpu_status():
+    """Get current GPU status and availability"""
+    try:
+        from real_model_training import get_gpu_status
+        
+        gpu_status = get_gpu_status()
+        
+        return jsonify({
+            'success': True,
+            'gpus': gpu_status,
+            'total_gpus': len(gpu_status),
+            'available_gpus': sum(1 for gpu in gpu_status if gpu['is_available'])
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get GPU status: {e}")
+        raise ValidationError(f'Failed to get GPU status: {e}')
+
 
 # Add the imports at the top if not already present
 if __name__ == '__main__':
