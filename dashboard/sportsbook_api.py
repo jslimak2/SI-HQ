@@ -39,8 +39,17 @@ class BetRequest:
     bet_type: BetType
     selection: str  # team name or over/under
     odds: float
-    stake: float
+    amount: float  # Renamed from stake for consistency
     line: Optional[float] = None  # for spread/total bets
+    sportsbook: Optional[str] = None  # preferred sportsbook
+    notes: Optional[str] = None  # user notes
+    confidence: Optional[float] = None  # model confidence
+    model_prediction: Optional[Dict] = None  # model prediction data
+    
+    @property
+    def stake(self) -> float:
+        """Backward compatibility property"""
+        return self.amount
     
 @dataclass
 class BetResult:
@@ -310,52 +319,193 @@ class BettingExecutionService:
     """Main service for executing bets across multiple sportsbooks"""
     
     def __init__(self, enabled: bool = False):
-        self.enabled = enabled
+        """
+        Initialize betting service
+        
+        IMPORTANT: Live betting is disabled by default for safety.
+        Users must export holdings to Excel and manually place bets.
+        """
+        self.enabled = False  # Always disabled for production safety
         self.sportsbooks = {}
         self.default_sportsbook = None
+        self.pending_investments = {}  # Store investments for manual processing
         
-    def add_sportsbook(self, name: str, api_instance: SportsbookAPIBase, is_default: bool = False):
-        """Add a sportsbook to the service"""
+        # Log important safety message
+        logger.info("🚨 LIVE BETTING DISABLED FOR SAFETY 🚨")
+        logger.info("All investments will be held for manual export and placement")
+        
+    def add_sportsbook(self, name: str, api_instance: 'SportsbookAPIBase', is_default: bool = False):
+        """Add a sportsbook to the service (disabled for manual workflow)"""
+        logger.warning(f"Sportsbook {name} registered but live betting is disabled")
         self.sportsbooks[name] = api_instance
         if is_default or not self.default_sportsbook:
             self.default_sportsbook = name
         logger.info(f"Added sportsbook: {name}")
+            
+    def hold_investment(self, bet_request: 'BetRequest', user_id: str) -> Dict[str, Any]:
+        """Hold an investment for manual export and placement"""
+        investment_id = f"inv_{int(time.time())}_{len(self.pending_investments)}"
+        
+        investment = {
+            'id': investment_id,
+            'user_id': user_id,
+            'game': bet_request.game_id,
+            'market_type': bet_request.bet_type.value,
+            'selection': bet_request.selection,
+            'odds': bet_request.odds,
+            'amount': bet_request.amount,
+            'potential_payout': bet_request.amount * bet_request.odds,
+            'sportsbook': bet_request.sportsbook or 'User Choice',
+            'created_at': datetime.now(),
+            'status': 'pending_export',
+            'notes': bet_request.notes or '',
+            'confidence': getattr(bet_request, 'confidence', 0.0),
+            'model_prediction': getattr(bet_request, 'model_prediction', {})
+        }
+        
+        if user_id not in self.pending_investments:
+            self.pending_investments[user_id] = []
+            
+        self.pending_investments[user_id].append(investment)
+        
+        logger.info(f"Investment held for manual placement: {investment_id}")
+        
+        return {
+            'success': True,
+            'investment_id': investment_id,
+            'message': f'Investment held for manual export. Amount: ${bet_request.amount:.2f}',
+            'status': 'held_for_export',
+            'next_steps': [
+                'Export holdings to Excel',
+                'Manually place bets on your chosen sportsbook',
+                'Return to confirm, edit, or reject the investment'
+            ]
+        }
     
-    def place_bet(self, bet_request: BetRequest, sportsbook: str = None) -> BetResult:
-        """Place a bet on specified or default sportsbook"""
-        if not self.enabled:
-            logger.warning("Real betting is disabled")
-            return BetResult(
-                success=False,
-                message="Real betting is disabled",
-                error_code="BETTING_DISABLED"
-            )
+    def place_bet(self, bet_request: 'BetRequest', sportsbook: str = None) -> 'BetResult':
+        """Place a bet on specified or default sportsbook (DISABLED)"""
+        logger.warning("🚨 place_bet() called but live betting is DISABLED")
         
-        sportsbook_name = sportsbook or self.default_sportsbook
+        return BetResult(
+            success=False,
+            message="Live betting is disabled. Use hold_investment() instead.",
+            error_code="LIVE_BETTING_DISABLED"
+        )
         
-        if sportsbook_name not in self.sportsbooks:
-            return BetResult(
-                success=False,
-                message=f"Sportsbook {sportsbook_name} not configured",
-                error_code="SPORTSBOOK_NOT_FOUND"
-            )
+    def get_pending_investments(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get pending investments for a user"""
+        return self.pending_investments.get(user_id, [])
         
-        try:
-            sportsbook_api = self.sportsbooks[sportsbook_name]
-            result = sportsbook_api.place_bet(bet_request)
+    def export_investments_to_csv(self, user_id: str) -> str:
+        """Export user's pending investments to CSV format"""
+        investments = self.get_pending_investments(user_id)
+        
+        if not investments:
+            return "No pending investments to export"
             
-            # Log the bet placement
-            logger.info(f"Bet placed on {sportsbook_name}: {result.bet_id} - {result.message}")
+        # Create CSV content
+        csv_lines = [
+            "Investment ID,Game,Market Type,Selection,Odds,Amount,Potential Payout,Sportsbook,Created At,Notes"
+        ]
+        
+        for inv in investments:
+            csv_line = f"{inv['id']},{inv['game']},{inv['market_type']},{inv['selection']}," \
+                      f"{inv['odds']},{inv['amount']:.2f},{inv['potential_payout']:.2f}," \
+                      f"{inv['sportsbook']},{inv['created_at'].strftime('%Y-%m-%d %H:%M:%S')}," \
+                      f"\"{inv['notes']}\""
+            csv_lines.append(csv_line)
             
-            return result
-            
-        except Exception as e:
-            logger.error(f"Failed to place bet on {sportsbook_name}: {e}")
-            return BetResult(
-                success=False,
-                message=f"Betting service error: {str(e)}",
-                error_code="SERVICE_ERROR"
-            )
+        return "\n".join(csv_lines)
+        
+    def confirm_investment(self, investment_id: str, user_id: str, 
+                          actual_odds: Optional[float] = None,
+                          actual_amount: Optional[float] = None,
+                          bet_slip_id: Optional[str] = None) -> Dict[str, Any]:
+        """Confirm that an investment was manually placed"""
+        investments = self.pending_investments.get(user_id, [])
+        
+        for inv in investments:
+            if inv['id'] == investment_id:
+                inv['status'] = 'confirmed'
+                inv['confirmed_at'] = datetime.now()
+                
+                if actual_odds:
+                    inv['actual_odds'] = actual_odds
+                    inv['actual_payout'] = inv['amount'] * actual_odds
+                    
+                if actual_amount:
+                    inv['actual_amount'] = actual_amount
+                    
+                if bet_slip_id:
+                    inv['bet_slip_id'] = bet_slip_id
+                    
+                logger.info(f"Investment confirmed: {investment_id}")
+                
+                return {
+                    'success': True,
+                    'message': f'Investment {investment_id} confirmed as placed',
+                    'investment': inv
+                }
+                
+        return {
+            'success': False,
+            'message': f'Investment {investment_id} not found'
+        }
+        
+    def edit_investment(self, investment_id: str, user_id: str, 
+                       updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Edit a pending investment"""
+        investments = self.pending_investments.get(user_id, [])
+        
+        for inv in investments:
+            if inv['id'] == investment_id and inv['status'] == 'pending_export':
+                
+                # Update allowed fields
+                updatable_fields = ['amount', 'odds', 'selection', 'sportsbook', 'notes']
+                for field in updatable_fields:
+                    if field in updates:
+                        inv[field] = updates[field]
+                        
+                # Recalculate potential payout
+                inv['potential_payout'] = inv['amount'] * inv['odds']
+                inv['updated_at'] = datetime.now()
+                
+                logger.info(f"Investment edited: {investment_id}")
+                
+                return {
+                    'success': True,
+                    'message': f'Investment {investment_id} updated',
+                    'investment': inv
+                }
+                
+        return {
+            'success': False,
+            'message': f'Investment {investment_id} not found or cannot be edited'
+        }
+        
+    def reject_investment(self, investment_id: str, user_id: str, 
+                         reason: str = '') -> Dict[str, Any]:
+        """Reject/cancel a pending investment"""
+        investments = self.pending_investments.get(user_id, [])
+        
+        for i, inv in enumerate(investments):
+            if inv['id'] == investment_id:
+                inv['status'] = 'rejected'
+                inv['rejected_at'] = datetime.now()
+                inv['rejection_reason'] = reason
+                
+                logger.info(f"Investment rejected: {investment_id} - {reason}")
+                
+                return {
+                    'success': True,
+                    'message': f'Investment {investment_id} rejected',
+                    'reason': reason
+                }
+                
+        return {
+            'success': False,
+            'message': f'Investment {investment_id} not found'
+        }
     
     def get_best_odds(self, game_id: str, bet_type: BetType, selection: str) -> Dict[str, float]:
         """Get best odds across all configured sportsbooks"""
