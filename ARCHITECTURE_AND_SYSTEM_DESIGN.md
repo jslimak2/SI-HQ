@@ -1,8 +1,18 @@
 # Post*9 Sports Investment Platform - Architecture & System Design
 
+**MAJOR UPDATE - September 14, 2025**: Enhanced with real model training infrastructure, GPU support, weather integration, and professional data pipeline.
+
 ## Overview
 
 Post*9 is a sophisticated sports investment platform that combines advanced machine learning with automated trading strategies. The platform enables users to create, test, and deploy data-driven investment strategies across multiple sports markets.
+
+### 🆕 Recent Infrastructure Enhancements
+
+1. **Real Model Training**: GPU infrastructure with TensorFlow/PyTorch support
+2. **Weather API Integration**: OpenWeatherMap integration for LSTM weather models
+3. **Professional Data Pipeline**: Modular, toggleable data sources with job processing
+4. **Safety-First Investment**: Manual export-place-confirm workflow (live betting disabled)
+5. **Real Data Collection**: NBA/NFL API integration with synthetic fallbacks
 
 ## Core Concepts Explained
 
@@ -11,17 +21,17 @@ Post*9 is a sophisticated sports investment platform that combines advanced mach
 A **Model** in Post*9 is a machine learning algorithm trained to predict sports outcomes and calculate betting probabilities. Models analyze historical data, team statistics, player performance, and even weather conditions to make intelligent predictions.
 
 **Types of Models:**
-- **LSTM + Weather Models**: Use Long Short-Term Memory neural networks combined with weather data for outdoor sports
-- **Ensemble Models**: Combine multiple algorithms (Random Forest, XGBoost, LightGBM) for robust predictions
-- **Neural Network Models**: Deep learning models including CNNs and Transformers
-- **Statistical Models**: Traditional statistical approaches using correlations and regression analysis
+- **🆕 LSTM + Weather Models**: Now with real weather API integration for outdoor sports
+- **🆕 Ensemble Models**: Enhanced with real training data and GPU acceleration
+- **🆕 Neural Network Models**: TensorFlow/PyTorch implementation with actual GPU training
+- **Statistical Models**: Traditional statistical approaches using real historical data
 
-**What Models Do:**
-- Analyze team statistics and historical performance
-- Process real-time data feeds
-- Generate probability predictions for game outcomes
-- Calculate expected value for different betting scenarios
-- Adapt to changing team dynamics and market conditions
+**Enhanced Model Capabilities:**
+- Real NBA/NFL historical data analysis
+- Weather impact modeling for outdoor sports
+- GPU-accelerated training with performance metrics
+- Real-time model evaluation and comparison
+- Professional feature engineering pipeline
 
 ### 📋 What is a Strategy?
 

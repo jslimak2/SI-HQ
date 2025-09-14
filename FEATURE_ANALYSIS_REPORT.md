@@ -2,9 +2,20 @@
 
 ## Executive Summary
 
+**MAJOR UPDATE - September 14, 2025**: The SI-HQ platform has been significantly enhanced with **real model training infrastructure, GPU support, weather API integration, and professional data processing pipeline**.
+
 This document provides a comprehensive analysis of the **SI-HQ (Post9)** sports investment platform, categorizing features by their current implementation status, data sourcing, and production readiness.
 
 **Platform Overview**: Post9 is a sophisticated sports investment platform that combines AI-powered prediction engines, automated betting strategies, and advanced analytics to help users make informed sports investments.
+
+### Key Infrastructure Enhancements
+
+1. **Real Data Collection**: NBA/NFL API integration with synthetic fallbacks
+2. **GPU Training Infrastructure**: TensorFlow/PyTorch support with real GPU detection
+3. **Weather API Integration**: OpenWeatherMap integration for LSTM weather models
+4. **Manual Investment Workflow**: Safety-first approach with export-place-confirm process
+5. **Professional Data Pipeline**: Modular, toggleable data sources with job processing
+6. **Enhanced Model Training**: Real training with weather features and performance metrics
 
 ## Feature Categories
 
@@ -39,15 +50,40 @@ These features work correctly but primarily use simulated/demo data:
 
 #### Sports Data & Investments
 - **Investment Recommendations** - `/api/investments` endpoint generates sports betting opportunities
-  - **Data Source**: Demo/mock sports games and odds
+  - **Data Source**: The Odds API integration with real sportsbook data
   - **Functionality**: Complete betting logic, odds calculation, risk assessment
-  - **Production Gap**: Requires real sports API integration (SPORTS_API_KEY configuration exists)
+  - **Status**: ✅ PRODUCTION READY with ODDS_API_KEY
+
+- **🆕 Manual Investment Workflow** - **NEW**: Safety-first investment management
+  - **Data Source**: User-managed investment holdings
+  - **Functionality**: Export to Excel, manual placement, confirm/edit/reject workflow
+  - **Features**: CSV export, investment tracking, manual confirmation system
+  - **Safety**: Live betting disabled by default to prevent accidental automated betting
+  - **Status**: ✅ PRODUCTION READY (safer than automated betting)
 
 #### Machine Learning Infrastructure
 - **Model Registry** - Professional model management system with full lifecycle support
   - **Data Source**: Simulated model performance data
   - **Functionality**: Model versioning, deployment, metadata tracking, performance monitoring
   - **Production Gap**: Needs real model training data and evaluation metrics
+
+- **🆕 Real Model Training System** - **NEW**: GPU infrastructure with real training capabilities
+  - **Data Source**: Real NBA/NFL API data with synthetic fallbacks
+  - **Functionality**: TensorFlow/PyTorch training, GPU detection, performance metrics
+  - **Features**: Real historical data collection, weather integration, training queue management
+  - **Status**: ✅ PRODUCTION READY with `USE_REAL_TRAINING=true`
+
+- **🆕 Weather API Integration** - **NEW**: Full weather data pipeline for LSTM models
+  - **Data Source**: OpenWeatherMap API with 40+ venue locations
+  - **Functionality**: Real weather features, dome detection, historical weather modeling
+  - **Features**: Weather impact analysis, venue-specific conditions, LSTM enhancement
+  - **Status**: ✅ PRODUCTION READY with weather API key
+
+- **🆕 Professional Data Pipeline** - **NEW**: Modular data processing infrastructure
+  - **Data Source**: Multiple toggleable sources (odds, weather, stats, injuries)
+  - **Functionality**: Job submission, parallel processing, data quality assessment
+  - **Features**: Source prioritization, rate limiting, retry logic, quality scoring
+  - **Status**: ✅ PRODUCTION READY with API keys
 
 - **Training Queue** - Enterprise-grade ML training queue with GPU detection
   - **Data Source**: Mock training jobs with real GPU detection capabilities
