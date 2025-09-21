@@ -3673,7 +3673,7 @@ function showInvestmentDetails(gameId, teams, sport, commenceTime) {
     updateInvestorRecommendationsDisplay(investorRecommendations, calculatedWagers);
     
     // Show the modal
-    modal.classList.remove('hidden');
+    window.showModal('investment-details-modal');
 }
 
 // Generate comprehensive consensus analysis across all sportsbooks
