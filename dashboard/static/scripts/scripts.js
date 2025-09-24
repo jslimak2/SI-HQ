@@ -353,10 +353,6 @@ function displayBots() {
                                     ${bot.strategy_id ? `
                                         <div class="mt-4 pt-4 border-t border-gray-200">
                                             <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
-                                            <button onclick="event.stopPropagation(); window.getStrategyPicks('${bot.id}', '${bot.strategy_id}')" 
-                                                    class="post9-btn px-4 py-2 text-sm">
-                                                Show Recommended Investments
-                                            </button>
                                             <div id="picks-content-${bot.id}" class="mt-2"></div>
                                         </div>
                                     ` : ''}
@@ -993,6 +989,16 @@ window.toggleBotWagers = function(botId) {
     const wagersRow = document.getElementById(`wagers-${botId}`);
     if (wagersRow) {
         wagersRow.classList.toggle('hidden');
+        
+        // Auto-populate recommended investments when expanding investor details
+        if (!wagersRow.classList.contains('hidden')) {
+            // Find the bot data to get strategy_id
+            const bot = bots.find(b => b.id === botId);
+            if (bot && bot.strategy_id) {
+                // Automatically trigger strategy picks
+                window.getStrategyPicks(botId, bot.strategy_id);
+            }
+        }
     }
 };
 
