@@ -344,6 +344,37 @@ def get_user_collections(user_id):
     }
 
 # --- Sports Data Helper Functions ---
+
+def get_bot_sport(bot_data, default='NBA'):
+    """
+    Extract sport preference from bot data, handling multiple field names and data types.
+    
+    Args:
+        bot_data: Bot configuration dictionary
+        default: Default sport if none found
+    
+    Returns:
+        str: Sport name (e.g., 'NFL', 'NBA')
+    """
+    bot_sport = None
+    
+    # Try different ways the sport might be stored in bot_data
+    if 'sport_filter' in bot_data:
+        bot_sport = bot_data['sport_filter']
+    elif 'sport' in bot_data:
+        bot_sport = bot_data['sport']
+    
+    # Handle case where sport is stored as an enum object
+    if hasattr(bot_sport, 'value'):
+        bot_sport = bot_sport.value
+    
+    # Return default if no sport found or if it's None/empty
+    if not bot_sport:
+        bot_sport = default
+        logger.warning(f"No sport preference found in bot data, defaulting to {bot_sport}")
+    
+    return bot_sport
+
 def get_sports_games_data(sport='NBA', max_games=10):
     """
     Get sports games data - uses real API when available, falls back to demo data
@@ -1249,7 +1280,9 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
     kelly_fraction = safe_float_extract(params.get('kelly_fraction', 0.25), 0.25)
     
     # Get sports games data (real or demo depending on configuration)
-    bot_sport = bot_data.get('sport_filter', 'NBA')
+    # Get bot's sport preference using helper function
+    bot_sport = get_bot_sport(bot_data)
+    
     all_games = get_sports_games_data(bot_sport, max_picks * 2)  # Get more than needed for filtering
     
     # Filter games based on +eV criteria
@@ -1467,7 +1500,9 @@ def generate_basic_strategy_picks(bot_data, max_picks):
     ]
     
     # Filter by bot's preferred sport if specified
-    bot_sport = bot_data.get('sport')
+    # Get bot's sport preference using helper function
+    bot_sport = get_bot_sport(bot_data, default=None)
+    
     if bot_sport and bot_sport != 'All':
         filtered_games = [g for g in demo_games if g['sport'] == bot_sport]
         if filtered_games:
@@ -2119,7 +2154,7 @@ def generate_real_bot_recommendations(user_id):
         # 2. Get current sports games with real data
         sports_to_check = set()
         for bot in user_bots:
-            sport = bot.get('sport_filter', 'NBA')
+            sport = get_bot_sport(bot)
             sports_to_check.add(sport)
         
         # Default to NBA if no sports specified
@@ -2171,7 +2206,7 @@ def _generate_bot_recommendation_for_game(bot, game):
     """
     try:
         # Get bot preferences
-        bot_sport = bot.get('sport_filter')
+        bot_sport = get_bot_sport(bot, default=None)
         game_sport = game.get('sport', 'NBA')
         
         # Skip if bot doesn't match this sport
@@ -2319,8 +2354,8 @@ def generate_real_strategy_picks(strategy_data, bot_data, max_picks):
     logger.info(f"Generating real strategy picks for strategy {strategy_data.get('name', 'unknown')}")
     
     try:
-        # Get bot's sport preference
-        bot_sport = bot_data.get('sport_filter', 'NBA')
+        # Get bot's sport preference using helper function
+        bot_sport = get_bot_sport(bot_data)
         
         # Get real games data for the bot's sport
         real_games = get_sports_games_data(bot_sport, max_picks * 2)  # Get more than needed for filtering
