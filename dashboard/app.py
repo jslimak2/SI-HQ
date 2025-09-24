@@ -14,7 +14,7 @@ try:
     from real_sports_api import get_real_sports_service, initialize_real_sports_service
     REAL_SPORTS_API_AVAILABLE = True
 except ImportError as e:
-    print(f"🟡 WARNING: Real sports API not available: {e}")
+    print(f"[WARNING] Real sports API not available: {e}")
     REAL_SPORTS_API_AVAILABLE = False
 
 # Import firebase_admin optionally
@@ -24,8 +24,8 @@ try:
     FIREBASE_AVAILABLE = True
     print("Firebase components loaded successfully")
 except ImportError as e:
-    print(f"🟡 WARNING: Firebase components not available: {e}")
-    print(f"🟡 WARNING: Running in MOCK MODE - no real database connections!")
+    print(f"[WARNING] Firebase components not available: {e}")
+    print(f"[WARNING] Running in MOCK MODE - no real database connections!")
     FIREBASE_AVAILABLE = False
     # ⚠️  MOCK FIRESTORE - NOT REAL DATABASE ⚠️
     # This mock class provides fake Firebase functionality for demo/testing purposes
@@ -36,25 +36,25 @@ except ImportError as e:
         All operations are fake and return empty/default values.
         """
         def collection(self, name): 
-            print(f"🟡 MOCK: Accessing collection '{name}' (no real data)")
+            print(f"[MOCK]: Accessing collection '{name}' (no real data)")
             return self
         def document(self, id): 
-            print(f"🟡 MOCK: Accessing document '{id}' (no real data)")
+            print(f"[MOCK]: Accessing document '{id}' (no real data)")
             return self
         def get(self): 
-            print(f"🟡 MOCK: Getting document (returning empty data)")
+            print(f"[MOCK]: Getting document (returning empty data)")
             return self
         def to_dict(self): 
-            print(f"🟡 MOCK: Converting to dict (returning empty dict)")
+            print(f"[MOCK]: Converting to dict (returning empty dict)")
             return {}
         def set(self, data): 
-            print(f"🟡 MOCK: Setting data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
+            print(f"[MOCK]: Setting data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
             pass
         def update(self, data): 
-            print(f"🟡 MOCK: Updating data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
+            print(f"[MOCK]: Updating data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
             pass
         def delete(self): 
-            print(f"🟡 MOCK: Deleting document (nothing actually deleted)")
+            print(f"[MOCK]: Deleting document (nothing actually deleted)")
             pass
     firestore = MockFirestore()
 
@@ -389,7 +389,7 @@ def get_sports_games_data(sport='NBA', max_games=10):
     try:
         # Try to use real sports API first
         if real_sports_service and config.api.sports_api_key and not config.disable_demo_mode:
-            logger.info(f"🔍 Fetching real sports data for {sport}")
+            logger.info(f"[DATA] Fetching real sports data for {sport}")
             real_games = real_sports_service.get_current_games(sport.lower())
             
             if real_games and len(real_games) > 0:
@@ -402,16 +402,16 @@ def get_sports_games_data(sport='NBA', max_games=10):
                 
                 # Check if we're using real data or emergency fallback
                 data_source = "REAL API DATA" if real_games[0].get('real_data', False) else "EMERGENCY FALLBACK"
-                logger.info(f"✅ Successfully fetched {len(limited_games)} {data_source} games for {sport}")
+                logger.info(f"[SUCCESS] Successfully fetched {len(limited_games)} {data_source} games for {sport}")
                 return limited_games
         
         # Fallback to demo data
-        logger.info(f"🟡 Using demo sports data for {sport} (no real API available)")
+        logger.info(f"[FALLBACK] Using demo sports data for {sport} (no real API available)")
         return get_demo_games_data(sport, max_games)
         
     except Exception as e:
-        logger.error(f"❌ Error fetching sports data: {e}")
-        logger.info(f"🔄 Falling back to demo data for {sport}")
+        logger.error(f"[ERROR] Error fetching sports data: {e}")
+        logger.info(f"[FALLBACK] Falling back to demo data for {sport}")
         return get_demo_games_data(sport, max_games)
 
 def get_demo_games_data(sport='NBA', max_games=10):
@@ -1751,7 +1751,7 @@ def generate_demo_investments():
     Generate demo investment data for testing - NOT REAL INVESTMENTS
     All data returned is mock/fake for demonstration purposes only
     """
-    print("🟡 GENERATING FAKE INVESTMENT DATA for demo purposes")
+    print("[DEMO] GENERATING FAKE INVESTMENT DATA for demo purposes")
     import random
     from datetime import datetime, timedelta
     
@@ -2008,7 +2008,7 @@ def generate_demo_bot_recommendations():
     Generate demo bot recommendations for testing - NOT REAL BOTS OR MONEY
     All bots, balances, and recommendations are fake for demonstration only
     """
-    print("🟡 GENERATING FAKE BOT RECOMMENDATIONS for demo purposes")
+    print("[DEMO] GENERATING FAKE BOT RECOMMENDATIONS for demo purposes")
     import random
     
     # Demo bots with different characteristics
@@ -2115,7 +2115,7 @@ def generate_real_bot_recommendations(user_id):
     Generate real bot recommendations using actual user bots and live sports data
     Uses real bots, strategies, and current sports games
     """
-    print("🟢 GENERATING REAL BOT RECOMMENDATIONS using live data")
+    print("[BOT_RECS] GENERATING REAL BOT RECOMMENDATIONS using live data")
     logger.info(f"Generating real bot recommendations for user {user_id}")
     
     recommendations = {}
@@ -2330,7 +2330,7 @@ def generate_demo_strategy_picks(strategy_id):
     Generate demo strategy picks for testing - NOT REAL BETTING RECOMMENDATIONS
     All picks, odds, and amounts are fake for demonstration only
     """
-    print(f"🟡 GENERATING FAKE STRATEGY PICKS for strategy {strategy_id}")
+    print(f"[DEMO] GENERATING FAKE STRATEGY PICKS for strategy {strategy_id}")
     import random
     
     # Demo games for different sports

@@ -337,11 +337,11 @@ class RealSportsDataService:
                         'real_data': True  # Flag to indicate this is real data
                     })
                 
-                logger.info(f"✅ Successfully fetched {len(games)} REAL games for {sport} from API")
+                logger.info(f"[SUCCESS] Successfully fetched {len(games)} REAL games for {sport} from API")
                 
             except Exception as e:
-                logger.error(f"❌ Failed to fetch real games data from API: {e}")
-                logger.info(f"🔄 Falling back to emergency data for {sport}")
+                logger.error(f"[ERROR] Failed to fetch real games data from API: {e}")
+                logger.info(f"[FALLBACK] Falling back to emergency data for {sport}")
                 games = self._get_emergency_fallback_data()
         else:
             logger.warning(f"⚠️  No odds API configured, using emergency fallback data for {sport}")
