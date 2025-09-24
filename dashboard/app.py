@@ -17,15 +17,13 @@ except ImportError as e:
     print(f"[WARNING] Real sports API not available: {e}")
     REAL_SPORTS_API_AVAILABLE = False
 
-# Import firebase_admin optionally
+# Import firebase_admin optionally - moved to avoid duplicate initialization
 try:
     import firebase_admin
     from firebase_admin import credentials, firestore, auth
     FIREBASE_AVAILABLE = True
-    print("Firebase components loaded successfully")
+    # Print statement moved to app initialization function to prevent duplicates
 except ImportError as e:
-    print(f"[WARNING] Firebase components not available: {e}")
-    print(f"[WARNING] Running in MOCK MODE - no real database connections!")
     FIREBASE_AVAILABLE = False
     # ⚠️  MOCK FIRESTORE - NOT REAL DATABASE ⚠️
     # This mock class provides fake Firebase functionality for demo/testing purposes
@@ -36,25 +34,18 @@ except ImportError as e:
         All operations are fake and return empty/default values.
         """
         def collection(self, name): 
-            print(f"[MOCK]: Accessing collection '{name}' (no real data)")
             return self
         def document(self, id): 
-            print(f"[MOCK]: Accessing document '{id}' (no real data)")
             return self
         def get(self): 
-            print(f"[MOCK]: Getting document (returning empty data)")
             return self
         def to_dict(self): 
-            print(f"[MOCK]: Converting to dict (returning empty dict)")
             return {}
         def set(self, data): 
-            print(f"[MOCK]: Setting data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
             pass
         def update(self, data): 
-            print(f"[MOCK]: Updating data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
             pass
         def delete(self): 
-            print(f"[MOCK]: Deleting document (nothing actually deleted)")
             pass
     firestore = MockFirestore()
 
@@ -80,7 +71,7 @@ from user_engagement import engagement_system
 # Import core betting logic to avoid code duplication
 from betting_logic import simulate_single_bet, simulate_real_world_bet
 
-# Import advanced ML and analytics components
+# Import advanced ML and analytics components - print statements moved to initialization
 try:
     import sys
     sys.path.append(os.path.dirname(__file__))
@@ -90,197 +81,251 @@ try:
     from models.neural_predictor import SportsNeuralPredictor, generate_demo_training_data
     from models.ensemble_predictor import SportsEnsemblePredictor
     ML_AVAILABLE = True
-    print("Advanced ML components loaded successfully")
+    # Print statement moved to app initialization function
 except ImportError as e:
-    print(f"Advanced ML components not available: {e}")
     try:
         # Fallback to basic ML components
         from ml.basic_predictor import BasicSportsPredictor, BasicAnalyzer, generate_demo_data
         ML_AVAILABLE = True
         BASIC_ML_ONLY = True
-        print("Basic ML components loaded as fallback")
+        # Print statement moved to app initialization function
     except ImportError as e2:
-        print(f"Basic ML components also not available: {e2}")
         ML_AVAILABLE = False
         BASIC_ML_ONLY = False
 
-# Import training queue management
+# Import training queue management - print statements moved to initialization
 try:
     from training_queue import training_queue
     TRAINING_QUEUE_AVAILABLE = True
-    print("Training queue system loaded successfully")
+    # Print statement moved to app initialization function
 except ImportError as e:
-    print(f"Training queue not available: {e}")
     TRAINING_QUEUE_AVAILABLE = False
 
-# Import performance matrix and sport models
+# Import performance matrix and sport models - print statements moved to initialization
 try:
     from performance_matrix import performance_matrix
     from sport_models import SportsModelFactory, Sport, ModelType
     PERFORMANCE_MATRIX_AVAILABLE = True
     SPORT_MODELS_AVAILABLE = True
-    print("Performance matrix and sport models loaded successfully")
+    # Print statement moved to app initialization function
 except ImportError as e:
-    print(f"Performance matrix or sport models not available: {e}")
     PERFORMANCE_MATRIX_AVAILABLE = False
     SPORT_MODELS_AVAILABLE = False
 
-# Import backtesting engine
+# Import backtesting engine - print statements moved to initialization
 try:
     from backtesting import backtesting_engine, BacktestConfig, BettingStrategy
     BACKTESTING_AVAILABLE = True
-    print("Backtesting engine loaded successfully")
+    # Print statement moved to app initialization function
 except ImportError as e:
-    print(f"Backtesting engine not available: {e}")
     BACKTESTING_AVAILABLE = False
 
-# Import data pipeline
+# Import data pipeline - print statements moved to initialization
 try:
     from data_pipeline import data_pipeline
     DATA_PIPELINE_AVAILABLE = True
-    print("Data pipeline loaded successfully")
+    # Print statement moved to app initialization function
 except ImportError as e:
-    print(f"Data pipeline not available: {e}")
     DATA_PIPELINE_AVAILABLE = False
 
-# Import and initialize betting service
+# Import and initialize betting service - print statements moved to initialization
 try:
     from sportsbook_api import BettingExecutionService
     # Initialize with live betting disabled for safety
     betting_service = BettingExecutionService(enabled=False)
     BETTING_SERVICE_AVAILABLE = True
-    print("Betting service initialized (live betting disabled for safety)")
+    # Print statement moved to app initialization function
 except ImportError as e:
-    print(f"Betting service not available: {e}")
     BETTING_SERVICE_AVAILABLE = False
     betting_service = None
 
-# Load environment variables from .env file
-config = ConfigManager.load_config()
-logger = setup_logging(config)
+# Global flag to prevent duplicate initialization
+_app_initialized = False
 
-# Initialize real sports API service if available
-if REAL_SPORTS_API_AVAILABLE and config.api.sports_api_key:
-    try:
-        real_sports_service = initialize_real_sports_service(
-            odds_api_key=config.api.sports_api_key,
-            espn_api_key=None  # ESPN doesn't require API key
-        )
-        logger.info("Real sports API service initialized successfully")
-    except Exception as e:
-        logger.warning(f"Failed to initialize real sports API service: {e}")
-        real_sports_service = None
-else:
-    real_sports_service = None
-    if config.disable_demo_mode:
-        logger.error("Demo mode disabled but no sports API key configured!")
-
-# Validate configuration
-config_warnings = validate_config(config)
-for warning in config_warnings:
-    logger.warning(f"Configuration warning: {warning}")
-
-# --- Firebase Initialization ---
-# Load the path to the service account key from an environment variable
-demo_mode = False
-try:
-    # Check if demo mode is explicitly disabled
-    if config.disable_demo_mode:
-        print("[INFO] DISABLE_DEMO_MODE=true - Forcing production mode")
-        logger.info("[CONFIG] Demo mode explicitly disabled via configuration")
-        if not FIREBASE_AVAILABLE:
-            print("[ERROR] Demo mode disabled but Firebase not available - cannot run in production mode")
-            logger.error("[CONFIG] Demo mode disabled but Firebase dependencies missing")
-            raise ValueError("Cannot disable demo mode without Firebase dependencies")
-        
-        cred_path = config.database.service_account_path
-        if not cred_path or not os.path.exists(cred_path):
-            print("[ERROR] Demo mode disabled but no valid Firebase credentials found")
-            logger.error(f"[CONFIG] Demo mode disabled but credentials missing or invalid: {cred_path}")
-            raise ValueError("Cannot disable demo mode without valid Firebase credentials")
-        
-        if 'demo' in cred_path:
-            print("[ERROR] Demo mode disabled but using demo credentials")
-            logger.error(f"[CONFIG] Demo mode disabled but demo credentials detected: {cred_path}")
-            raise ValueError("Cannot disable demo mode while using demo credentials")
-        
-        # Force production mode
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        db = firestore.client()
-        demo_mode = False
-        logger.info("[SUCCESS] PRODUCTION MODE: Demo mode disabled, using real database")
-        print("[SUCCESS] PRODUCTION MODE: Demo mode disabled, real database connection established")
+def initialize_app():
+    """Initialize the application components - called only once"""
+    global _app_initialized, demo_mode, db, config, logger, real_sports_service, app_id, firebase_config, external_api_key
     
-    elif not FIREBASE_AVAILABLE:
-        print("[WARNING] Running in DEMO MODE - Firebase not available")
-        print("[WARNING] All data operations will use MOCK/FAKE data")
-        logger.warning("[DEMO MODE] Firebase not available, running with mock data")
-        demo_mode = True
-        db = None
+    if _app_initialized:
+        return  # Prevent duplicate initialization
+        
+    # Print startup messages only during initialization
+    if FIREBASE_AVAILABLE:
+        print("Firebase components loaded successfully")
     else:
-        cred_path = config.database.service_account_path
-        if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
-            print("[WARNING] Running in DEMO MODE - Firebase features will be limited")
-            print("[WARNING] Using demo service account or no valid credentials")
-            logger.warning("[DEMO MODE] Invalid or demo credentials detected")
-            demo_mode = True
-            db = None
+        print(f"[WARNING] Firebase components not available")
+        print(f"[WARNING] Running in MOCK MODE - no real database connections!")
+        
+    if ML_AVAILABLE:
+        if hasattr(globals(), 'BASIC_ML_ONLY') and BASIC_ML_ONLY:
+            print("Basic ML components loaded as fallback")
         else:
+            print("Advanced ML components loaded successfully")
+    
+    if TRAINING_QUEUE_AVAILABLE:
+        print("Training queue system loaded successfully")
+        
+    if PERFORMANCE_MATRIX_AVAILABLE and SPORT_MODELS_AVAILABLE:
+        print("Performance matrix and sport models loaded successfully")
+        
+    if BACKTESTING_AVAILABLE:
+        print("Backtesting engine loaded successfully")
+        
+    if DATA_PIPELINE_AVAILABLE:
+        print("Data pipeline loaded successfully")
+        
+    if BETTING_SERVICE_AVAILABLE:
+        print("Betting service initialized (live betting disabled for safety)")
+
+    # Load environment variables from .env file
+    config = ConfigManager.load_config()
+    logger = setup_logging(config)
+
+    # Initialize real sports API service if available
+    if REAL_SPORTS_API_AVAILABLE and config.api.sports_api_key:
+        try:
+            real_sports_service = initialize_real_sports_service(
+                odds_api_key=config.api.sports_api_key,
+                espn_api_key=None  # ESPN doesn't require API key
+            )
+            logger.info("Real sports API service initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize real sports API service: {e}")
+            real_sports_service = None
+    else:
+        real_sports_service = None
+        if config.disable_demo_mode:
+            logger.error("Demo mode disabled but no sports API key configured!")
+
+    # Validate configuration
+    config_warnings = validate_config(config)
+    for warning in config_warnings:
+        logger.warning(f"Configuration warning: {warning}")
+
+    # --- Firebase Initialization ---
+    # Load the path to the service account key from an environment variable
+    demo_mode = False
+    try:
+        # Check if demo mode is explicitly disabled
+        if config.disable_demo_mode:
+            print("[INFO] DISABLE_DEMO_MODE=true - Forcing production mode")
+            logger.info("[CONFIG] Demo mode explicitly disabled via configuration")
+            if not FIREBASE_AVAILABLE:
+                print("[ERROR] Demo mode disabled but Firebase not available - cannot run in production mode")
+                logger.error("[CONFIG] Demo mode disabled but Firebase dependencies missing")
+                raise ValueError("Cannot disable demo mode without Firebase dependencies")
+            
+            cred_path = config.database.service_account_path
+            if not cred_path or not os.path.exists(cred_path):
+                print("[ERROR] Demo mode disabled but no valid Firebase credentials found")
+                logger.error(f"[CONFIG] Demo mode disabled but credentials missing or invalid: {cred_path}")
+                raise ValueError("Cannot disable demo mode without valid Firebase credentials")
+            
+            if 'demo' in cred_path:
+                print("[ERROR] Demo mode disabled but using demo credentials")
+                logger.error(f"[CONFIG] Demo mode disabled but demo credentials detected: {cred_path}")
+                raise ValueError("Cannot disable demo mode while using demo credentials")
+            
+            # Force production mode
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
             db = firestore.client()
-            logger.info("[SUCCESS] PRODUCTION MODE: Firestore client initialized successfully")
-            print("[SUCCESS] PRODUCTION MODE: Real database connection established")
-except Exception as e:
-    if config.disable_demo_mode:
-        print(f"[ERROR] Demo mode disabled but initialization failed: {e}")
-        logger.error(f"[CONFIG] Demo mode disabled but Firebase initialization failed: {e}")
-        raise
-    else:
-        print("[ERROR] Firebase initialization failed - falling back to DEMO MODE")
-        logger.error(f"[DEMO MODE] Firebase initialization failed, running with mock data: {e}")
-        demo_mode = True
-        db = None
+            demo_mode = False
+            logger.info("[SUCCESS] PRODUCTION MODE: Demo mode disabled, using real database")
+            print("[SUCCESS] PRODUCTION MODE: Demo mode disabled, real database connection established")
+        
+        elif not FIREBASE_AVAILABLE:
+            print("[WARNING] Running in DEMO MODE - Firebase not available")
+            print("[WARNING] All data operations will use MOCK/FAKE data")
+            logger.warning("[DEMO MODE] Firebase not available, running with mock data")
+            demo_mode = True
+            db = None
+        else:
+            cred_path = config.database.service_account_path
+            if not cred_path or not os.path.exists(cred_path) or 'demo' in cred_path:
+                print("[WARNING] Running in DEMO MODE - Firebase features will be limited")
+                print("[WARNING] Using demo service account or no valid credentials")
+                logger.warning("[DEMO MODE] Invalid or demo credentials detected")
+                demo_mode = True
+                db = None
+            else:
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+                db = firestore.client()
+                logger.info("[SUCCESS] PRODUCTION MODE: Firestore client initialized successfully")
+                print("[SUCCESS] PRODUCTION MODE: Real database connection established")
+    except Exception as e:
+        if config.disable_demo_mode:
+            print(f"[ERROR] Demo mode disabled but initialization failed: {e}")
+            logger.error(f"[CONFIG] Demo mode disabled but Firebase initialization failed: {e}")
+            raise
+        else:
+            print("[ERROR] Firebase initialization failed - falling back to DEMO MODE")
+            logger.error(f"[DEMO MODE] Firebase initialization failed, running with mock data: {e}")
+            demo_mode = True
+            db = None
 
-# Additional demo mode warnings
-if demo_mode:
-    print("=" + "="*60 + "=")
-    print("= RUNNING IN DEMO MODE - NOT PRODUCTION DATA =")
-    print("= All investments, investors, and analytics are FAKE =") 
-    print("=" + "="*60 + "=")
-elif config.disable_demo_mode:
-    print("=" + "="*60 + "=")
-    print("= PRODUCTION MODE ENABLED (Demo mode disabled) =")
-    print("= Using REAL data and live connections =") 
-    print("= Set DISABLE_DEMO_MODE=false to re-enable demo mode =")
-    print("=" + "="*60 + "=")
+    # Additional demo mode warnings
+    if demo_mode:
+        print("=" + "="*60 + "=")
+        print("= RUNNING IN DEMO MODE - NOT PRODUCTION DATA =")
+        print("= All investments, investors, and analytics are FAKE =") 
+        print("=" + "="*60 + "=")
+    elif config.disable_demo_mode:
+        print("=" + "="*60 + "=")
+        print("= PRODUCTION MODE ENABLED (Demo mode disabled) =")
+        print("= Using REAL data and live connections =") 
+        print("= Set DISABLE_DEMO_MODE=false to re-enable demo mode =")
+        print("=" + "="*60 + "=")
 
-app = Flask(__name__)
-app.secret_key = config.secret_key
+    # Load the Firebase App ID for collections from an environment variable
+    app_id = config.database.firebase_app_id
+    if not app_id:
+        raise ValueError("FIREBASE_APP_ID not found in environment variables.")
 
-# Initialize security manager
-app.security_manager = SecurityManager(config.secret_key)
+    # Load the client-side Firebase configuration from environment variables
+    firebase_config = {
+        'apiKey': config.database.firebase_api_key,
+        'authDomain': config.database.firebase_auth_domain,
+        'projectId': config.database.firebase_project_id,
+        'storageBucket': config.database.firebase_storage_bucket,
+        'messagingSenderId': config.database.firebase_messaging_sender_id,
+        'appId': config.database.firebase_app_id
+    }
 
-# Load the Firebase App ID for collections from an environment variable
-app_id = config.database.firebase_app_id
-if not app_id:
-    raise ValueError("FIREBASE_APP_ID not found in environment variables.")
+    # Load the external sports betting API key
+    external_api_key = config.api.sports_api_key
+    if not external_api_key:
+        logger.warning("SPORTS_API_KEY is not set. The available investments feature will not work.")
+    
+    _app_initialized = True
 
-# Load the client-side Firebase configuration from environment variables
-firebase_config = {
-    'apiKey': config.database.firebase_api_key,
-    'authDomain': config.database.firebase_auth_domain,
-    'projectId': config.database.firebase_project_id,
-    'storageBucket': config.database.firebase_storage_bucket,
-    'messagingSenderId': config.database.firebase_messaging_sender_id,
-    'appId': config.database.firebase_app_id
-}
+# Initialize global variables - will be set during initialization
+demo_mode = None
+db = None
+config = None
+logger = None
+real_sports_service = None
+app_id = None
+firebase_config = None
+external_api_key = None
 
-# Load the external sports betting API key
-external_api_key = config.api.sports_api_key
-if not external_api_key:
-    logger.warning("SPORTS_API_KEY is not set. The available investments feature will not work.")
+def create_app():
+    """Create the Flask application"""
+    # Initialize the app components first
+    initialize_app()
+    
+    # Create Flask app
+    app = Flask(__name__)
+    app.secret_key = config.secret_key
+
+    # Initialize security manager
+    app.security_manager = SecurityManager(config.secret_key)
+    
+    return app
+
+# Create the Flask app
+app = create_app()
 
 # Professional request tracking middleware
 @app.before_request
@@ -6172,6 +6217,8 @@ def get_gpu_status():
         raise ValidationError(f'Failed to get GPU status: {e}')
 
 
-# Add the imports at the top if not already present
+# Main execution guard - only run when script is executed directly
 if __name__ == '__main__':
+    # The app has already been created and initialized above
+    # Just run it directly
     app.run(debug=True)
