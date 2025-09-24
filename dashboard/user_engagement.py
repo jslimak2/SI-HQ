@@ -73,7 +73,7 @@ class NotificationService:
             <head><title>Post9 Weekly Performance Report</title></head>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h1 style="color: #2c3e50; text-align: center;">📊 Weekly Performance Report</h1>
+                    <h1 style="color: #2c3e50; text-align: center;">[ANALYTICS] Weekly Performance Report</h1>
                     
                     <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
                         <h2 style="color: #27ae60; margin-top: 0;">Performance Summary</h2>
@@ -92,7 +92,7 @@ class NotificationService:
                     </div>
                     
                     <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                        <h2 style="color: #f57c00; margin-top: 0;">🎯 This Week's Opportunities</h2>
+                        <h2 style="color: #f57c00; margin-top: 0;">[OPPORTUNITIES] This Week's Opportunities</h2>
                         {opportunities_html}
                     </div>
                     
@@ -180,7 +180,7 @@ class NotificationService:
                 recommendations_html=recommendations_html
             )
             
-            subject = f"📊 Weekly Performance Report - Week of {report.week_start}"
+            subject = f"[ANALYTICS] Weekly Performance Report - Week of {report.week_start}"
             
             return self._send_email(user_preferences.email, subject, html_content)
             

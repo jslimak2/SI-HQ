@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 import logging
 
 from schemas import (
-    BotSchema, StrategySchema, BotStatus, StrategyType, 
+    BotSchema, StrategySchema, InvestorStatus, StrategyType, 
     TransactionLog, OpenWager, PerformanceMetrics, RiskManagement,
     SchemaValidator, migrate_legacy_bot, migrate_legacy_strategy
 )
@@ -192,7 +192,7 @@ class DataService:
                 bots = [b for b in bots if b.created_by == filters['created_by']]
             
             if 'active_status' in filters:
-                status = BotStatus(filters['active_status'])
+                status = InvestorStatus(filters['active_status'])
                 bots = [b for b in bots if b.active_status == status]
             
             if 'sport_filter' in filters and filters['sport_filter']:

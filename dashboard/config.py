@@ -148,20 +148,30 @@ def setup_logging(config: AppConfig):
         handlers=[]
     )
     
-    # File handler for all logs
-    file_handler = logging.FileHandler('logs/post9.log')
+    # File handler for all logs with UTF-8 encoding
+    file_handler = logging.FileHandler('logs/post9.log', encoding='utf-8')
     file_handler.setFormatter(detailed_formatter)
     file_handler.setLevel(logging.DEBUG)
     
-    # Error file handler
-    error_handler = logging.FileHandler('logs/post9_errors.log')
+    # Error file handler with UTF-8 encoding
+    error_handler = logging.FileHandler('logs/post9_errors.log', encoding='utf-8')
     error_handler.setFormatter(detailed_formatter)
     error_handler.setLevel(logging.ERROR)
     
-    # Console handler
+    # Console handler with UTF-8 encoding support
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(simple_formatter)
     console_handler.setLevel(getattr(logging, config.log_level))
+    
+    # Set UTF-8 encoding for console handler to handle Unicode characters
+    import sys
+    if hasattr(console_handler.stream, 'reconfigure'):
+        try:
+            console_handler.stream.reconfigure(encoding='utf-8', errors='replace')
+        except (AttributeError, ValueError):
+            # Fall back to creating a safe formatter for older Python versions
+            safe_formatter = logging.Formatter(log_format.encode('ascii', 'replace').decode('ascii'))
+            console_handler.setFormatter(safe_formatter)
     
     # Add handlers to root logger
     root_logger = logging.getLogger()

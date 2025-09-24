@@ -9,11 +9,11 @@ flowchart LR
     DATA[Sports Data] --> MODEL[ML Model]
     MODEL --> PREDICTION[Prediction]
     PREDICTION --> STRATEGY[Strategy Rules]
-    STRATEGY --> BOT[Automated Bot]
-    BOT --> TRADE[Execute Trade]
+    STRATEGY --> INVESTOR[Automated Investor]
+    INVESTOR --> TRADE[Execute Trade]
 ```
 
-**Simple Formula**: `Data → Model → Strategy → Bot → Profit`
+**Simple Formula**: `Data → Model → Strategy → Investor → Profit`
 
 ### 2. Core Concepts in 30 Seconds
 
@@ -21,7 +21,7 @@ flowchart LR
 |-----------|--------------|---------|
 | **Model** 🤖 | Predicts game outcomes using AI | "Lakers have 75% win probability" |
 | **Strategy** 📋 | Rules for when/how to bet | "Only bet when confidence > 80%" |
-| **Bot** 🚀 | Executes trades automatically | "Place $100 bet on Lakers moneyline" |
+| **Investor** 🚀 | Executes trades automatically | "Place $100 bet on Lakers moneyline" |
 
 ## 📊 Model Types Quick Guide
 
@@ -74,15 +74,15 @@ Focus: Market inefficiencies
 Expected Return: Variable, high potential
 ```
 
-## 🤖 Bot Configuration Cheat Sheet
+## 🤖 Investor Configuration Cheat Sheet
 
 ```mermaid
 flowchart TD
-    START[Create Bot] --> MODEL[Assign Model]
+    START[Create Investor] --> MODEL[Assign Model]
     MODEL --> STRATEGY[Attach Strategy]
     STRATEGY --> BALANCE[Set Starting Balance]
     BALANCE --> LIMITS[Configure Limits]
-    LIMITS --> ACTIVATE[Activate Bot]
+    LIMITS --> ACTIVATE[Activate Investor]
     
     MODEL --> AUTO_SPORT[Sport Auto-Populated from Model]
     AUTO_SPORT --> STRATEGY
@@ -90,7 +90,7 @@ flowchart TD
 
 ### Essential Settings:
 - **Model Selection**: Choose your trained model (sport is automatically determined)
-- **Starting Balance**: How much money the bot can use
+- **Starting Balance**: How much money the investor can use
 - **Max Bet %**: Maximum percentage of balance per bet (typically 1-5%)
 - **Stop Loss**: Automatic shutdown if losses exceed threshold
 - **Daily Limits**: Maximum number of bets per day
@@ -109,10 +109,10 @@ flowchart TD
 
 ## 🔧 Common Workflows
 
-### Creating Your First Bot
+### Creating Your First Investor
 
-1. **Navigate to Dashboard** → Bots Section
-2. **Click "Create New Bot"**
+1. **Navigate to Dashboard** → Investors Section
+2. **Click "Create New Investor"**
 3. **Choose Model**: Ensemble for beginners (sport auto-populated)
 4. **Pick Strategy**: Use "Conservative" template
 5. **Set Balance**: Start with small amount ($1000)
@@ -138,7 +138,7 @@ flowchart LR
 
 | Problem | Likely Cause | Solution |
 |---------|--------------|----------|
-| Bot not placing bets | Confidence threshold too high | Lower threshold to 60-70% |
+| Investor not placing bets | Confidence threshold too high | Lower threshold to 60-70% |
 | Too many losing bets | Model needs retraining | Update with recent data |
 | High volatility | Bet sizes too large | Reduce max bet percentage |
 | Missing opportunities | Strategy too restrictive | Broaden market filters |
@@ -195,7 +195,7 @@ python /tmp/test_mermaid_syntax.py
 3. Try simpler model type (Statistical)
 4. Verify sufficient historical data
 
-### Bot Not Trading
+### Investor Not Trading
 1. Check confidence threshold (should be 50-80%)
 2. Verify sufficient balance
 3. Ensure strategy rules aren't too restrictive
@@ -203,7 +203,7 @@ python /tmp/test_mermaid_syntax.py
 
 ## 📞 Getting Help
 
-1. **Check Logs**: Dashboard → Performance → Bot Logs
+1. **Check Logs**: Dashboard → Performance → Investor Logs
 2. **Review Documentation**: `ARCHITECTURE_AND_SYSTEM_DESIGN.md`
 3. **Analyze Performance**: Use built-in analytics dashboard
 4. **Test Changes**: Always use backtesting first

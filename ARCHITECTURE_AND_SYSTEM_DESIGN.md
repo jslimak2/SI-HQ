@@ -49,18 +49,18 @@ A **Strategy** in Post*9 defines the logic and rules for making investment decis
 - "Value Hunter": Target bets where our predicted probability significantly differs from market odds
 - "Weather Edge": Focus on outdoor games where weather gives us an informational advantage
 
-### 🚀 What is a Bot/Automated Investor?
+### 🚀 What is a Investor/Automated Investor?
 
-A **Bot** (also called an Automated Investor) is the execution engine that brings everything together. It's an automated system that applies a specific strategy using designated models to make real investment decisions.
+A **Investor** (also called an Automated Investor) is the execution engine that brings everything together. It's an automated system that applies a specific strategy using designated models to make real investment decisions.
 
-**Bot Responsibilities:**
+**Investor Responsibilities:**
 - **Execute Strategies**: Automatically apply strategy rules to live market data
 - **Monitor Markets**: Continuously scan for betting opportunities
 - **Risk Management**: Enforce position limits and bankroll management
 - **Performance Tracking**: Record all decisions and track profitability
 - **Model Integration**: Use assigned ML models to generate predictions
 
-**Bot Configuration:**
+**Investor Configuration:**
 - Assigned to specific sports (NBA, NFL, MLB, etc.)
 - Configured for specific markets (spread, totals, moneyline)
 - Linked to one strategy and one or more models
@@ -90,8 +90,8 @@ graph TB
         STRAT_STORE[Strategy Storage]
     end
     
-    subgraph "Bot Management"
-        BOT_MANAGER[Bot Manager]
+    subgraph "Investor Management"
+        BOT_MANAGER[Investor Manager]
         BOT_ENGINE[Execution Engine]
         BOT_MONITOR[Performance Monitor]
     end
@@ -165,11 +165,11 @@ graph LR
         FILTERS[Market Filters]
     end
     
-    subgraph "Bot Execution Layer"
-        BOT1[NBA Bot]
-        BOT2[NFL Bot]
-        BOT3[MLB Bot]
-        BOT4[Multi-Sport Bot]
+    subgraph "Investor Execution Layer"
+        BOT1[NBA Investor]
+        BOT2[NFL Investor]
+        BOT3[MLB Investor]
+        BOT4[Multi-Sport Investor]
     end
     
     subgraph "Data Sources"
@@ -214,16 +214,16 @@ flowchart TD
     VISUAL --> VALIDATE
     
     VALIDATE --> SAVE[Save Strategy]
-    SAVE --> ASSIGN[Assign to Bot]
-    ASSIGN --> ACTIVATE[Activate Bot]
+    SAVE --> ASSIGN[Assign to Investor]
+    ASSIGN --> ACTIVATE[Activate Investor]
     ACTIVATE --> MONITOR[Monitor Performance]
 ```
 
-### Bot Trading Flow
+### Investor Trading Flow
 
 ```mermaid
 flowchart TD
-    START([Bot Starts]) --> SCAN[Scan Markets]
+    START([Investor Starts]) --> SCAN[Scan Markets]
     SCAN --> FETCH[Fetch Game Data]
     FETCH --> PREDICT[Generate ML Predictions]
     
@@ -302,7 +302,7 @@ flowchart LR
     end
     
     subgraph "Application Layer"
-        BOTS[Trading Bots]
+        INVESTORS[Trading Investors]
         DASHBOARD[Dashboard]
         ANALYTICS[Analytics Engine]
     end
@@ -323,10 +323,10 @@ flowchart LR
     MODELS --> INFERENCE
     
     REDIS --> INFERENCE
-    INFERENCE --> BOTS
+    INFERENCE --> INVESTORS
     FIRESTORE --> ANALYTICS
     ANALYTICS --> DASHBOARD
-    BOTS --> DASHBOARD
+    INVESTORS --> DASHBOARD
 ```
 
 ## Technology Stack
@@ -442,7 +442,7 @@ graph LR
     end
     
     subgraph "Business Metrics"
-        BOT_PERF[Bot Performance]
+        BOT_PERF[Investor Performance]
         MODEL_ACC[Model Accuracy]
         ROI[Return on Investment]
         SHARPE[Sharpe Ratio]
@@ -538,8 +538,8 @@ graph TB
 
 1. **Create Your Strategy**: Use either the Quick Edit form or Visual Strategy Builder
 2. **Choose Your Models**: Select appropriate ML models for your target sports
-3. **Configure Your Bot**: Set up automated investors with proper risk parameters
-4. **Monitor Performance**: Use the dashboard to track your bot's trading performance
+3. **Configure Your Investor**: Set up automated investors with proper risk parameters
+4. **Monitor Performance**: Use the dashboard to track your investor's trading performance
 5. **Iterate and Improve**: Analyze results and refine your strategies
 
 ## Key Files and Directories
@@ -557,7 +557,7 @@ graph TB
 When contributing to Post*9, please follow these guidelines:
 
 1. Understand the component you're working on using the architecture diagrams
-2. Ensure changes don't break the model → strategy → bot workflow
+2. Ensure changes don't break the model → strategy → investor workflow
 3. Add appropriate tests for new functionality
 4. Update documentation when adding new features
 5. Follow the existing code style and patterns

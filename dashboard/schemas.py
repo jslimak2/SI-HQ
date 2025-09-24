@@ -18,7 +18,7 @@ class ModelStatus(Enum):
     FAILED = "failed"
 
 
-class BotStatus(Enum):
+class InvestorStatus(Enum):
     ACTIVE = "active"
     PAUSED = "paused"
     STOPPED = "stopped"
@@ -283,7 +283,7 @@ class BotSchema:
     name: str
     
     # Status and control
-    active_status: BotStatus = BotStatus.STOPPED
+    active_status: InvestorStatus = InvestorStatus.STOPPED
     
     # Financial tracking
     current_balance: float = 1000.0
@@ -331,7 +331,7 @@ class BotSchema:
     def from_dict(cls, data: Dict[str, Any]) -> 'BotSchema':
         # Handle enums
         if 'active_status' in data and isinstance(data['active_status'], str):
-            data['active_status'] = BotStatus(data['active_status'])
+            data['active_status'] = InvestorStatus(data['active_status'])
         if 'sport_filter' in data and data['sport_filter'] and isinstance(data['sport_filter'], str):
             data['sport_filter'] = Sport(data['sport_filter'])
         if 'market_filters' in data and isinstance(data['market_filters'], list):
@@ -549,11 +549,11 @@ def migrate_legacy_bot(legacy_data: Dict[str, Any]) -> BotSchema:
     # Handle status mapping
     if 'status' in legacy_data:
         status_mapping = {
-            'active': BotStatus.ACTIVE,
-            'stopped': BotStatus.STOPPED,
-            'paused': BotStatus.PAUSED
+            'active': InvestorStatus.ACTIVE,
+            'stopped': InvestorStatus.STOPPED,
+            'paused': InvestorStatus.PAUSED
         }
-        bot_data['active_status'] = status_mapping.get(legacy_data['status'], BotStatus.STOPPED)
+        bot_data['active_status'] = status_mapping.get(legacy_data['status'], InvestorStatus.STOPPED)
     
     # Handle sport filter
     if 'sport' in legacy_data and legacy_data['sport']:

@@ -14,7 +14,7 @@ try:
     from real_sports_api import get_real_sports_service, initialize_real_sports_service
     REAL_SPORTS_API_AVAILABLE = True
 except ImportError as e:
-    print(f"🟡 WARNING: Real sports API not available: {e}")
+    print(f"[WARNING] Real sports API not available: {e}")
     REAL_SPORTS_API_AVAILABLE = False
 
 # Import firebase_admin optionally
@@ -24,43 +24,43 @@ try:
     FIREBASE_AVAILABLE = True
     print("Firebase components loaded successfully")
 except ImportError as e:
-    print(f"🟡 WARNING: Firebase components not available: {e}")
-    print(f"🟡 WARNING: Running in MOCK MODE - no real database connections!")
+    print(f"[WARNING] Firebase components not available: {e}")
+    print(f"[WARNING] Running in MOCK MODE - no real database connections!")
     FIREBASE_AVAILABLE = False
     # ⚠️  MOCK FIRESTORE - NOT REAL DATABASE ⚠️
     # This mock class provides fake Firebase functionality for demo/testing purposes
     class MockFirestore:
         """
-        🚨 MOCK FIRESTORE CLASS - NOT REAL DATABASE 🚨
+        [MOCK] MOCK FIRESTORE CLASS - NOT REAL DATABASE [MOCK]
         This class simulates Firebase Firestore operations but does NOT persist data.
         All operations are fake and return empty/default values.
         """
         def collection(self, name): 
-            print(f"🟡 MOCK: Accessing collection '{name}' (no real data)")
+            print(f"[MOCK]: Accessing collection '{name}' (no real data)")
             return self
         def document(self, id): 
-            print(f"🟡 MOCK: Accessing document '{id}' (no real data)")
+            print(f"[MOCK]: Accessing document '{id}' (no real data)")
             return self
         def get(self): 
-            print(f"🟡 MOCK: Getting document (returning empty data)")
+            print(f"[MOCK]: Getting document (returning empty data)")
             return self
         def to_dict(self): 
-            print(f"🟡 MOCK: Converting to dict (returning empty dict)")
+            print(f"[MOCK]: Converting to dict (returning empty dict)")
             return {}
         def set(self, data): 
-            print(f"🟡 MOCK: Setting data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
+            print(f"[MOCK]: Setting data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
             pass
         def update(self, data): 
-            print(f"🟡 MOCK: Updating data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
+            print(f"[MOCK]: Updating data (not saved anywhere): {list(data.keys()) if isinstance(data, dict) else 'non-dict data'}")
             pass
         def delete(self): 
-            print(f"🟡 MOCK: Deleting document (nothing actually deleted)")
+            print(f"[MOCK]: Deleting document (nothing actually deleted)")
             pass
     firestore = MockFirestore()
 
 # Import standardized schemas
 from schemas import (
-    BotSchema, StrategySchema, ModelSchema, BotStatus, StrategyType, Sport,
+    BotSchema, StrategySchema, ModelSchema, InvestorStatus, StrategyType, Sport,
     RiskManagement, PerformanceMetrics, SchemaValidator
 )
 from data_service import data_service
@@ -247,7 +247,7 @@ except Exception as e:
 if demo_mode:
     print("=" + "="*60 + "=")
     print("= RUNNING IN DEMO MODE - NOT PRODUCTION DATA =")
-    print("= All investments, bots, and analytics are FAKE =") 
+    print("= All investments, investors, and analytics are FAKE =") 
     print("=" + "="*60 + "=")
 elif config.disable_demo_mode:
     print("=" + "="*60 + "=")
@@ -371,7 +371,7 @@ def get_bot_sport(bot_data, default='NBA'):
     # Return default if no sport found or if it's None/empty
     if not bot_sport:
         bot_sport = default
-        logger.warning(f"No sport preference found in bot data, defaulting to {bot_sport}")
+        logger.warning(f"No sport preference found in investor data, defaulting to {bot_sport}")
     
     return bot_sport
 
@@ -389,7 +389,7 @@ def get_sports_games_data(sport='NBA', max_games=10):
     try:
         # Try to use real sports API first
         if real_sports_service and config.api.sports_api_key and not config.disable_demo_mode:
-            logger.info(f"🔍 Fetching real sports data for {sport}")
+            logger.info(f"[DATA] Fetching real sports data for {sport}")
             real_games = real_sports_service.get_current_games(sport.lower())
             
             if real_games and len(real_games) > 0:
@@ -402,16 +402,16 @@ def get_sports_games_data(sport='NBA', max_games=10):
                 
                 # Check if we're using real data or emergency fallback
                 data_source = "REAL API DATA" if real_games[0].get('real_data', False) else "EMERGENCY FALLBACK"
-                logger.info(f"✅ Successfully fetched {len(limited_games)} {data_source} games for {sport}")
+                logger.info(f"[SUCCESS] Successfully fetched {len(limited_games)} {data_source} games for {sport}")
                 return limited_games
         
         # Fallback to demo data
-        logger.info(f"🟡 Using demo sports data for {sport} (no real API available)")
+        logger.info(f"[FALLBACK] Using demo sports data for {sport} (no real API available)")
         return get_demo_games_data(sport, max_games)
         
     except Exception as e:
-        logger.error(f"❌ Error fetching sports data: {e}")
-        logger.info(f"🔄 Falling back to demo data for {sport}")
+        logger.error(f"[ERROR] Error fetching sports data: {e}")
+        logger.info(f"[FALLBACK] Falling back to demo data for {sport}")
         return get_demo_games_data(sport, max_games)
 
 def get_demo_games_data(sport='NBA', max_games=10):
@@ -811,14 +811,14 @@ def home():
                                firebase_config=firebase_config,
                                auth_token=auth_token_str,
                                demo_mode=demo_mode,
-                               demo_warning="🚨 DEMO MODE - All data is MOCK/FAKE for testing purposes 🚨" if demo_mode else None)
+                               demo_warning="[MOCK] DEMO MODE - All data is MOCK/FAKE for testing purposes [MOCK]" if demo_mode else None)
     except Exception as e:
         app.logger.error(f'Error in home route: {e}')
         return render_template('index.html',
                                firebase_config=firebase_config,
                                auth_token="demo_auth_token",
                                demo_mode=True,
-                               demo_warning="🚨 DEMO MODE - All data is MOCK/FAKE for testing purposes 🚨")
+                               demo_warning="[MOCK] DEMO MODE - All data is MOCK/FAKE for testing purposes [MOCK]")
 
 @app.route('/api/firebase-config', methods=['GET'])
 def get_firebase_config():
@@ -906,7 +906,7 @@ def add_bot():
                 detected_sport = model_metadata.sport
                 sport_auto_detected = True
                 sport_detection_source = 'model_metadata'
-                logger.info(f"Auto-detected sport '{detected_sport.value}' from model {model_id} during bot creation")
+                logger.info(f"Auto-detected sport '{detected_sport.value}' from model {model_id} during investor creation")
             else:
                 # Fallback: try to extract sport from model_id pattern
                 model_parts = model_id.lower().split('_')
@@ -924,7 +924,7 @@ def add_bot():
                         detected_sport = sport_mapping[part]
                         sport_auto_detected = True
                         sport_detection_source = 'model_id_pattern'
-                        logger.info(f"Auto-detected sport '{detected_sport.value}' from model ID pattern during bot creation")
+                        logger.info(f"Auto-detected sport '{detected_sport.value}' from model ID pattern during investor creation")
                         break
         
         # Set sport filter
@@ -956,7 +956,7 @@ def add_bot():
             'assigned_strategy_id': data.get('strategy_id'),
             'risk_management': risk_management.to_dict(),
             'created_by': user_id,
-            'active_status': BotStatus.STOPPED.value,
+            'active_status': InvestorStatus.STOPPED.value,
             'tags': ['auto-created'],
             'description': f"Bot created for {sport_filter.value if sport_filter else 'multiple sports'} with ${initial_balance} starting balance"
         }
@@ -978,7 +978,7 @@ def add_bot():
         
         bot_ref.set(firestore_data)
         
-        logger.info(f"Bot created successfully: {bot_id} by user {user_id}")
+        logger.info(f"Investor created successfully: {bot_id} by user {user_id}")
         
         return jsonify({
             'success': True, 
@@ -993,7 +993,7 @@ def add_bot():
     except ValueError as e:
         raise ValidationError(f"Invalid numeric value: {str(e)}")
     except Exception as e:
-        logger.error(f"Failed to add bot: {e}")
+        logger.error(f"Failed to add investor: {e}")
         raise ValidationError(f'Failed to add bot: {e}')
 
 @app.route('/api/bots/simulate', methods=['POST'])
@@ -1728,7 +1728,7 @@ def get_available_investments():
         }), 200
 
 # ████████████████████████████████████████████████████████████████████████████████
-# 🚨                           MOCK/DEMO DATA SECTION                         🚨
+# [MOCK]                           MOCK/DEMO DATA SECTION                         [MOCK]
 # ████████████████████████████████████████████████████████████████████████████████
 # 
 # ⚠️  WARNING: ALL FUNCTIONS BELOW GENERATE FAKE DATA FOR DEMO PURPOSES ONLY ⚠️
@@ -1747,11 +1747,11 @@ def get_available_investments():
 
 def generate_demo_investments():
     """
-    🚨 FAKE DATA GENERATOR 🚨
+    [MOCK] FAKE DATA GENERATOR [MOCK]
     Generate demo investment data for testing - NOT REAL INVESTMENTS
     All data returned is mock/fake for demonstration purposes only
     """
-    print("🟡 GENERATING FAKE INVESTMENT DATA for demo purposes")
+    print("[DEMO] GENERATING FAKE INVESTMENT DATA for demo purposes")
     import random
     from datetime import datetime, timedelta
     
@@ -1977,7 +1977,7 @@ def get_bot_recommendations():
         if not collections:
             return jsonify({'success': False, 'message': 'Database not available'}), 500
         
-        # Use real bot recommendations in production mode
+        # Use real investor recommendations in production mode
         try:
             recommendations = generate_real_bot_recommendations(user_id)
             return jsonify({
@@ -2004,11 +2004,11 @@ def get_bot_recommendations():
 
 def generate_demo_bot_recommendations():
     """
-    🚨 FAKE BOT RECOMMENDATIONS GENERATOR 🚨
+    [MOCK] FAKE BOT RECOMMENDATIONS GENERATOR [MOCK]
     Generate demo bot recommendations for testing - NOT REAL BOTS OR MONEY
     All bots, balances, and recommendations are fake for demonstration only
     """
-    print("🟡 GENERATING FAKE BOT RECOMMENDATIONS for demo purposes")
+    print("[DEMO] GENERATING FAKE INVESTOR RECOMMENDATIONS for demo purposes")
     import random
     
     # Demo bots with different characteristics
@@ -2111,17 +2111,17 @@ def generate_demo_bot_recommendations():
 
 def generate_real_bot_recommendations(user_id):
     """
-    ✅ REAL BOT RECOMMENDATIONS GENERATOR ✅
-    Generate real bot recommendations using actual user bots and live sports data
+    [REAL] REAL BOT RECOMMENDATIONS GENERATOR [REAL]
+    Generate real investor recommendations using actual user investors and live sports data
     Uses real bots, strategies, and current sports games
     """
-    print("🟢 GENERATING REAL BOT RECOMMENDATIONS using live data")
-    logger.info(f"Generating real bot recommendations for user {user_id}")
+    print("[BOT_RECS] GENERATING REAL INVESTOR RECOMMENDATIONS using live data")
+    logger.info(f"Generating real investor recommendations for user {user_id}")
     
     recommendations = {}
     
     try:
-        # 1. Get user's active bots from the database
+        # 1. Get user's active investors from the database
         user_bots = []
         if db and bots_collection:
             try:
@@ -2132,9 +2132,9 @@ def generate_real_bot_recommendations(user_id):
                     bot_data['bot_id'] = bot_doc.id
                     user_bots.append(bot_data)
                     
-                logger.info(f"Found {len(user_bots)} active bots for user {user_id}")
+                logger.info(f"Found {len(user_bots)} active investors for user {user_id}")
             except Exception as e:
-                logger.error(f"Failed to fetch user bots from Firestore: {e}")
+                logger.error(f"Failed to fetch user investors from Firestore: {e}")
                 
         # Also try to get from data service if available
         try:
@@ -2146,9 +2146,9 @@ def generate_real_bot_recommendations(user_id):
         except Exception as e:
             logger.debug(f"Data service not available or failed: {e}")
         
-        # If no real bots found, create some sample active bots
+        # If no real bots found, create some sample active investors
         if not user_bots:
-            logger.info("No active bots found, creating sample active bots for demonstration")
+            logger.info("No active investors found, creating sample active investors for demonstration")
             user_bots = [
                 {
                     'bot_id': f'real_bot_{user_id}_1',
@@ -2209,7 +2209,7 @@ def generate_real_bot_recommendations(user_id):
                     if recommendation:
                         game_recommendations.append(recommendation)
                 except Exception as e:
-                    logger.error(f"Failed to generate recommendation for bot {bot.get('bot_id', 'unknown')}: {e}")
+                    logger.error(f"Failed to generate recommendation for investor {bot.get('bot_id', 'unknown')}: {e}")
             
             if game_recommendations:
                 recommendations[game_id] = game_recommendations
@@ -2218,7 +2218,7 @@ def generate_real_bot_recommendations(user_id):
         return recommendations
         
     except Exception as e:
-        logger.error(f"Failed to generate real bot recommendations: {e}")
+        logger.error(f"Failed to generate real investor recommendations: {e}")
         raise e
 
 def _generate_bot_recommendation_for_game(bot, game):
@@ -2321,16 +2321,16 @@ def _generate_bot_recommendation_for_game(bot, game):
         return recommendation
         
     except Exception as e:
-        logger.error(f"Error generating bot recommendation: {e}")
+        logger.error(f"Error generating investor recommendation: {e}")
         return None
 
 def generate_demo_strategy_picks(strategy_id):
     """
-    🚨 FAKE STRATEGY PICKS GENERATOR 🚨
+    [MOCK] FAKE STRATEGY PICKS GENERATOR [MOCK]
     Generate demo strategy picks for testing - NOT REAL BETTING RECOMMENDATIONS
     All picks, odds, and amounts are fake for demonstration only
     """
-    print(f"🟡 GENERATING FAKE STRATEGY PICKS for strategy {strategy_id}")
+    print(f"[DEMO] GENERATING FAKE STRATEGY PICKS for strategy {strategy_id}")
     import random
     
     # Demo games for different sports
@@ -2369,7 +2369,7 @@ def generate_demo_strategy_picks(strategy_id):
 
 def generate_real_strategy_picks(strategy_data, bot_data, max_picks):
     """
-    ✅ REAL STRATEGY PICKS GENERATOR ✅
+    [REAL] REAL STRATEGY PICKS GENERATOR [REAL]
     Generate real strategy picks using actual sports data and bot configuration
     """
     logger.info(f"Generating real strategy picks for strategy {strategy_data.get('name', 'unknown')}")
@@ -3976,7 +3976,7 @@ def assign_model_to_bot():
         }), 200
         
     except Exception as e:
-        logger.error(f"Failed to assign model to bot: {e}")
+        logger.error(f"Failed to assign model to investor: {e}")
         return jsonify({'success': False, 'message': f'Failed to assign model: {e}'}), 500
 
 @app.route('/api/bots/<bot_id>/model-recommendations', methods=['GET'])
@@ -4365,7 +4365,7 @@ def get_schema_info():
                     'description': 'Automated investor/bot schema with risk management',
                     'required_fields': ['bot_id', 'name', 'current_balance', 'created_by'],
                     'enums': {
-                        'active_status': [status.value for status in BotStatus],
+                        'active_status': [status.value for status in InvestorStatus],
                         'sport_filter': [sport.value for sport in Sport]
                     }
                 },

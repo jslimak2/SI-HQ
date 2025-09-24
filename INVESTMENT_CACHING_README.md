@@ -185,7 +185,7 @@ users/{userId}/
 ## Future Enhancements
 
 ### Planned Features
-1. **Bot Investment Tracking**: Show which bots have backed specific investments
+1. **Investor Investment Tracking**: Show which investors have backed specific investments
 2. **Cache Expiration Policies**: Automatic cache invalidation based on game start times
 3. **Batch Refresh Options**: Refresh specific sports or markets only
 4. **Investment History**: Track and display investment data over time

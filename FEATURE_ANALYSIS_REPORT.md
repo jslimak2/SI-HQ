@@ -40,7 +40,7 @@ These features are complete with real data sources and production-grade implemen
 #### Database & Authentication
 - **Firebase Integration** - Full Firebase Firestore integration with real database connections
 - **User Authentication** - Firebase Auth implementation with JWT token management
-- **Schema Validation** - Comprehensive schema system v2.0 with validation for bots, strategies, models
+- **Schema Validation** - Comprehensive schema system v2.0 with validation for investors, strategies, models
 - **Data Validation** - Professional data validation pipeline with quality assessment
 - **Security Headers** - Complete security header implementation (X-Frame-Options, CSRF protection, etc.)
 
@@ -100,8 +100,8 @@ These features work correctly but primarily use simulated/demo data:
   - **Functionality**: Data quality assessment, validation, preprocessing, outlier detection
   - **Production Gap**: Requires real sports data feeds and historical datasets
 
-#### Bot Management System
-- **Automated Bots** - Complete bot creation, configuration, and management
+#### Investor Management System
+- **Automated Investors** - Complete investor creation, configuration, and management
   - **Data Source**: Simulated betting outcomes and performance
   - **Functionality**: Risk management, strategy assignment, profit/loss tracking
   - **Production Gap**: Requires real betting API integration
