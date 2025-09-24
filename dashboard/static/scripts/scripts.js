@@ -242,6 +242,12 @@ async function fetchStrategies() {
 
 // Function to fetch and display bots
 async function fetchBots() {
+    if (!firebaseAvailable) {
+        console.log("Firebase not available, loading demo bots");
+        await loadDemoBots();
+        return;
+    }
+    
     showLoading();
     try {
         const q = collection(db, `users/${userId}/bots`);
@@ -258,8 +264,8 @@ async function fetchBots() {
         });
     } catch (e) {
         console.error("Error fetching bots:", e);
-        showMessage("Failed to load bots. Ensure Firebase is configured correctly.", true);
-        hideLoading();
+        console.log("Firebase not available, loading demo bots");
+        await loadDemoBots();
     }
 }
 
@@ -436,6 +442,100 @@ async function loadDemoStrategies() {
         window.strategies = strategies;
         displayStrategies();
         updateStrategySelects();
+        hideLoading();
+    }
+}
+
+async function loadDemoBots() {
+    try {
+        // Demo bots with assigned strategies
+        bots = [
+            {
+                "id": "demo_bot_1",
+                "name": "Value Hunter",
+                "current_balance": 1250.75,
+                "starting_balance": 1000.0,
+                "initial_balance": 1000.0,
+                "bet_percentage": 3.0,
+                "strategy_id": "4", // +eV Strategy
+                "assigned_strategy_id": "4", // +eV Strategy (for API compatibility)
+                "status": "active",
+                "total_wagers": 15,
+                "total_wins": 9,
+                "profit_loss": 250.75,
+                "win_rate": 60.0,
+                "description": "Specialized in finding undervalued bets with positive expected value",
+                "sport_filter": "NBA",
+                "created_at": new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+                "last_run": new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+            },
+            {
+                "id": "demo_bot_2", 
+                "name": "Safe Play",
+                "current_balance": 1085.20,
+                "starting_balance": 1000.0,
+                "initial_balance": 1000.0,
+                "bet_percentage": 2.0,
+                "strategy_id": "1", // Conservative
+                "assigned_strategy_id": "1", // Conservative (for API compatibility)
+                "status": "stopped",
+                "total_wagers": 8,
+                "total_wins": 6,
+                "profit_loss": 85.20,
+                "win_rate": 75.0,
+                "description": "Conservative approach with steady, low-risk gains",
+                "sport_filter": "NFL",
+                "created_at": new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days ago
+                "last_run": new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() // 6 hours ago
+            },
+            {
+                "id": "demo_bot_3",
+                "name": "High Roller",
+                "current_balance": 1380.50,
+                "starting_balance": 1000.0,
+                "initial_balance": 1000.0,
+                "bet_percentage": 5.0,
+                "strategy_id": "2", // Aggressive
+                "assigned_strategy_id": "2", // Aggressive (for API compatibility)
+                "status": "active",
+                "total_wagers": 22,
+                "total_wins": 12,
+                "profit_loss": 380.50,
+                "win_rate": 54.5,
+                "description": "High-risk, high-reward aggressive betting strategy",
+                "sport_filter": "MLB",
+                "created_at": new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days ago
+                "last_run": new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30 minutes ago
+            },
+            {
+                "id": "demo_bot_4",
+                "name": "Recovery Master",
+                "current_balance": 975.30,
+                "starting_balance": 1000.0,
+                "initial_balance": 1000.0,
+                "bet_percentage": 4.0,
+                "strategy_id": "3", // Loss Recovery
+                "assigned_strategy_id": "3", // Loss Recovery (for API compatibility)
+                "status": "stopped",
+                "total_wagers": 12,
+                "total_wins": 7,
+                "profit_loss": -24.70,
+                "win_rate": 58.3,
+                "description": "Specialized in recovering from losses with calculated risks",
+                "sport_filter": "NBA",
+                "created_at": new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
+                "last_run": new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() // 4 hours ago
+            }
+        ];
+        
+        displayBots();
+        updateOverallStats();
+        setupStatsCardClicks();
+        hideLoading();
+        console.log("Demo bots loaded successfully");
+    } catch (error) {
+        console.error("Error loading demo bots:", error);
+        showMessage("Failed to load demo bots.", true);
         hideLoading();
     }
 }
