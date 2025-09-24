@@ -337,11 +337,14 @@ class RealSportsDataService:
                         'real_data': True  # Flag to indicate this is real data
                     })
                 
+                logger.info(f"✅ Successfully fetched {len(games)} REAL games for {sport} from API")
+                
             except Exception as e:
-                logger.error(f"Failed to fetch real games data: {e}")
+                logger.error(f"❌ Failed to fetch real games data from API: {e}")
+                logger.info(f"🔄 Falling back to emergency data for {sport}")
                 games = self._get_emergency_fallback_data()
         else:
-            logger.warning("No odds API configured, using demo data")
+            logger.warning(f"⚠️  No odds API configured, using emergency fallback data for {sport}")
             games = self._get_emergency_fallback_data()
         
         # Cache the results
@@ -350,7 +353,7 @@ class RealSportsDataService:
         return games
     
     def _get_emergency_fallback_data(self) -> List[Dict]:
-        """Emergency fallback data when all APIs fail"""
+        """Emergency fallback data when all APIs fail - returns multiple games to avoid single game issue"""
         return [
             {
                 'id': 'emergency_1',
@@ -360,6 +363,50 @@ class RealSportsDataService:
                 'away_odds': 2.10,
                 'over_under': 215.5,
                 'game_time': (datetime.now() + timedelta(hours=2)).isoformat(),
+                'sportsbook': 'emergency_fallback',
+                'real_data': False
+            },
+            {
+                'id': 'emergency_2',
+                'teams': 'Celtics @ Heat',
+                'sport': 'NBA',
+                'odds': 1.75,
+                'away_odds': 2.25,
+                'over_under': 208.5,
+                'game_time': (datetime.now() + timedelta(hours=4)).isoformat(),
+                'sportsbook': 'emergency_fallback',
+                'real_data': False
+            },
+            {
+                'id': 'emergency_3',
+                'teams': 'Cowboys @ Eagles',
+                'sport': 'NFL',
+                'odds': 1.95,
+                'away_odds': 1.95,
+                'over_under': 44.5,
+                'game_time': (datetime.now() + timedelta(hours=6)).isoformat(),
+                'sportsbook': 'emergency_fallback',
+                'real_data': False
+            },
+            {
+                'id': 'emergency_4',
+                'teams': 'Chiefs @ Bills',
+                'sport': 'NFL', 
+                'odds': 2.10,
+                'away_odds': 1.80,
+                'over_under': 48.0,
+                'game_time': (datetime.now() + timedelta(hours=8)).isoformat(),
+                'sportsbook': 'emergency_fallback',
+                'real_data': False
+            },
+            {
+                'id': 'emergency_5',
+                'teams': 'Dodgers @ Yankees',
+                'sport': 'MLB',
+                'odds': 1.90,
+                'away_odds': 2.00,
+                'over_under': 8.5,
+                'game_time': (datetime.now() + timedelta(hours=3)).isoformat(),
                 'sportsbook': 'emergency_fallback',
                 'real_data': False
             }
