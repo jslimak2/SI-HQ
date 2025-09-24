@@ -6046,6 +6046,8 @@ window.acceptInvestorRecommendation = acceptInvestorRecommendation;
 window.modifyInvestorRecommendation = modifyInvestorRecommendation;
 window.rejectInvestorRecommendation = rejectInvestorRecommendation;
 window.toggleStrategySizingOptions = toggleStrategySizingOptions;
+window.displayStrategies = displayStrategies;
+window.updateStrategySelects = updateStrategySelects;
 
 // Add form handler for train model modal
 document.addEventListener('DOMContentLoaded', function() {
