@@ -4770,6 +4770,19 @@
         // Make admin functions globally available
         window.loadSystemStatus = loadSystemStatus;
         window.refreshSystemStatus = refreshSystemStatus;
+        
+        // Make template functions globally available (fix for JavaScript ReferenceErrors)
+        window.showPage = showPage;
+        window.toggleDropdown = toggleDropdown;
+        window.showTrainingTab = showTrainingTab;
+        window.refreshTrainingQueue = refreshTrainingQueue;
+        window.cancelTrainingJob = cancelTrainingJob;
+        window.viewModelDetails = viewModelDetails;
+        window.deleteModel = deleteModel;
+        window.deployModel = deployModel;
+        window.filterModels = filterModels;
+        window.refreshFeature = refreshFeature;
+        window.refreshPredictiveModels = refreshPredictiveModels;
     </script>
     
     <script type="module" src="../static/scripts/scripts.js"></script>
