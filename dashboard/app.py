@@ -6220,5 +6220,5 @@ def get_gpu_status():
 # Main execution guard - only run when script is executed directly
 if __name__ == '__main__':
     # The app has already been created and initialized above
-    # Just run it directly
-    app.run(debug=True)
+    # Just run it directly on port 5001 to avoid conflicts
+    app.run(debug=True, port=5001)

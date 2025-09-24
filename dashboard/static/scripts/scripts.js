@@ -6232,6 +6232,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Initialize investor configuration event listeners
+    const addInvestorForm = document.getElementById('add-investor-form');
+    if (addInvestorForm) {
+        // Add event listeners to all form inputs for real-time validation
+        const inputs = addInvestorForm.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', checkFormCompletion);
+            input.addEventListener('change', checkFormCompletion);
+        });
+        
+        // Handle form submission
+        addInvestorForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const investorData = Object.fromEntries(formData.entries());
+            
+            // Add enhanced validation
+            if (parseFloat(investorData.bet_percentage) > 10) {
+                showMessage('Bet percentage cannot exceed 10% for risk management', true);
+                return;
+            }
+            
+            if (parseFloat(investorData.starting_balance) < 100) {
+                showMessage('Starting balance must be at least $100', true);
+                return;
+            }
+            
+            // Show success message with model info
+            const modelSelect = document.getElementById('model-select');
+            const selectedModel = modelSelect.options[modelSelect.selectedIndex].text;
+            
+            showMessage(`Investor "${investorData.name}" created successfully with ${selectedModel}!`, false);
+            closeModal('add-investor-modal');
+            
+            // Reset form
+            addInvestorForm.reset();
+            onModelSelected(''); // Reset form state
+            
+            // Refresh investors display
+            if (typeof loadBots === 'function') {
+                setTimeout(loadBots, 500);
+            }
+        });
+    }
+
     // Initialize bot configuration event listeners
     const addBotForm = document.getElementById('add-bot-form');
     if (addBotForm) {
