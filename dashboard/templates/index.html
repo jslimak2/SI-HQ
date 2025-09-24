@@ -3135,6 +3135,12 @@
             gpu_resources: []
         };
         
+        // Backend availability tracking
+        let isBackendAvailable = true;
+        let backendUnavailableCount = 0;
+        let lastBackendCheck = 0;
+        const BACKEND_CHECK_COOLDOWN = 60000; // 1 minute cooldown between backend checks
+        
         function showTrainingTab(tabName) {
             // Hide all tab contents
             document.querySelectorAll('.training-tab-content').forEach(content => {
@@ -3160,6 +3166,15 @@
         }
         
         async function refreshTrainingQueue() {
+            // Skip API call if backend is known to be unavailable and within cooldown period
+            const now = Date.now();
+            if (!isBackendAvailable && (now - lastBackendCheck) < BACKEND_CHECK_COOLDOWN) {
+                // Use existing demo data without making API calls
+                await generateDemoTrainingData();
+                updateTrainingQueueUI();
+                return;
+            }
+            
             try {
                 const authToken = localStorage.getItem('auth_token');
                 const headers = {};
@@ -3175,11 +3190,38 @@
                     const data = await response.json();
                     trainingQueueData = data.queue;
                     updateTrainingQueueUI();
+                    // Backend is available, reset failure tracking
+                    isBackendAvailable = true;
+                    backendUnavailableCount = 0;
                 } else {
-                    console.error('Failed to fetch training queue data');
+                    // Handle HTTP errors (like 404, 500) as backend unavailable
+                    backendUnavailableCount++;
+                    lastBackendCheck = now;
+                    
+                    if (backendUnavailableCount >= 1) {
+                        isBackendAvailable = false;
+                        console.warn('Backend training queue endpoint unavailable (HTTP ' + response.status + ') - using demo data. Will retry in ' + (BACKEND_CHECK_COOLDOWN / 1000) + ' seconds.');
+                    }
+                    
+                    // Use demo data
+                    await generateDemoTrainingData();
+                    updateTrainingQueueUI();
                 }
             } catch (error) {
-                console.error('Error fetching training queue:', error);
+                // Handle connection errors gracefully
+                backendUnavailableCount++;
+                lastBackendCheck = now;
+                
+                // Mark backend as unavailable after first failure
+                if (backendUnavailableCount >= 1) {
+                    isBackendAvailable = false;
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        console.warn('Backend appears to be unavailable (connection refused) - using demo data. Will retry in ' + (BACKEND_CHECK_COOLDOWN / 1000) + ' seconds.');
+                    } else {
+                        console.warn('Backend error: ' + error.message + ' - using demo data. Will retry in ' + (BACKEND_CHECK_COOLDOWN / 1000) + ' seconds.');
+                    }
+                }
+                
                 // Use demo data for now
                 await generateDemoTrainingData();
                 updateTrainingQueueUI();
@@ -3187,6 +3229,12 @@
         }
         
         async function fetchGPUStats() {
+            // Skip API call if backend is known to be unavailable and within cooldown period
+            const now = Date.now();
+            if (!isBackendAvailable && (now - lastBackendCheck) < BACKEND_CHECK_COOLDOWN) {
+                return null;
+            }
+            
             try {
                 const authToken = localStorage.getItem('auth_token');
                 const headers = {};
@@ -3199,13 +3247,35 @@
                 
                 if (response.ok) {
                     const data = await response.json();
+                    // Backend is available, reset failure tracking
+                    isBackendAvailable = true;
+                    backendUnavailableCount = 0;
                     return data.gpu_stats;
                 } else {
-                    console.error('Failed to fetch GPU stats');
+                    // Handle HTTP errors (like 404, 500) as backend unavailable
+                    backendUnavailableCount++;
+                    lastBackendCheck = now;
+                    
+                    if (backendUnavailableCount >= 1) {
+                        isBackendAvailable = false;
+                        console.warn('Backend API endpoint unavailable (HTTP ' + response.status + ') - using demo data. Will retry in ' + (BACKEND_CHECK_COOLDOWN / 1000) + ' seconds.');
+                    }
                     return null;
                 }
             } catch (error) {
-                console.error('Error fetching GPU stats:', error);
+                // Handle connection errors gracefully
+                backendUnavailableCount++;
+                lastBackendCheck = now;
+                
+                // Mark backend as unavailable after first failure to reduce console spam
+                if (backendUnavailableCount >= 1) {
+                    isBackendAvailable = false;
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        console.warn('Backend appears to be unavailable (connection refused) - using demo data. Will retry in ' + (BACKEND_CHECK_COOLDOWN / 1000) + ' seconds.');
+                    } else {
+                        console.warn('Backend error: ' + error.message + ' - using demo data. Will retry in ' + (BACKEND_CHECK_COOLDOWN / 1000) + ' seconds.');
+                    }
+                }
                 return null;
             }
         }
