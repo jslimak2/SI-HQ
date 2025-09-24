@@ -2314,7 +2314,10 @@ async function startListeners() {
         // In demo mode without Firebase, just set up the UI
         console.log("Running in demo mode, skipping Firebase auth listeners");
         userId = 'demo-user';
-        document.getElementById('user-id').textContent = 'Demo Mode';
+        const userIdElement = document.getElementById('user-id');
+        if (userIdElement) {
+            userIdElement.textContent = 'Demo Mode';
+        }
         
         // Load demo settings
         await loadUserSettings();
@@ -2339,7 +2342,10 @@ async function startListeners() {
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             userId = user.uid;
-            document.getElementById('user-id').textContent = userId;
+            const userIdElement = document.getElementById('user-id');
+            if (userIdElement) {
+                userIdElement.textContent = userId;
+            }
             // Load user settings first, then fetch data, then check auto-refresh
             await loadUserSettings();
             // Fetch strategies first, then bots
@@ -2355,7 +2361,10 @@ async function startListeners() {
             }, 1500); // Increased delay to ensure settings are loaded
         } else {
             console.log("No user is signed in.");
-            document.getElementById('user-id').textContent = 'Not signed in';
+            const userIdElement = document.getElementById('user-id');
+            if (userIdElement) {
+                userIdElement.textContent = 'Not signed in';
+            }
             hideLoading();
         }
     });
@@ -2363,24 +2372,30 @@ async function startListeners() {
 
 // --- EVENT LISTENERS ---
 
-document.getElementById('add-bot-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    const botData = {
-        name: form.name.value,
-        starting_balance: parseFloat(form.starting_balance.value),
-        bet_percentage: parseFloat(form.bet_percentage.value),
-        max_bets_per_week: parseInt(form.max_bets_per_week.value, 10),
-        strategy_id: form.strategy_id.value,
-        sport: form.sport.value,
-        bet_type: form.bet_type.value
-    };
-    await window.addBot(botData);
-    form.reset();
-    closeModal('add-bot-modal');
-});
+// Check if the form exists before adding event listener to prevent null errors
+const addBotForm = document.getElementById('add-investor-form');
+if (addBotForm) {
+    addBotForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        const botData = {
+            name: form.name.value,
+            starting_balance: parseFloat(form.starting_balance.value),
+            bet_percentage: parseFloat(form.bet_percentage.value),
+            max_bets_per_week: parseInt(form.max_bets_per_week.value, 10),
+            strategy_id: form.strategy_id.value,
+            sport: form.sport.value,
+            bet_type: form.bet_type.value
+        };
+        await window.addBot(botData);
+        form.reset();
+        closeModal('add-investor-modal');
+    });
+}
 
-document.getElementById('edit-bot-form').addEventListener('submit', async function(event) {
+const editBotForm = document.getElementById('edit-bot-form');
+if (editBotForm) {
+    editBotForm.addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
     
@@ -2401,9 +2416,12 @@ document.getElementById('edit-bot-form').addEventListener('submit', async functi
     };
     await window.editBot(botData);
     window.closeModal('bot-details-modal');
-});
+    });
+}
 
-document.getElementById('add-strategy-form').addEventListener('submit', async function(event) {
+const addStrategyForm = document.getElementById('add-strategy-form');
+if (addStrategyForm) {
+    addStrategyForm.addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
     
@@ -2435,9 +2453,12 @@ document.getElementById('add-strategy-form').addEventListener('submit', async fu
     form.reset();
     toggleStrategySizingOptions(); // Reset the form display
     closeModal('add-strategy-modal');
-});
+    });
+}
 
-document.getElementById('edit-strategy-form').addEventListener('submit', async function(event) {
+const editStrategyForm = document.getElementById('edit-strategy-form');
+if (editStrategyForm) {
+    editStrategyForm.addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
     const strategyId = form['strategy-modal-id'].value;
@@ -2466,10 +2487,13 @@ document.getElementById('edit-strategy-form').addEventListener('submit', async f
         parameters: newParameters
     });
     window.closeModal('strategy-details-modal');
-});
+    });
+}
 
 // Settings form event listener
-document.getElementById('settings-form').addEventListener('submit', async function(event) {
+const settingsForm = document.getElementById('settings-form');
+if (settingsForm) {
+    settingsForm.addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
     
@@ -2482,47 +2506,63 @@ document.getElementById('settings-form').addEventListener('submit', async functi
     if (saved) {
         window.closeModal('settings-modal');
     }
-});
-
-document.getElementById('signin-form-element').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    await signInUser(form.email.value, form.password.value);
-    form.reset();
-});
-
-document.getElementById('signup-form-element').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    await signUpUser(form.email.value, form.password.value, form.confirmPassword.value);
-    form.reset();
-});
-
-document.getElementById('demo-signin-btn').addEventListener('click', async function() {
-    currentUser = { email: 'demo@example.com', displayName: 'Demo User' };
-    isAuthenticated = true;
-    showAccountManagement();
-    showMessage('Signed in successfully (Demo Mode)', false);
-});
-
-document.getElementById('profile-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    await updateUserProfile({
-        email: form.email.value,
-        displayName: form.displayName.value
     });
-});
+}
 
-document.getElementById('password-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    await updateUserPassword(
-        form.currentPassword.value,
-        form.newPassword.value,
-        form.confirmNewPassword.value
-    );
-});
+const signinFormElement = document.getElementById('signin-form-element');
+if (signinFormElement) {
+    signinFormElement.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        await signInUser(form.email.value, form.password.value);
+        form.reset();
+    });
+}
+
+const signupFormElement = document.getElementById('signup-form-element');
+if (signupFormElement) {
+    signupFormElement.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        await signUpUser(form.email.value, form.password.value, form.confirmPassword.value);
+        form.reset();
+    });
+}
+
+const demoSigninBtn = document.getElementById('demo-signin-btn');
+if (demoSigninBtn) {
+    demoSigninBtn.addEventListener('click', async function() {
+        currentUser = { email: 'demo@example.com', displayName: 'Demo User' };
+        isAuthenticated = true;
+        showAccountManagement();
+        showMessage('Signed in successfully (Demo Mode)', false);
+    });
+}
+
+const profileForm = document.getElementById('profile-form');
+if (profileForm) {
+    profileForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        await updateUserProfile({
+            email: form.email.value,
+            displayName: form.displayName.value
+        });
+    });
+}
+
+const passwordForm = document.getElementById('password-form');
+if (passwordForm) {
+    passwordForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const form = event.target;
+        await updateUserPassword(
+            form.currentPassword.value,
+            form.newPassword.value,
+            form.confirmNewPassword.value
+        );
+    });
+}
 
 const preferencesForm = document.getElementById('preferences-form');
 if (preferencesForm) {
@@ -2544,9 +2584,15 @@ if (preferencesForm) {
     });
 }
 
-document.getElementById('logout-btn').addEventListener('click', signOutUser);
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', signOutUser);
+}
 
-document.getElementById('delete-account-btn').addEventListener('click', deleteUserAccount);
+const deleteAccountBtn = document.getElementById('delete-account-btn');
+if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener('click', deleteUserAccount);
+}
 
 // Initialize account page state
 function initializeAccountPage() {
