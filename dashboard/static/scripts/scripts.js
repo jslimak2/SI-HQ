@@ -809,7 +809,9 @@ window.showBotDetails = function(botId) {
 };
 
 window.showStrategyDetails = function(strategyId) {
-    const strategy = strategies.find(s => s.id === strategyId);
+    // Convert strategyId to number for comparison (HTML attributes are strings)
+    const numericStrategyId = typeof strategyId === 'string' ? parseInt(strategyId, 10) : strategyId;
+    const strategy = strategies.find(s => s.id === numericStrategyId);
     if (!strategy) {
         console.error('Strategy not found:', strategyId);
         return;
