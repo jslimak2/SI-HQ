@@ -6314,12 +6314,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Bot Configuration Functions
 
-// Handle model selection in Add Bot modal
+// Handle model selection in Add Bot/Investor modal
 function onModelSelected(modelId) {
     const modelSelect = document.getElementById('model-select');
     const sportDisplay = document.getElementById('sport-display');
     const marketSelect = document.getElementById('market-select');
-    const submitBtn = document.getElementById('add-bot-submit');
+    
+    // Try to find the submit button - check investor form first, then bot form
+    let submitBtn = document.getElementById('add-investor-submit');
+    if (!submitBtn) {
+        submitBtn = document.getElementById('add-bot-submit');
+    }
     
     if (modelId) {
         // Get the selected option's data-sport attribute
@@ -6342,14 +6347,30 @@ function onModelSelected(modelId) {
         sportDisplay.className = 'bg-gray-100 cursor-not-allowed';
         marketSelect.disabled = true;
         marketSelect.selectedIndex = 0;
-        submitBtn.disabled = true;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
     }
 }
 
 // Check if form is complete to enable submit button
 function checkFormCompletion() {
-    const form = document.getElementById('add-bot-form');
-    const submitBtn = document.getElementById('add-bot-submit');
+    // Try to find investor form first, then bot form
+    let form = document.getElementById('add-investor-form');
+    let submitBtn = document.getElementById('add-investor-submit');
+    let buttonText = 'Add Investor';
+    
+    if (!form) {
+        form = document.getElementById('add-bot-form');
+        submitBtn = document.getElementById('add-bot-submit');
+        buttonText = 'Add Bot';
+    }
+    
+    // If neither form is found, exit early
+    if (!form || !submitBtn) {
+        return;
+    }
+    
     const requiredFields = ['name', 'model_id', 'bet_type', 'starting_balance', 'bet_percentage', 'max_bets_per_week'];
     
     let allFieldsFilled = true;
@@ -6365,7 +6386,7 @@ function checkFormCompletion() {
     
     if (allFieldsFilled) {
         submitBtn.className = 'post9-btn p-3 mt-2';
-        submitBtn.textContent = 'Add Bot';
+        submitBtn.textContent = buttonText;
     } else {
         submitBtn.className = 'post9-btn p-3 mt-2 opacity-50 cursor-not-allowed';
         submitBtn.textContent = 'Complete All Fields';
