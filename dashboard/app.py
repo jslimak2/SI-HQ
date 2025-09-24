@@ -1291,9 +1291,25 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
 def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
     """Generate conservative strategy picks with enhanced logic."""
     params = strategy_data.get('parameters', {})
-    min_confidence = params.get('min_confidence', 75)
-    max_bet_pct = params.get('max_bet_percentage', 2.0)
-    max_odds = params.get('max_odds', 2.0)
+    
+    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            # If it's a dict, try to extract a 'value' field or use default
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
+    min_confidence = safe_float_extract(params.get('min_confidence', 75), 75)
+    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 2.0), 2.0)
+    max_odds = safe_float_extract(params.get('max_odds', 2.0), 2.0)
     
     basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
     
@@ -1317,8 +1333,24 @@ def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
 def generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks):
     """Generate aggressive strategy picks with enhanced logic."""
     params = strategy_data.get('parameters', {})
-    min_confidence = params.get('min_confidence', 60)
-    max_bet_pct = params.get('max_bet_percentage', 5.0)
+    
+    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            # If it's a dict, try to extract a 'value' field or use default
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
+    min_confidence = safe_float_extract(params.get('min_confidence', 60), 60)
+    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 5.0), 5.0)
     
     basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
     
@@ -1335,8 +1367,24 @@ def generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks):
 def generate_value_hunting_picks(strategy_data, bot_data, max_picks):
     """Generate value hunting strategy picks."""
     params = strategy_data.get('parameters', {})
-    min_odds_edge = params.get('min_odds_edge', 5.0)
-    max_bet_pct = params.get('max_bet_percentage', 3.5)
+    
+    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            # If it's a dict, try to extract a 'value' field or use default
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
+    min_odds_edge = safe_float_extract(params.get('min_odds_edge', 5.0), 5.0)
+    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 3.5), 3.5)
     
     picks = generate_basic_strategy_picks(bot_data, max_picks)
     
@@ -1356,7 +1404,23 @@ def generate_value_hunting_picks(strategy_data, bot_data, max_picks):
 def generate_arbitrage_picks(strategy_data, bot_data, max_picks):
     """Generate arbitrage strategy picks."""
     params = strategy_data.get('parameters', {})
-    min_profit = params.get('min_arbitrage_profit', 1.0)
+    
+    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            # If it's a dict, try to extract a 'value' field or use default
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
+    min_profit = safe_float_extract(params.get('min_arbitrage_profit', 1.0), 1.0)
     
     # Simulate arbitrage opportunities (in real implementation, find across sportsbooks)
     arbitrage_picks = []
@@ -2293,10 +2357,26 @@ def generate_real_expected_value_picks(strategy_data, bot_data, games, max_picks
     """Generate +EV picks using real game data"""
     picks = []
     
-    # Get strategy parameters
+    # Get strategy parameters with proper type conversion to handle dict/float issues
     params = strategy_data.get('parameters', {})
-    min_ev = params.get('min_expected_value', 5.0)
-    min_confidence = params.get('confidence_threshold', 65.0)
+    
+    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            # If it's a dict, try to extract a 'value' field or use default
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
+    min_ev = safe_float_extract(params.get('min_expected_value', 5.0), 5.0)
+    min_confidence = safe_float_extract(params.get('confidence_threshold', 65.0), 65.0)
     
     # Filter games by expected value
     for game in games:

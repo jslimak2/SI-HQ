@@ -4709,7 +4709,6 @@ function initializeMLAnalytics() {
     
     // Analytics page now focuses purely on performance analysis and reporting
     // Removed the ML prediction tool as it belongs in the Predictive Analytics section
-    console.log('Analytics page initialized - ML prediction tool removed from this section');
 }
 
 function displayMLAnalytics(analytics) {
