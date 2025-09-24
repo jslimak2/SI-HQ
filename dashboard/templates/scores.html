@@ -405,6 +405,9 @@
             
             container.innerHTML = html;
         }
+        
+        // Fix JavaScript ReferenceErrors: Expose functions to global window object
+        window.filterBySport = filterBySport;
     </script>
 </body>
 </html>

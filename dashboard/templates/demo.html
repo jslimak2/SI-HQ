@@ -188,6 +188,11 @@
         function refreshApiStatus() {
             alert('API status refreshed! (This is a demo)');
         }
+        
+        // Fix JavaScript ReferenceErrors: Expose functions to global window object
+        window.toggleWagers = toggleWagers;
+        window.getStrategyPicks = getStrategyPicks;
+        window.refreshApiStatus = refreshApiStatus;
     </script>
 </body>
 </html>
