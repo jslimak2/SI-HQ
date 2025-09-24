@@ -389,7 +389,7 @@ def get_sports_games_data(sport='NBA', max_games=10):
     try:
         # Try to use real sports API first
         if real_sports_service and config.api.sports_api_key and not config.disable_demo_mode:
-            logger.info(f"Fetching real sports data for {sport}")
+            logger.info(f"🔍 Fetching real sports data for {sport}")
             real_games = real_sports_service.get_current_games(sport.lower())
             
             if real_games and len(real_games) > 0:
@@ -400,15 +400,18 @@ def get_sports_games_data(sport='NBA', max_games=10):
                     game['true_probability'] = 0.50 + (random.random() - 0.5) * 0.2  # 0.4-0.6 range
                     game['expected_value'] = ((game['odds'] * game['true_probability']) - 1) * 100
                 
-                logger.info(f"Successfully fetched {len(limited_games)} real games for {sport}")
+                # Check if we're using real data or emergency fallback
+                data_source = "REAL API DATA" if real_games[0].get('real_data', False) else "EMERGENCY FALLBACK"
+                logger.info(f"✅ Successfully fetched {len(limited_games)} {data_source} games for {sport}")
                 return limited_games
         
         # Fallback to demo data
-        logger.info(f"Using demo sports data for {sport}")
+        logger.info(f"🟡 Using demo sports data for {sport} (no real API available)")
         return get_demo_games_data(sport, max_games)
         
     except Exception as e:
-        logger.error(f"Error fetching sports data: {e}")
+        logger.error(f"❌ Error fetching sports data: {e}")
+        logger.info(f"🔄 Falling back to demo data for {sport}")
         return get_demo_games_data(sport, max_games)
 
 def get_demo_games_data(sport='NBA', max_games=10):
@@ -1195,11 +1198,29 @@ def get_strategy_picks(strategy_id):
         if not bot_doc.exists:
             return jsonify({'success': False, 'message': 'Bot not found.'}), 404
         bot_data = bot_doc.to_dict()
+        
+        # Check if bot has a strategy assigned (protection for bots without strategies)
+        bot_assigned_strategy = bot_data.get('assigned_strategy_id')
+        if not bot_assigned_strategy:
+            return jsonify({
+                'success': False, 
+                'message': 'This bot does not have a strategy assigned. Please select a strategy first.',
+                'requires_strategy_selection': True
+            }), 400
+        
+        # If a specific strategy_id is provided in URL, use that; otherwise use bot's assigned strategy
+        effective_strategy_id = strategy_id if strategy_id else bot_assigned_strategy
+        
         # Fetch strategy from user-specific collection
-        strategy_ref = db.collection(f'users/{user_id}/strategies').document(strategy_id)
+        strategy_ref = db.collection(f'users/{user_id}/strategies').document(effective_strategy_id)
         strategy_doc = strategy_ref.get()
         if not strategy_doc.exists:
-            return jsonify({'success': False, 'message': 'Strategy not found.'}), 404
+            return jsonify({
+                'success': False, 
+                'message': f'Strategy not found. The strategy may have been deleted. Please select a new strategy for this bot.',
+                'strategy_deleted': True,
+                'missing_strategy_id': effective_strategy_id
+            }), 404
         strategy_data = strategy_doc.to_dict()
         # Check if bot has reached max bets for the week
         max_bets = bot_data.get('max_bets_per_week', 5)
