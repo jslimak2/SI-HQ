@@ -37,9 +37,9 @@ ModelSchema(
 - ✅ Multiple market support per model
 - ✅ Training configuration preservation
 
-### 2. Bot Schema (`BotSchema`)
+### 2. Investor Schema (`BotSchema`)
 
-The enhanced bot schema includes comprehensive risk management:
+The enhanced investor schema includes comprehensive risk management:
 
 ```python
 BotSchema(
@@ -152,7 +152,7 @@ class Sport(Enum):
     NHL = "NHL"
 ```
 
-### Bot Status
+### Investor Status
 ```python
 class BotStatus(Enum):
     ACTIVE = "active"
@@ -195,10 +195,10 @@ issues = SchemaValidator.validate_model(model)
 if issues:
     print(f"Validation failed: {issues}")
 
-# Validate a bot
-issues = SchemaValidator.validate_bot(bot)
+# Validate a investor
+issues = SchemaValidator.validate_bot(investor)
 if issues:
-    print(f"Bot validation failed: {issues}")
+    print(f"Investor validation failed: {issues}")
 
 # Validate a strategy
 issues = SchemaValidator.validate_strategy(strategy)
@@ -220,10 +220,10 @@ legacy_model_data = {
 }
 migrated_model = migrate_legacy_model(legacy_model_data)
 
-# Migrate legacy bot data
+# Migrate legacy investor data
 legacy_bot_data = {
     'id': 'old_bot_001',
-    'name': 'Old Bot',
+    'name': 'Old Investor',
     'status': 'active',
     'bet_percentage': 3.0
 }
@@ -237,18 +237,18 @@ The `DataService` class provides centralized data management:
 ```python
 from dashboard.data_service import data_service
 
-# Create a bot
+# Create a investor
 bot_id = data_service.create_bot({
-    'name': 'My Bot',
+    'name': 'My Investor',
     'current_balance': 1000.0,
     'sport_filter': 'NBA',
     'created_by': 'user123'
 })
 
-# Retrieve a bot
-bot = data_service.get_bot(bot_id)
+# Retrieve a investor
+investor = data_service.get_bot(bot_id)
 
-# Update a bot
+# Update a investor
 updated_bot = data_service.update_bot(bot_id, {
     'current_balance': 1200.0
 })
@@ -279,10 +279,10 @@ New API endpoints support schema operations:
 ```
 POST /api/schema/validate
 {
-    "schema_type": "bot",
+    "schema_type": "investor",
     "data": {
         "bot_id": "test_bot",
-        "name": "Test Bot",
+        "name": "Test Investor",
         "current_balance": 1000.0,
         "created_by": "user123"
     }
@@ -301,9 +301,9 @@ Returns information about available schemas, required fields, and enums.
 ### 1. Always Use Schema Classes
 ```python
 # ✅ Good
-bot = BotSchema(
+investor = BotSchema(
     bot_id="bot_001",
-    name="My Bot",
+    name="My Investor",
     current_balance=1000.0,
     created_by="user123"
 )
@@ -311,7 +311,7 @@ bot = BotSchema(
 # ❌ Avoid raw dictionaries
 bot_data = {
     'id': 'bot_001',
-    'name': 'My Bot',
+    'name': 'My Investor',
     'balance': 1000.0
 }
 ```
@@ -319,23 +319,23 @@ bot_data = {
 ### 2. Validate Before Storing
 ```python
 # Always validate before saving
-issues = SchemaValidator.validate_bot(bot)
+issues = SchemaValidator.validate_bot(investor)
 if issues:
-    raise ValueError(f"Invalid bot: {issues}")
+    raise ValueError(f"Invalid investor: {issues}")
 
 # Then save
-bot_id = data_service.create_bot(bot.to_dict())
+bot_id = data_service.create_bot(investor.to_dict())
 ```
 
 ### 3. Use Enums for Type Safety
 ```python
 # ✅ Good
-bot.active_status = BotStatus.ACTIVE
-bot.sport_filter = Sport.NBA
+investor.active_status = BotStatus.ACTIVE
+investor.sport_filter = Sport.NBA
 
 # ❌ Avoid strings
-bot.status = "active"  # Could have typos
-bot.sport = "nba"      # Inconsistent casing
+investor.status = "active"  # Could have typos
+investor.sport = "nba"      # Inconsistent casing
 ```
 
 ### 4. Leverage Performance Metrics
@@ -398,10 +398,10 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Check schema structure
-print(bot.to_dict())
+print(investor.to_dict())
 
 # Validate step by step
-issues = SchemaValidator.validate_bot(bot)
+issues = SchemaValidator.validate_bot(investor)
 for issue in issues:
     print(f"Issue: {issue}")
 ```

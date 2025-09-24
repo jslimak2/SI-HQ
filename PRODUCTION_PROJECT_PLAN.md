@@ -16,7 +16,7 @@ This document outlines the complete project plan to transform the SI-HQ Sports I
 - Comprehensive error handling and logging
 
 ### ⚠️ Functionally Complete but Demo Data (Score: 6-8/10)
-- Bot management with sophisticated betting logic
+- Investor management with sophisticated betting logic
 - Strategy engine with Kelly criterion implementation
 - Investment recommendation system
 - ML model registry and lifecycle management

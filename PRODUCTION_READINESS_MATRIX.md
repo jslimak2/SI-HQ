@@ -34,7 +34,7 @@
 
 | Feature | Implementation Status | Data Source | Production Score |
 |---------|----------------------|-------------|------------------|
-| **Bot Management System** | ✅ Full CRUD operations | Simulated betting outcomes | 8/10 |
+| **Investor Management System** | ✅ Full CRUD operations | Simulated betting outcomes | 8/10 |
 | **Strategy Engine** | ✅ Complete strategy logic | Mock strategy performance | 8/10 |
 | **Investment Recommendations** | ✅ Complete betting logic | Demo sports games and odds | 7/10 |
 | **Model Registry** | ✅ Full model lifecycle | Simulated model performance with metadata | 8/10 |
@@ -81,16 +81,16 @@
 
 ### ⚠️ **FUNCTIONALLY COMPLETE** (Works but needs real data)
 
-#### Bot & Strategy Management
+#### Investor & Strategy Management
 ```python
 # Real functional code with schema validation
-@app.route('/api/bots', methods=['POST'])
+@app.route('/api/investors', methods=['POST'])
 @handle_errors
 @require_authentication  
 @rate_limit(requests_per_hour=100)
 @sanitize_request_data(required_fields=['name', 'initial_balance'])
 def add_bot():
-    # Complete bot creation with risk management
+    # Complete investor creation with risk management
     risk_management = RiskManagement(
         max_bet_percentage=bet_percentage,
         max_bets_per_week=max_bets_per_week,

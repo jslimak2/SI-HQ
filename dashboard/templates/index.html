@@ -518,14 +518,14 @@
                     <div class="stats-card">
                         <span class="stats-icon">🚀</span>
                         <span class="stats-label">Best Investor</span>
-                        <span id="best-bot-name" class="stats-value">-</span>
-                        <span id="best-bot-profit" class="stats-trend"></span>
+                        <span id="best-investor-name" class="stats-value">-</span>
+                        <span id="best-investor-profit" class="stats-trend"></span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">⚠️</span>
                         <span class="stats-label">Worst Investor</span>
-                        <span id="worst-bot-name" class="stats-value">-</span>
-                        <span id="worst-bot-profit" class="stats-trend negative"></span>
+                        <span id="worst-investor-name" class="stats-value">-</span>
+                        <span id="worst-investor-profit" class="stats-trend negative"></span>
                     </div>
                     <div class="stats-card">
                         <span class="stats-icon">🤖</span>
@@ -565,7 +565,7 @@
             </section>
             <section class="table-container mb-12 post9-card">
                 <h2 class="text-2xl font-bold mb-4 text-white">Investor Manager</h2>
-                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-bot-modal')">Add Investor</button>
+                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-investor-modal')">Add Investor</button>
                 <div id="inactive-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
                     <p id="inactive-bots-loading" class="text-center text-gray-500">Loading inactive investors...</p>
                 </div>
@@ -612,11 +612,11 @@
             </section>
         </div>
         <!-- Add Investor Modal -->
-        <div id="add-bot-modal" class="modal">
+        <div id="add-investor-modal" class="modal">
             <div class="modal-content post9-card max-w-4xl">
-                <span class="modal-close" onclick="closeModal('add-bot-modal')">&times;</span>
+                <span class="modal-close" onclick="closeModal('add-investor-modal')">&times;</span>
                 <h3 class="text-xl font-bold mb-4 text-white">Add Automated Investor</h3>
-                <form id="add-bot-form" class="flex flex-col gap-4">
+                <form id="add-investor-form" class="flex flex-col gap-4">
                     <input type="text" name="name" placeholder="Investor Name" required>
                     
                     <!-- Step 1: Model Selection (Primary) -->
@@ -699,7 +699,7 @@
                         </div>
                     </div>
                     
-                    <button type="submit" class="post9-btn p-3 mt-2" id="add-bot-submit" disabled>Add Investor</button>
+                    <button type="submit" class="post9-btn p-3 mt-2" id="add-investor-submit" disabled>Add Investor</button>
                 </form>
             </div>
         </div>
@@ -1826,12 +1826,12 @@
         </div>
     </div>
     
-    <div id="bot-details-modal" class="modal">
+    <div id="investor-details-modal" class="modal">
         <div class="modal-content">
-            <span class="modal-close" onclick="window.closeModal('bot-details-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Edit Investor: <span id="modal-bot-name"></span></h2>
-            <form id="edit-bot-form" class="space-y-4">
-                <input type="hidden" id="modal-bot-id">
+            <span class="modal-close" onclick="window.closeModal('investor-details-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Edit Investor: <span id="modal-investor-name"></span></h2>
+            <form id="edit-investor-form" class="space-y-4">
+                <input type="hidden" id="modal-investor-id">
                 <div>
                     <label for="modal-name" class="block text-sm font-medium text-gray-700">Name</label>
                     <input type="text" id="modal-name" name="name" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
@@ -1894,7 +1894,7 @@
                             <span class="text-sm text-gray-700">PointsBet</span>
                         </label>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Select which sportsbooks this bot can consider for placing bets</p>
+                    <p class="text-xs text-gray-500 mt-2">Select which sportsbooks this investor can consider for placing bets</p>
                 </div>
                 <button type="submit" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300">Save Changes</button>
             </form>
@@ -1930,7 +1930,7 @@
     <div id="history-modal" class="modal">
         <div class="modal-content max-w-2xl">
             <span class="modal-close" onclick="window.closeModal('history-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Bet History for <span id="history-bot-name"></span></h2>
+            <h2 class="text-2xl font-bold mb-4">Bet History for <span id="history-investor-name"></span></h2>
             <div class="overflow-y-auto max-h-96">
                 <table class="w-full divide-y divide-gray-200">
                     <thead>
@@ -1950,12 +1950,12 @@
         </div>
     </div>
 
-    <div id="bot-log-modal" class="modal">
+    <div id="investor-log-modal" class="modal">
         <div class="modal-content max-w-2xl">
-            <span class="modal-close" onclick="window.closeModal('bot-log-modal')">&times;</span>
-            <h2 class="text-2xl font-bold mb-4">Investor Log for <span id="log-bot-name"></span></h2>
+            <span class="modal-close" onclick="window.closeModal('investor-log-modal')">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Investor Log for <span id="log-investor-name"></span></h2>
             <div class="overflow-y-auto max-h-96 bg-gray-100 p-4 rounded-md text-sm font-mono whitespace-pre-wrap">
-                <pre id="bot-log-content"></pre>
+                <pre id="investor-log-content"></pre>
             </div>
         </div>
     </div>
@@ -2054,8 +2054,8 @@
             </div>
 
             <div class="mb-6">
-                <h3 class="text-lg font-semibold mb-4">Investments by Bot Strategy</h3>
-                <div id="bets-by-bot" class="space-y-4"></div>
+                <h3 class="text-lg font-semibold mb-4">Investments by Investor Strategy</h3>
+                <div id="bets-by-investor" class="space-y-4"></div>
             </div>
 
             <div class="flex justify-between">
@@ -2469,14 +2469,14 @@
         </div>
     </div>
 
-    <!-- Bot Recommendation Details Modal -->
-    <div id="bot-recommendation-modal" class="modal">
+    <!-- Investor Recommendation Details Modal -->
+    <div id="investor-recommendation-modal" class="modal">
         <div class="modal-content post9-card max-w-5xl">
-            <span class="modal-close" onclick="closeModal('bot-recommendation-modal')">&times;</span>
-            <h3 class="text-2xl font-bold mb-6 text-white">Bot Recommendation Details</h3>
+            <span class="modal-close" onclick="closeModal('investor-recommendation-modal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-6 text-white">Investor Recommendation Details</h3>
             
-            <div id="bot-recommendation-content" class="space-y-6">
-                <!-- Bot recommendation details will be populated here -->
+            <div id="investor-recommendation-content" class="space-y-6">
+                <!-- Investor recommendation details will be populated here -->
             </div>
         </div>
     </div>

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Post9 is a comprehensive platform that enables users to develop, train, and deploy machine learning models for sports investment strategies. The platform provides end-to-end workflow capabilities from model parameter tuning to automated bot recommendations.
+Post9 is a comprehensive platform that enables users to develop, train, and deploy machine learning models for sports investment strategies. The platform provides end-to-end workflow capabilities from model parameter tuning to automated investor recommendations.
 
 ## Key Features Implemented
 
@@ -78,30 +78,30 @@ Post9 is a comprehensive platform that enables users to develop, train, and depl
 
 **API Endpoints**:
 - `POST /api/strategies/model-based` - Create strategies powered by ML models
-- `POST /api/bots/<bot_id>/assign-model` - Assign models to bots
-- `GET /api/bots/<bot_id>/model-recommendations` - Get ML-powered recommendations
+- `POST /api/investors/<bot_id>/assign-model` - Assign models to investors
+- `GET /api/investors/<bot_id>/model-recommendations` - Get ML-powered recommendations
 
 **Capabilities**:
 - Create betting strategies that use specific ML models
-- Assign trained models to automated bots
+- Assign trained models to automated investors
 - Generate recommendations based on model predictions
 - Configure strategy parameters (confidence thresholds, bet sizing)
 
-### 5. Bot Recommendation System 🤖
+### 5. Investor Recommendation System 🤖
 
 **Enhanced Features**:
 - ML model-powered pick generation
 - Confidence-based filtering
 - Real-time game analysis using trained models
 - Kelly Criterion-based bet sizing
-- Integration with existing bot management system
+- Integration with existing investor management system
 
 **How It Works**:
-1. Assign a trained model to a bot
-2. Bot queries model for predictions on current games
+1. Assign a trained model to a investor
+2. Investor queries model for predictions on current games
 3. Model returns predictions with confidence scores
-4. Bot filters predictions based on confidence thresholds
-5. Bot generates recommended bets with optimal sizing
+4. Investor filters predictions based on confidence thresholds
+5. Investor generates recommended bets with optimal sizing
 
 ## API Reference
 
@@ -162,18 +162,18 @@ POST /api/strategies/model-based
 }
 ```
 
-#### Assign Model to Bot
+#### Assign Model to Investor
 ```
-POST /api/bots/{bot_id}/assign-model
+POST /api/investors/{bot_id}/assign-model
 {
   "model_id": "nba_model_123",
   "user_id": "user123"
 }
 ```
 
-#### Get Bot Recommendations
+#### Get Investor Recommendations
 ```
-GET /api/bots/{bot_id}/model-recommendations?user_id=user123
+GET /api/investors/{bot_id}/model-recommendations?user_id=user123
 ```
 
 ### Analytics APIs
@@ -211,13 +211,13 @@ POST /api/analytics/kelly
    - Link to the trained model
    - Configure strategy parameters
 
-5. **Assign to Bot**:
-   - Create or select existing bot
-   - Assign the trained model to bot
-   - Bot will use model for recommendations
+5. **Assign to Investor**:
+   - Create or select existing investor
+   - Assign the trained model to investor
+   - Investor will use model for recommendations
 
 6. **Monitor Performance**:
-   - View bot recommendations
+   - View investor recommendations
    - Track model accuracy
    - Analyze betting performance
 
@@ -226,8 +226,8 @@ POST /api/analytics/kelly
 1. **Access Model Gallery**: Navigate to ML Dashboard → Model Gallery
 2. **Select Pre-trained Model**: Choose from NBA, NFL, or MLB models
 3. **Tune Parameters**: Click "Tune" and adjust settings
-4. **Assign to Bot**: Use existing bot management system
-5. **Get Recommendations**: Bot will provide ML-powered picks
+4. **Assign to Investor**: Use existing investor management system
+5. **Get Recommendations**: Investor will provide ML-powered picks
 
 ## Technical Architecture
 
@@ -246,7 +246,7 @@ POST /api/analytics/kelly
 
 ### Database Integration
 
-- **Firebase Firestore**: User data, bot configurations, strategies
+- **Firebase Firestore**: User data, investor configurations, strategies
 - **Model Storage**: Trained model artifacts and metadata
 - **Performance Tracking**: Model metrics and betting results
 

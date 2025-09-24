@@ -17,7 +17,7 @@ At ***Post*9**, we merge the passion of sports with the precision of data scienc
 ### Core Concepts
 - **Models** 🤖 - AI-powered prediction engines for sports outcomes
 - **Strategies** 📋 - Intelligent rules for when and how to invest
-- **Bots** 🚀 - Automated investors that execute your strategies 24/7
+- **Investors** 🚀 - Automated investors that execute your strategies 24/7
 
 ### Production Ready Features ✨ **NEW**
 - **Production Mode Validation** - Set `DISABLE_DEMO_MODE=true` to identify fully functional features
@@ -27,13 +27,13 @@ At ***Post*9**, we merge the passion of sports with the precision of data scienc
 ### Schema & Data Models ✨ **NEW**
 - **[Schema v2.0 Documentation](SCHEMA_DOCUMENTATION.md)** - Complete schema reference
 - **Model Schema** - Enhanced ML model tracking with performance metrics
-- **Bot Schema** - Comprehensive bot management with risk controls
+- **Investor Schema** - Comprehensive investor management with risk controls
 - **Strategy Schema** - Advanced strategy configuration and tracking
 
 ### Detailed Documentation
 - [Architecture & System Design](ARCHITECTURE_AND_SYSTEM_DESIGN.md) - Comprehensive technical documentation with Mermaid diagrams
 - [ML System Documentation](ML_SYSTEM_DOCUMENTATION.md) - Machine learning pipeline details
-- [Strategy & Bot Design Analysis](STRATEGY_AND_BOT_DESIGN_ANALYSIS.md) - Design patterns and best practices
+- [Strategy & Investor Design Analysis](STRATEGY_AND_BOT_DESIGN_ANALYSIS.md) - Design patterns and best practices
 - [Training Queue Implementation](TRAINING_QUEUE_IMPLEMENTATION.md) - Model training workflow
 - [Investment Caching](INVESTMENT_CACHING_README.md) - Performance optimization
 - [Deployment Guide](DEPLOYMENT.md) - Production setup instructions

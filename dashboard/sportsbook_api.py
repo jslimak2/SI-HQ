@@ -331,7 +331,7 @@ class BettingExecutionService:
         self.pending_investments = {}  # Store investments for manual processing
         
         # Log important safety message
-        logger.info("🚨 LIVE BETTING DISABLED FOR SAFETY 🚨")
+        logger.info("[SAFETY] LIVE BETTING DISABLED FOR SAFETY [SAFETY]")
         logger.info("All investments will be held for manual export and placement")
         
     def add_sportsbook(self, name: str, api_instance: 'SportsbookAPIBase', is_default: bool = False):
@@ -384,7 +384,7 @@ class BettingExecutionService:
     
     def place_bet(self, bet_request: 'BetRequest', sportsbook: str = None) -> 'BetResult':
         """Place a bet on specified or default sportsbook (DISABLED)"""
-        logger.warning("🚨 place_bet() called but live betting is DISABLED")
+        logger.warning("[SAFETY] place_bet() called but live betting is DISABLED")
         
         return BetResult(
             success=False,

@@ -1,12 +1,12 @@
 # Backend Real Recommendations Fix
 
 ## Problem Statement
-The backend logic was always returning demo/fake recommendations instead of fetching real data from the sports API, even when a valid API key was available. Additionally, the bot recommendations endpoint was showing `🟡 GENERATING FAKE BOT RECOMMENDATIONS for demo purposes` in the terminal and always returning fake bot data.
+The backend logic was always returning demo/fake recommendations instead of fetching real data from the sports API, even when a valid API key was available. Additionally, the investor recommendations endpoint was showing `🟡 GENERATING FAKE INVESTOR RECOMMENDATIONS for demo purposes` in the terminal and always returning fake investor data.
 
 ## Root Cause
 1. The original logic was overly conservative and required both Firebase database AND a valid sports API key to fetch real data
-2. The `/api/bot-recommendations` endpoint was calling `generate_demo_bot_recommendations()` in both demo and production modes
-3. Users had no way to access real bot recommendations even in production
+2. The `/api/investor-recommendations` endpoint was calling `generate_demo_bot_recommendations()` in both demo and production modes
+3. Users had no way to access real investor recommendations even in production
 
 ## Solution Implemented
 
@@ -17,11 +17,11 @@ The backend logic was always returning demo/fake recommendations instead of fetc
    - Removed the requirement for Firebase database to fetch real sports data
    - API key validation: `can_fetch_real_data = external_api_key and 'demo' not in external_api_key.lower()`
 
-2. **🆕 Fixed Bot Recommendations Endpoint** (`/api/bot-recommendations`):
+2. **🆕 Fixed Investor Recommendations Endpoint** (`/api/investor-recommendations`):
    - Added `generate_real_bot_recommendations()` function
    - Now calls real function in production mode instead of always using demo
-   - Terminal message changes from `🟡 GENERATING FAKE BOT RECOMMENDATIONS` to `🟢 GENERATING REAL BOT RECOMMENDATIONS`
-   - Uses real user bots and real sports data for recommendations
+   - Terminal message changes from `🟡 GENERATING FAKE INVESTOR RECOMMENDATIONS` to `🟢 GENERATING REAL INVESTOR RECOMMENDATIONS`
+   - Uses real user investors and real sports data for recommendations
 
 3. **🆕 Added Real Strategy Picks**:
    - Implemented `generate_real_strategy_picks()` function
@@ -46,13 +46,13 @@ The backend logic was always returning demo/fake recommendations instead of fetc
 if demo_mode or not db:
     return generate_demo_investments()
 
-# Bot recommendations always used demo
+# Investor recommendations always used demo
 recommendations = generate_demo_bot_recommendations()
 ```
 - Always used demo mode if Firebase was unavailable
 - Required both database AND API key for real data
 - Failed completely on API errors
-- Bot recommendations were always fake
+- Investor recommendations were always fake
 
 **AFTER (New Logic):**
 ```python
@@ -63,7 +63,7 @@ can_fetch_real_data = external_api_key and 'demo' not in external_api_key.lower(
 if not can_fetch_real_data:
     return generate_demo_investments()
 
-# Bot recommendations use real data in production
+# Investor recommendations use real data in production
 try:
     recommendations = generate_real_bot_recommendations(user_id)
     data_source = 'real'
@@ -75,7 +75,7 @@ except Exception:
 - Works without Firebase if API key is valid
 - Gracefully falls back to demo data on API failures
 - Only uses demo mode when truly necessary
-- Bot recommendations use real user data and real sports games
+- Investor recommendations use real user data and real sports games
 
 ### API Response Changes
 
@@ -88,8 +88,8 @@ Real data responses now include:
 
 ### Terminal Message Changes
 
-**Before**: 🟡 GENERATING FAKE BOT RECOMMENDATIONS for demo purposes
-**After**: 🟢 GENERATING REAL BOT RECOMMENDATIONS using live data
+**Before**: 🟡 GENERATING FAKE INVESTOR RECOMMENDATIONS for demo purposes
+**After**: 🟢 GENERATING REAL INVESTOR RECOMMENDATIONS using live data
 
 ### Testing
 
@@ -99,7 +99,7 @@ The fix has been tested with multiple scenarios:
 3. ✅ Valid API key with database → Real data with caching
 4. ✅ Valid API key without database → Real data without caching
 5. ✅ API failure → Graceful fallback to demo data
-6. ✅ Bot recommendations endpoint returns real data
+6. ✅ Investor recommendations endpoint returns real data
 7. ✅ Terminal shows correct messages for real vs demo mode
 8. ✅ Strategy picks use real sports data
 
@@ -117,7 +117,7 @@ Firebase is now optional for fetching real sports data, making development and t
 
 - `/dashboard/app.py` - Main application logic updated
   - Investment endpoint (`/api/investments`) completely refactored
-  - Bot recommendations endpoint (`/api/bot-recommendations`) fixed
+  - Investor recommendations endpoint (`/api/investor-recommendations`) fixed
   - Added `generate_real_bot_recommendations()` function
   - Added `generate_real_strategy_picks()` function
   - Strategy picks endpoint enhanced
@@ -127,7 +127,7 @@ Firebase is now optional for fetching real sports data, making development and t
 
 ✅ **Major Improvement**: Backend now fetches REAL recommendations when possible instead of always defaulting to demo/fake data!
 
-✅ **Bot Recommendations Fixed**: Users can now get real bot recommendations instead of fake demo data!
+✅ **Investor Recommendations Fixed**: Users can now get real investor recommendations instead of fake demo data!
 
 ✅ **Clear User Feedback**: Terminal messages clearly indicate real vs demo data generation!
 

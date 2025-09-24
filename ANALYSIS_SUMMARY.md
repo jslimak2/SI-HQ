@@ -14,7 +14,7 @@ The SI-HQ (Post9) sports investment platform has been thoroughly analyzed to det
 - **Error Handling**: Professional logging and monitoring
 
 ### 🟡 **FUNCTIONALLY COMPLETE** (Needs real data integration)
-- **Bot Management**: Complete CRUD operations and betting logic
+- **Investor Management**: Complete CRUD operations and betting logic
 - **Strategy Engine**: Advanced strategy implementation with Kelly criterion
 - **Investment System**: Sophisticated recommendation engine
 - **Model Registry**: Full ML model lifecycle management

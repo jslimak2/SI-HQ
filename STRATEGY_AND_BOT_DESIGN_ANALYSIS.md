@@ -1,4 +1,4 @@
-# Strategy and Bot Design Analysis
+# Strategy and Investor Design Analysis
 
 ## Problem Statement Responses
 
@@ -7,15 +7,15 @@
 
 **Fix**: Added `window.makePredictionWithModel = makePredictionWithModel;` to the global function exports in `dashboard/static/scripts/scripts.js` line 4189.
 
-### 2. Bot Sport/Market Assignment Design 
+### 2. Investor Sport/Market Assignment Design 
 
-**Question**: Do bots need to be assigned to a specific sport and market if strategies are?
+**Question**: Do investors need to be assigned to a specific sport and market if strategies are?
 
 **Analysis from codebase**:
 
 Based on `factors.txt` design specification:
 ```
-Each investor/bot has:
+Each investor/investor has:
     a balance
     a sport
     a market (hth, total, spread)
@@ -23,17 +23,17 @@ Each investor/bot has:
     a model
 ```
 
-**Answer**: Yes, bots should be assigned to specific sports and markets even if strategies are, for the following reasons:
+**Answer**: Yes, investors should be assigned to specific sports and markets even if strategies are, for the following reasons:
 
-1. **Granular Control**: Bots serve as the execution layer that implements strategies. A strategy might be general (e.g., "bet on favorites"), but the bot needs specific constraints about which sports/markets to apply it to.
+1. **Granular Control**: Investors serve as the execution layer that implements strategies. A strategy might be general (e.g., "bet on favorites"), but the investor needs specific constraints about which sports/markets to apply it to.
 
-2. **Risk Management**: Different sports have different volatility profiles. A bot assigned to NBA might have different bankroll management than one assigned to NFL due to game frequency.
+2. **Risk Management**: Different sports have different volatility profiles. A investor assigned to NBA might have different bankroll management than one assigned to NFL due to game frequency.
 
-3. **Model Specialization**: The system design shows each bot has its own model. Sports-specific models (NBA LSTM vs NFL Ensemble) perform better than generic models.
+3. **Model Specialization**: The system design shows each investor has its own model. Sports-specific models (NBA LSTM vs NFL Ensemble) perform better than generic models.
 
-4. **Portfolio Diversification**: Users can run multiple bots with the same strategy across different sports/markets to diversify risk.
+4. **Portfolio Diversification**: Users can run multiple investors with the same strategy across different sports/markets to diversify risk.
 
-**Current Implementation**: The code shows bots have sport fields (`bot.sport`) and the system generates sport-specific game data and analytics.
+**Current Implementation**: The code shows investors have sport fields (`investor.sport`) and the system generates sport-specific game data and analytics.
 
 ### 3. Edit Strategy vs Strategy Builder Distinction
 
@@ -62,10 +62,10 @@ Each investor/bot has:
 
 ## Recommendations
 
-### 1. Bot-Strategy-Sport-Market Relationship
+### 1. Investor-Strategy-Sport-Market Relationship
 ```
 User
-├── Bots (execution layer)
+├── Investors (execution layer)
 │   ├── Sport: NBA/NFL/MLB/etc
 │   ├── Market: spread/total/moneyline
 │   ├── Strategy: reference to strategy
@@ -73,7 +73,7 @@ User
 └── Strategies (logic layer)
     ├── Parameters: configurable rules
     ├── Logic: betting conditions
-    └── Can be shared across multiple bots
+    └── Can be shared across multiple investors
 ```
 
 ### 2. Strategy Interface Clarification
@@ -90,7 +90,7 @@ The TailwindCSS CDN warning is expected in development. For production:
 
 ## Implementation Status
 - [x] Fixed JavaScript ReferenceError
-- [x] Documented design rationale for bot/strategy relationships
+- [x] Documented design rationale for investor/strategy relationships
 - [x] Explained dual strategy interface purpose
 - [ ] Consider UI improvements for strategy interface clarity
 

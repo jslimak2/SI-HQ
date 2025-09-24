@@ -74,12 +74,12 @@ def endpoint():
 ### 3. Professional API Design
 ```python
 # Before: No validation or documentation
-@app.route('/api/bots', methods=['POST'])
+@app.route('/api/investors', methods=['POST'])
 def add_bot():
     data = request.json  # No validation
 
 # After: Professional API with validation
-@app.route('/api/bots', methods=['POST'])
+@app.route('/api/investors', methods=['POST'])
 @handle_errors
 @require_authentication
 @rate_limit(requests_per_hour=100)
