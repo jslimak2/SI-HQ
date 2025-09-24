@@ -243,7 +243,7 @@ async function fetchStrategies() {
 // Function to fetch and display bots
 async function fetchBots() {
     if (!firebaseAvailable) {
-        console.log("Firebase not available, loading demo bots");
+        console.log("Firebase not available, loading demo investors");
         await loadDemoBots();
         return;
     }
@@ -264,7 +264,7 @@ async function fetchBots() {
         });
     } catch (e) {
         console.error("Error fetching bots:", e);
-        console.log("Firebase not available, loading demo bots");
+        console.log("Firebase not available, loading demo investors");
         await loadDemoBots();
     }
 }
@@ -373,8 +373,8 @@ function displayBots() {
         container.appendChild(table);
     }
 
-    createBotTable(activeBotsContainer, activeBots, 'Active Bots');
-    createBotTable(inactiveBotsContainer, inactiveBots, 'Inactive Bots');
+    createBotTable(activeBotsContainer, activeBots, 'Active Investors');
+    createBotTable(inactiveBotsContainer, inactiveBots, 'Inactive Investors');
 }
 
 // Load strategies from demo data initially
@@ -532,9 +532,9 @@ async function loadDemoBots() {
         updateOverallStats();
         setupStatsCardClicks();
         hideLoading();
-        console.log("Demo bots loaded successfully");
+        console.log("Demo investors loaded successfully");
     } catch (error) {
-        console.error("Error loading demo bots:", error);
+        console.error("Error loading demo investors:", error);
         showMessage("Failed to load demo investors.", true);
         hideLoading();
     }
@@ -1262,7 +1262,7 @@ window.loadCachedInvestments = async function() {
         const [investmentsResponse, recommendationsResponse] = await Promise.all([
             fetch(`/api/investments?user_id=${userId}&refresh=false`),
             fetch(`/api/bot-recommendations?user_id=${userId}`).catch(e => {
-                console.warn('Failed to load bot recommendations:', e);
+                console.warn('Failed to load investor recommendations:', e);
                 return { ok: false };
             })
         ]);
@@ -1275,10 +1275,10 @@ window.loadCachedInvestments = async function() {
                 const recommendationsData = await recommendationsResponse.json();
                 if (recommendationsData.success) {
                     botRecommendations = recommendationsData.recommendations || {};
-                    console.log('Loaded bot recommendations:', Object.keys(botRecommendations).length, 'games');
+                    console.log('Loaded investor recommendations:', Object.keys(botRecommendations).length, 'games');
                 }
             } catch (e) {
-                console.warn('Failed to parse bot recommendations:', e);
+                console.warn('Failed to parse investor recommendations:', e);
                 botRecommendations = {};
             }
         } else {
