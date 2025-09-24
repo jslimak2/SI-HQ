@@ -853,6 +853,9 @@
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-white">Available Investments</h2>
                 <div class="flex items-center gap-4">
+                    <button id="refresh-investments-btn" class="post9-btn px-4 py-2" onclick="refreshInvestments()">
+                        <span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments
+                    </button>
                     <button id="cart-toggle-btn" class="post9-btn px-4 py-2 relative" onclick="toggleBetCart()">
                         <span class="inline-block mr-2">🎯</span>Investor Holdings
                         <span id="cart-count-badge" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs px-2 py-1 hidden">0</span>
@@ -864,7 +867,6 @@
             <span id="cache-text" class="text-sm text-gray-300"></span>
             <div id="investments-container" class="mt-6"></div>
             <div id="no-investments-message" class="text-center text-gray-400 mt-8 hidden">No investments available.</div>
-            <button id="refresh-investments-btn" class="post9-btn px-4 py-2 mt-6"><span id="refresh-icon" class="inline-block mr-2">🔄</span>Refresh Investments</button>
             
             <!-- Investment Holdings Sidebar -->
             <div id="bet-cart-sidebar" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50 overflow-hidden">
