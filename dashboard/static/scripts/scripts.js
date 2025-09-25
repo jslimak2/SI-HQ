@@ -358,12 +358,10 @@ function displayBots() {
                                             : '<p class="text-gray-400">No open wagers</p>'
                                         }
                                     </div>
-                                    ${bot.strategy_id ? `
-                                        <div class="mt-4 pt-4 border-t border-gray-200">
-                                            <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
-                                            <div id="picks-content-${bot.id}" class="mt-2"></div>
-                                        </div>
-                                    ` : ''}
+                                    <div class="mt-4 pt-4 border-t border-gray-200">
+                                        <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
+                                        <div id="picks-content-${bot.id}" class="mt-2"></div>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -1759,7 +1757,20 @@ window.getStrategyPicks = async function(botId, strategyId) {
         
         const picksContent = document.getElementById(`picks-content-${botId}`);
         
-        if (data.success && data.picks.length > 0) {
+        // Check if the response was successful
+        if (!response.ok) {
+            // Handle 400 and other HTTP errors
+            picksContent.innerHTML = `
+                <div class="text-center py-4 text-red-600">
+                    <div class="text-lg font-medium mb-2">Error Loading Picks</div>
+                    <div class="text-sm">${data.message || 'Unable to load strategy picks for this investor.'}</div>
+                </div>
+            `;
+            showMessage(data.message || "Failed to load strategy picks", true);
+            return;
+        }
+        
+        if (data.success && data.picks && data.picks.length > 0) {
             const picksHtml = data.picks.map(pick => `
                 <div class="mb-2 p-3 bg-purple-50 rounded border border-purple-200">
                     <div class="font-semibold text-purple-800">${pick.teams} (${pick.sport})</div>
@@ -1782,14 +1793,24 @@ window.getStrategyPicks = async function(botId, strategyId) {
             showMessage(`Generated ${data.picks.length} picks from strategy`, false);
         } else {
             picksContent.innerHTML = `
-                <div class="text-sm text-gray-500 p-2 bg-gray-100 rounded">
-                    ${data.message || 'No picks available from strategy'}
+                <div class="text-center py-4 text-yellow-600">
+                    <div class="text-lg font-medium mb-2">No Picks Available</div>
+                    <div class="text-sm">${data.message || 'No picks available from this strategy at the moment.'}</div>
                 </div>
             `;
             showMessage(data.message || "No picks available", false);
         }
     } catch (error) {
         console.error("Error getting strategy picks:", error);
+        const picksContent = document.getElementById(`picks-content-${botId}`);
+        if (picksContent) {
+            picksContent.innerHTML = `
+                <div class="text-center py-4 text-red-600">
+                    <div class="text-lg font-medium mb-2">Connection Error</div>
+                    <div class="text-sm">Unable to connect to the server. Please try again later.</div>
+                </div>
+            `;
+        }
         showMessage("Failed to get strategy picks", true);
     } finally {
         hideLoading();
@@ -5221,6 +5242,11 @@ window.exportAnalytics = function() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         initializeStrategyBuilder();
+        
+        // Initialize portfolio charts if elements exist
+        if (document.getElementById('portfolio-pie-chart')) {
+            initializePortfolioCharts();
+        }
         
         // Load models when model gallery page exists
         const modelGalleryPage = document.getElementById('model-gallery-page');
