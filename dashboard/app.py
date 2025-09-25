@@ -1089,6 +1089,73 @@ def simulate_bot_bet():
         print(f"Failed to simulate bet: {e}")
         return jsonify({'success': False, 'message': f'Failed to simulate bet: {e}'}), 500
 
+@app.route('/api/bots/<bot_id>', methods=['PUT'])
+@handle_errors
+@require_authentication
+@rate_limit(requests_per_hour=200)
+@sanitize_request_data(required_fields=['name'], optional_fields=['strategy_id', 'bet_percentage', 'max_bets_per_week', 'minimum_confidence', 'kelly_fraction', 'allowable_platforms'])
+def update_bot(bot_id):
+    """Updates an existing bot/investor."""
+    try:
+        data = g.sanitized_request_data
+        user_id = data.get('user_id', 'demo_user')  # Default for demo mode
+        
+        # Handle demo mode - return success without actual database operation
+        if not db or not FIREBASE_AVAILABLE:
+            logger.info(f"Demo mode: Simulating update for bot {bot_id}")
+            return jsonify({
+                'success': True,
+                'message': 'Investor updated successfully (Demo Mode).',
+                'bot_id': bot_id,
+                'demo_mode': True
+            })
+
+        # Get the bot reference
+        bots_collection_user = db.collection(f'users/{user_id}/bots')
+        bot_ref = bots_collection_user.document(bot_id)
+        bot_doc = bot_ref.get()
+
+        if not bot_doc.exists:
+            return jsonify({'success': False, 'message': 'Investor not found.'}), 404
+
+        # Prepare update data
+        update_data = {
+            'name': data.get('name'),
+            'last_updated': datetime.datetime.now().isoformat()
+        }
+
+        # Add optional fields if provided
+        if 'strategy_id' in data and data['strategy_id']:
+            update_data['strategy_id'] = data['strategy_id']
+        
+        if 'bet_percentage' in data and data['bet_percentage'] is not None:
+            update_data['bet_percentage'] = float(data['bet_percentage'])
+        
+        if 'max_bets_per_week' in data and data['max_bets_per_week'] is not None:
+            update_data['max_bets_per_week'] = int(data['max_bets_per_week'])
+        
+        if 'minimum_confidence' in data and data['minimum_confidence'] is not None:
+            update_data['minimum_confidence'] = float(data['minimum_confidence'])
+        
+        if 'kelly_fraction' in data and data['kelly_fraction'] is not None:
+            update_data['kelly_fraction'] = float(data['kelly_fraction'])
+        
+        if 'allowable_platforms' in data and data['allowable_platforms'] is not None:
+            update_data['allowable_platforms'] = data['allowable_platforms']
+
+        # Update the bot
+        bot_ref.update(update_data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Investor updated successfully.',
+            'bot_id': bot_id
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to update investor: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update investor'}), 500
+
 @app.route('/api/strategies', methods=['POST'])
 def add_strategy():
     """Adds a new strategy using the standardized schema."""

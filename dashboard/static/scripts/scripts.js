@@ -1593,6 +1593,11 @@ window.showBotDetails = function(botId) {
     document.getElementById('modal-balance').value = bot.current_balance;
     document.getElementById('modal-bet-percent').value = bot.bet_percentage;
     document.getElementById('modal-max-bets').value = bot.max_bets_per_week;
+    
+    // Populate additional fields with defaults if not present
+    document.getElementById('modal-min-confidence').value = bot.minimum_confidence || 60.0;
+    document.getElementById('modal-kelly-fraction').value = bot.kelly_fraction || 0.25;
+    document.getElementById('modal-schema-version').value = bot.schema_version || '1.0.0';
 
     // Populate the strategy dropdown
     const strategySelect = document.getElementById('modal-strategy');
@@ -1828,17 +1833,54 @@ window.addBot = async function(botData) {
 window.editBot = async function(botData) {
     showLoading();
     try {
-        const botRef = doc(db, `users/${userId}/bots`, botData.id);
-        await updateDoc(botRef, {
-            name: botData.name,
-            strategy_id: botData.strategy_id,
-            bet_percentage: botData.bet_percentage,
-            max_bets_per_week: botData.max_bets_per_week
-        });
-        showMessage("Bot updated successfully!");
+        if (firebaseAvailable && db) {
+            // Firebase update
+            const botRef = doc(db, `users/${userId}/bots`, botData.id);
+            await updateDoc(botRef, {
+                name: botData.name,
+                strategy_id: botData.strategy_id,
+                bet_percentage: botData.bet_percentage,
+                max_bets_per_week: botData.max_bets_per_week,
+                minimum_confidence: botData.minimum_confidence,
+                kelly_fraction: botData.kelly_fraction,
+                allowable_platforms: botData.allowable_platforms,
+                last_updated: new Date().toISOString()
+            });
+            showMessage("Investor updated successfully!");
+        } else {
+            // Fallback to REST API
+            const response = await fetch(`/api/bots/${botData.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    name: botData.name,
+                    strategy_id: botData.strategy_id,
+                    bet_percentage: botData.bet_percentage,
+                    max_bets_per_week: botData.max_bets_per_week,
+                    minimum_confidence: botData.minimum_confidence,
+                    kelly_fraction: botData.kelly_fraction,
+                    allowable_platforms: botData.allowable_platforms
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                showMessage("Investor updated successfully! (Demo Mode)");
+                // Refresh would happen here in a real system
+            } else {
+                throw new Error(result.message || 'Failed to update investor');
+            }
+        }
     } catch (e) {
         console.error("Error updating bot: ", e);
-        showMessage("Failed to update bot.", true);
+        showMessage("Failed to update investor.", true);
     } finally {
         hideLoading();
     }
@@ -3236,9 +3278,9 @@ if (addBotForm) {
     });
 }
 
-const editBotForm = document.getElementById('edit-bot-form');
-if (editBotForm) {
-    editBotForm.addEventListener('submit', async function(event) {
+const editInvestorForm = document.getElementById('edit-investor-form');
+if (editInvestorForm) {
+    editInvestorForm.addEventListener('submit', async function(event) {
     event.preventDefault();
     const form = event.target;
     
@@ -3250,11 +3292,13 @@ if (editBotForm) {
     });
     
     const botData = {
-        id: form['modal-bot-id'].value,
+        id: form['modal-investor-id'].value,
         name: form['modal-name'].value,
         strategy_id: form['modal-strategy'].value,
         bet_percentage: parseFloat(form['modal-bet-percent'].value),
         max_bets_per_week: parseInt(form['modal-max-bets'].value, 10),
+        minimum_confidence: parseFloat(form['modal-min-confidence'].value),
+        kelly_fraction: parseFloat(form['modal-kelly-fraction'].value),
         allowable_platforms: allowablePlatforms
     };
     await window.editBot(botData);
