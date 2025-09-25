@@ -2101,23 +2101,13 @@ def generate_demo_bot_recommendations():
     # Demo games that match what we show in investments
     demo_games = [
         {
-            'game_id': 'demo_1',
-            'teams': 'Los Angeles Lakers vs Boston Celtics',
+            'game_id': 'demo_game_0',
+            'teams': 'Lakers vs Warriors',
             'sport': 'NBA'
         },
         {
-            'game_id': 'demo_2', 
-            'teams': 'Golden State Warriors vs Miami Heat',
-            'sport': 'NBA'
-        },
-        {
-            'game_id': 'demo_3', 
-            'teams': 'Milwaukee Bucks vs Phoenix Suns',
-            'sport': 'NBA'
-        },
-        {
-            'game_id': 'demo_4', 
-            'teams': 'Denver Nuggets vs Brooklyn Nets',
+            'game_id': 'demo_game_1', 
+            'teams': 'Celtics vs Heat',
             'sport': 'NBA'
         }
     ]
@@ -2140,15 +2130,9 @@ def generate_demo_bot_recommendations():
                 
                 # Generate recommendation for random sportsbook and market
                 sportsbooks = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']
-                
-                # Extract team names from the game
-                team_names = game['teams'].split(' vs ')
-                team1 = team_names[0] if len(team_names) > 0 else 'Team A'
-                team2 = team_names[1] if len(team_names) > 1 else 'Team B'
-                
                 markets = [
-                    {'key': 'h2h', 'name': 'Moneyline', 'selections': [team1, team2]},
-                    {'key': 'spreads', 'name': 'Spreads', 'selections': [team1, team2]},
+                    {'key': 'h2h', 'name': 'Moneyline', 'selections': ['Lakers', 'Warriors'] if 'Lakers' in game['teams'] else ['Celtics', 'Heat']},
+                    {'key': 'spreads', 'name': 'Spreads', 'selections': ['Lakers', 'Warriors'] if 'Lakers' in game['teams'] else ['Celtics', 'Heat']},
                     {'key': 'totals', 'name': 'Totals', 'selections': ['Over', 'Under']}
                 ]
                 
