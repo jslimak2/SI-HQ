@@ -2210,22 +2210,22 @@ def generate_real_bot_recommendations(user_id):
                 {
                     'bot_id': f'real_bot_{user_id}_1',
                     'name': 'NBA Value Finder',
-                    'strategy': 'Expected Value',
+                    'strategy': 'Conservative',
                     'sport_filter': 'NBA',
                     'current_balance': 1000.0,
                     'bet_percentage': 2.5,
                     'active_status': 'RUNNING',
-                    'risk_management': {'max_bet_percentage': 2.5, 'minimum_confidence': 65.0}
+                    'risk_management': {'max_bet_percentage': 2.5, 'minimum_confidence': 55.0}
                 },
                 {
                     'bot_id': f'real_bot_{user_id}_2',
                     'name': 'Conservative Sports',
-                    'strategy': 'Low Risk',
+                    'strategy': 'Conservative',
                     'sport_filter': 'NFL',
                     'current_balance': 500.0,
                     'bet_percentage': 1.5,
                     'active_status': 'RUNNING',
-                    'risk_management': {'max_bet_percentage': 1.5, 'minimum_confidence': 75.0}
+                    'risk_management': {'max_bet_percentage': 1.5, 'minimum_confidence': 55.0}
                 }
             ]
         
@@ -2298,19 +2298,30 @@ def _generate_bot_recommendation_for_game(bot, game):
         
         # Calculate confidence based on game data
         # This would normally use the bot's ML model, but for now we'll use game metrics
-        base_confidence = 50.0
+        base_confidence = 60.0  # Start higher to ensure recommendations are generated
         
         # Adjust confidence based on game odds and expected value
-        if 'expected_value' in game and game['expected_value'] > 0:
-            base_confidence += min(game['expected_value'] * 2, 25)  # Up to 25% boost
+        if 'expected_value' in game:
+            if game['expected_value'] > 0:
+                base_confidence += min(game['expected_value'] * 2, 25)  # Up to 25% boost for positive EV
+            else:
+                # Still give some boost even for negative EV to ensure recommendations
+                base_confidence += min(abs(game['expected_value']) * 0.5, 10)
+        else:
+            # If no expected value available, give a modest boost for having odds data
+            if 'odds' in game or 'away_odds' in game:
+                base_confidence += 5
         
         if 'true_probability' in game:
             # Higher confidence if model prediction is strong
             prob_confidence = abs(game['true_probability'] - 0.5) * 100  # Distance from 50/50
             base_confidence += prob_confidence
+        else:
+            # If no true probability, add modest confidence for having game data
+            base_confidence += 5
         
-        # Random variation to simulate model uncertainty
-        confidence = base_confidence + random.uniform(-5, 5)
+        # Random variation to simulate model uncertainty (smaller range)
+        confidence = base_confidence + random.uniform(-3, 7)  # Slightly bias upward
         confidence = max(50, min(95, confidence))  # Clamp between 50-95%
         
         # Skip if confidence is below bot's minimum
