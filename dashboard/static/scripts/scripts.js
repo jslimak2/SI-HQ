@@ -2527,22 +2527,8 @@ function createInvestmentCard(investment) {
     const formattedTime = commenceTime.toLocaleString();
 
     // Get bot recommendations for this game
-    const gameRecommendations = botRecommendations[investment.id] || [];
-    let hasRecommendations = false;
-    let recommendationCount = 0;
-    
-    // Handle both array and object formats
-    if (Array.isArray(gameRecommendations)) {
-        // New format: array of recommendations
-        hasRecommendations = gameRecommendations.length > 0;
-        recommendationCount = gameRecommendations.length;
-    } else {
-        // Old format: object with botName keys
-        hasRecommendations = Object.keys(gameRecommendations).length > 0;
-        recommendationCount = Object.values(gameRecommendations).reduce((count, recs) => {
-            return count + (Array.isArray(recs) ? recs.length : 1);
-        }, 0);
-    }
+    const gameRecommendations = botRecommendations[investment.id] || {};
+    const hasRecommendations = Object.keys(gameRecommendations).length > 0;
     
     // Check for placed bets on this game
     const placedBets = investment.placed_bets || [];
@@ -2559,7 +2545,7 @@ function createInvestmentCard(investment) {
         headerBadges = `
             <div class="flex gap-2 mt-2">
                 <span class="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full">
-                    🎯 ${recommendationCount} Recommendation${recommendationCount > 1 ? 's' : ''}
+                    🎯 ${Object.keys(gameRecommendations).length} Recommendation${Object.keys(gameRecommendations).length > 1 ? 's' : ''}
                 </span>
                 <span class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
                     ✅ ${placedBets.length} Placed Bet${placedBets.length > 1 ? 's' : ''}
@@ -2572,7 +2558,7 @@ function createInvestmentCard(investment) {
         headerBadges = `
             <div class="mt-2">
                 <span class="px-3 py-1 bg-orange-600 text-white text-xs font-medium rounded-full">
-                    🎯 ${recommendationCount} Investor Recommendation${recommendationCount > 1 ? 's' : ''}
+                    🎯 ${Object.keys(gameRecommendations).length} Investor Recommendation${Object.keys(gameRecommendations).length > 1 ? 's' : ''}
                 </span>
             </div>
         `;
@@ -2667,59 +2653,27 @@ function createInvestmentCard(investment) {
     // Generate bot recommendation summary
     let botSummaryHtml = '';
     if (hasRecommendations) {
-        let botSummaries = '';
-        
-        if (Array.isArray(gameRecommendations)) {
-            // New format: array of recommendations, group by bot_name
-            const botGroups = {};
-            gameRecommendations.forEach(rec => {
-                const botName = rec.bot_name || 'Unknown Investor';
-                if (!botGroups[botName]) {
-                    botGroups[botName] = [];
-                }
-                botGroups[botName].push(rec);
-            });
+        const botNames = Object.keys(gameRecommendations);
+        const botSummaries = botNames.map(botName => {
+            const botRecs = gameRecommendations[botName];
+            if (!botRecs || (!Array.isArray(botRecs) && typeof botRecs !== 'object')) return '';
             
-            botSummaries = Object.keys(botGroups).map(botName => {
-                const recsArray = botGroups[botName];
-                if (recsArray.length === 0) return '';
-                
-                const avgConfidence = Math.round(recsArray.reduce((sum, rec) => sum + (rec.confidence || 0), 0) / recsArray.length);
-                const totalAmount = recsArray.reduce((sum, rec) => sum + (rec.recommended_amount || 0), 0);
-                const botColor = recsArray[0].bot_color || '#3B82F6';
-                
-                return `
-                    <div class="text-xs px-3 py-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
-                         style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
-                         onclick="event.stopPropagation(); showBotRecommendationDetails('${investment.id}', '${botName}')">
-                        <span class="font-medium">${botName}</span>: ${recsArray.length} bet${recsArray.length > 1 ? 's' : ''}, ${avgConfidence}% avg confidence, $${totalAmount.toFixed(0)} total
-                    </div>
-                `;
-            }).filter(html => html).join('');
-        } else {
-            // Old format: object with botName keys
-            const botNames = Object.keys(gameRecommendations);
-            botSummaries = botNames.map(botName => {
-                const botRecs = gameRecommendations[botName];
-                if (!botRecs || (!Array.isArray(botRecs) && typeof botRecs !== 'object')) return '';
-                
-                // Handle both array and object formats
-                const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
-                if (recsArray.length === 0) return '';
-                
-                const avgConfidence = Math.round(recsArray.reduce((sum, rec) => sum + (rec.confidence || 0), 0) / recsArray.length);
-                const totalAmount = recsArray.reduce((sum, rec) => sum + (rec.recommended_amount || 0), 0);
-                const botColor = recsArray[0].bot_color || '#3B82F6';
-                
-                return `
-                    <div class="text-xs px-3 py-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
-                         style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
-                         onclick="event.stopPropagation(); showBotRecommendationDetails('${investment.id}', '${botName}')">
-                        <span class="font-medium">${botName}</span>: ${recsArray.length} bet${recsArray.length > 1 ? 's' : ''}, ${avgConfidence}% avg confidence, $${totalAmount.toFixed(0)} total
-                    </div>
-                `;
-            }).filter(html => html).join('');
-        }
+            // Handle both array and object formats
+            const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
+            if (recsArray.length === 0) return '';
+            
+            const avgConfidence = Math.round(recsArray.reduce((sum, rec) => sum + (rec.confidence || 0), 0) / recsArray.length);
+            const totalAmount = recsArray.reduce((sum, rec) => sum + (rec.recommended_amount || 0), 0);
+            const botColor = recsArray[0].bot_color || '#3B82F6';
+            
+            return `
+                <div class="text-xs px-3 py-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
+                     style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
+                     onclick="event.stopPropagation(); showBotRecommendationDetails('${investment.id}', '${botName}')">
+                    <span class="font-medium">${botName}</span>: ${recsArray.length} bet${recsArray.length > 1 ? 's' : ''}, ${avgConfidence}% avg confidence, $${totalAmount.toFixed(0)} total
+                </div>
+            `;
+        }).filter(html => html).join('');
         
         if (botSummaries) {
             botSummaryHtml = `
@@ -4633,56 +4587,34 @@ function generateAdvancedModelPredictions(teams, sport) {
 // Get investor recommendations for specific game
 function getInvestorRecommendationsForGame(gameId) {
     // Check if we have bot recommendations for this game
-    const gameRecommendations = botRecommendations[gameId] || [];
+    const gameRecommendations = botRecommendations[gameId] || {};
     
     const recommendations = [];
     
-    // Handle both old format (object with botName keys) and new format (array of recommendations)
-    if (Array.isArray(gameRecommendations)) {
-        // New format: array of recommendation objects
-        gameRecommendations.forEach(rec => {
+    Object.keys(gameRecommendations).forEach(botName => {
+        const botRecs = gameRecommendations[botName];
+        if (!botRecs) return;
+        
+        // Handle both array and object formats
+        const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
+        
+        recsArray.forEach(rec => {
             if (rec && typeof rec === 'object') {
                 recommendations.push({
-                    investorName: rec.bot_name || 'Unknown Investor',
+                    investorName: botName,
                     investorColor: rec.bot_color || '#3B82F6',
-                    betType: rec.market_name || rec.market_type || 'Moneyline',
-                    selection: rec.selection || rec.outcome || 'Unknown',
+                    betType: rec.market_type || 'Moneyline',
+                    selection: rec.outcome || 'Unknown',
                     recommendedAmount: rec.recommended_amount || 0,
                     confidence: rec.confidence || 0,
-                    reasoning: rec.reasoning || rec.strategy_reason || 'Advanced algorithm analysis',
+                    reasoning: rec.strategy_reason || 'Advanced algorithm analysis',
                     expectedValue: rec.expected_value || 0,
-                    potentialPayout: rec.potential_payout || (rec.recommended_amount * 2),
+                    potentialPayout: rec.potential_payout || 0,
                     odds: rec.odds || 0
                 });
             }
         });
-    } else {
-        // Old format: object with botName keys
-        Object.keys(gameRecommendations).forEach(botName => {
-            const botRecs = gameRecommendations[botName];
-            if (!botRecs) return;
-            
-            // Handle both array and object formats
-            const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
-            
-            recsArray.forEach(rec => {
-                if (rec && typeof rec === 'object') {
-                    recommendations.push({
-                        investorName: botName,
-                        investorColor: rec.bot_color || '#3B82F6',
-                        betType: rec.market_name || rec.market_type || 'Moneyline',
-                        selection: rec.selection || rec.outcome || 'Unknown',
-                        recommendedAmount: rec.recommended_amount || 0,
-                        confidence: rec.confidence || 0,
-                        reasoning: rec.reasoning || rec.strategy_reason || 'Advanced algorithm analysis',
-                        expectedValue: rec.expected_value || 0,
-                        potentialPayout: rec.potential_payout || 0,
-                        odds: rec.odds || 0
-                    });
-                }
-            });
-        });
-    }
+    });
     
     return recommendations;
 }
@@ -5822,19 +5754,7 @@ function displayModelDetails(modelDetails) {
 function showBotRecommendationDetails(gameId, botName) {
     // Find the game recommendations for this bot
     const gameRecommendations = botRecommendations[gameId] || [];
-    let botRecs = [];
-    
-    // Handle both old format (object with botName keys) and new format (array of recommendations)
-    if (Array.isArray(gameRecommendations)) {
-        // New format: filter array by bot_name
-        botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
-    } else {
-        // Old format: get recommendations from botName key
-        botRecs = gameRecommendations[botName] || [];
-        if (!Array.isArray(botRecs)) {
-            botRecs = [botRecs];
-        }
-    }
+    const botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
     
     if (botRecs.length === 0) {
         showMessage('No recommendations found for this bot', true);
