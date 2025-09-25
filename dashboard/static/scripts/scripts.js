@@ -979,6 +979,340 @@ window.showStrategyDetails = function(strategyKey) {
     showModal('strategy-details-modal');
 };
 
+// Portfolio Analytics Functions
+let portfolioAnimationInterval = null;
+let currentWeek = 4;
+
+// Generate demo portfolio data for the last 4 weeks
+function generatePortfolioData() {
+    const investors = [
+        { name: 'NBA Value Finder', color: '#3B82F6', baseBalance: 1000 },
+        { name: 'Conservative Sports', color: '#10B981', baseBalance: 500 },
+        { name: 'Aggressive NFL', color: '#F59E0B', baseBalance: 750 },
+        { name: 'Recovery Strategy', color: '#8B5CF6', baseBalance: 600 }
+    ];
+    
+    const weeklyData = [];
+    for (let week = 1; week <= 4; week++) {
+        const weekData = {
+            week: week,
+            investors: investors.map(investor => ({
+                ...investor,
+                balance: investor.baseBalance + (Math.random() - 0.3) * 200 * week,
+                isActive: Math.random() > 0.2 // 80% chance of being active
+            }))
+        };
+        weekData.total = weekData.investors.reduce((sum, inv) => sum + inv.balance, 0);
+        weeklyData.push(weekData);
+    }
+    
+    return weeklyData;
+}
+
+// Create animated portfolio pie chart
+function createPortfolioPieChart() {
+    const canvas = document.getElementById('portfolio-pie-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const portfolioData = generatePortfolioData();
+    
+    function drawPieChart(weekIndex) {
+        const data = portfolioData[weekIndex];
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 100;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let startAngle = -Math.PI / 2;
+        
+        data.investors.forEach((investor, index) => {
+            const percentage = investor.balance / data.total;
+            const sliceAngle = percentage * 2 * Math.PI;
+            
+            // Draw slice
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fillStyle = investor.color;
+            ctx.fill();
+            
+            // Add stroke
+            ctx.strokeStyle = '#1F2937';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            startAngle += sliceAngle;
+        });
+        
+        // Update center text
+        document.getElementById('portfolio-total').textContent = `$${data.total.toFixed(0)}`;
+        document.getElementById('portfolio-period').textContent = `Week ${weekIndex + 1} of 4`;
+        
+        // Update legend
+        updatePortfolioLegend(data.investors);
+    }
+    
+    function updatePortfolioLegend(investors) {
+        const legend = document.getElementById('portfolio-legend');
+        legend.innerHTML = investors.map(investor => `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-4 h-4 rounded mr-3" style="background-color: ${investor.color}"></div>
+                    <span class="text-white">${investor.name}</span>
+                </div>
+                <div class="text-gray-300">$${investor.balance.toFixed(0)}</div>
+            </div>
+        `).join('');
+    }
+    
+    // Start animation
+    drawPieChart(currentWeek - 1);
+    
+    portfolioAnimationInterval = setInterval(() => {
+        currentWeek = currentWeek >= 4 ? 1 : currentWeek + 1;
+        drawPieChart(currentWeek - 1);
+    }, 3000);
+}
+
+// Generate balance over time data
+function generateBalanceData() {
+    const investors = [
+        { name: 'NBA Value Finder', color: '#3B82F6' },
+        { name: 'Conservative Sports', color: '#10B981' },
+        { name: 'Aggressive NFL', color: '#F59E0B' },
+        { name: 'Recovery Strategy', color: '#8B5CF6' }
+    ];
+    
+    const dates = [];
+    const now = new Date();
+    for (let i = 30; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+    }
+    
+    return investors.map(investor => {
+        let balance = 1000;
+        const balances = dates.map((date, index) => {
+            // Simulate balance changes with some volatility
+            const change = (Math.random() - 0.45) * 50;
+            balance = Math.max(balance + change, 100);
+            
+            // Determine if active (some periods inactive)
+            const isActive = index < 10 || index > 20 || Math.random() > 0.3;
+            
+            return {
+                date: date,
+                balance: balance,
+                isActive: isActive
+            };
+        });
+        
+        return {
+            ...investor,
+            balances: balances
+        };
+    });
+}
+
+// Create balance over time chart
+function createBalanceChart() {
+    const canvas = document.getElementById('balance-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const balanceData = generateBalanceData();
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Chart dimensions
+    const padding = 40;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // Find min/max values for scaling
+    const allBalances = balanceData.flatMap(inv => inv.balances.map(b => b.balance));
+    const minBalance = Math.min(...allBalances) * 0.9;
+    const maxBalance = Math.max(...allBalances) * 1.1;
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+        const y = padding + (chartHeight / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(canvas.width - padding, y);
+        ctx.stroke();
+    }
+    
+    // Draw investor lines
+    balanceData.forEach(investor => {
+        let isDrawing = false;
+        
+        investor.balances.forEach((point, index) => {
+            const x = padding + (chartWidth / (investor.balances.length - 1)) * index;
+            const y = padding + chartHeight - ((point.balance - minBalance) / (maxBalance - minBalance)) * chartHeight;
+            
+            if (point.isActive) {
+                if (!isDrawing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    isDrawing = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = investor.color;
+                ctx.lineWidth = 3;
+            } else {
+                if (isDrawing) {
+                    ctx.stroke();
+                    isDrawing = false;
+                }
+                // Draw inactive point
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = '#6B7280';
+                ctx.fill();
+            }
+        });
+        
+        if (isDrawing) {
+            ctx.stroke();
+        }
+    });
+    
+    // Draw labels
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+        const value = minBalance + (maxBalance - minBalance) * (1 - i / 5);
+        const y = padding + (chartHeight / 5) * i + 5;
+        ctx.fillText(`$${value.toFixed(0)}`, padding - 5, y);
+    }
+}
+
+// Generate accuracy data
+function generateAccuracyData() {
+    const strategies = [
+        { name: 'Overall', color: '#3B82F6' },
+        { name: 'Conservative', color: '#8B5CF6' },
+        { name: 'Aggressive', color: '#F59E0B' },
+        { name: 'Value', color: '#10B981' }
+    ];
+    
+    const dates = [];
+    const now = new Date();
+    for (let i = 30; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+    }
+    
+    return strategies.map(strategy => {
+        let baseAccuracy = strategy.name === 'Conservative' ? 0.75 : 
+                          strategy.name === 'Aggressive' ? 0.65 : 
+                          strategy.name === 'Value' ? 0.70 : 0.68;
+        
+        const accuracies = dates.map(() => {
+            // Add some volatility but keep within reasonable bounds
+            const variation = (Math.random() - 0.5) * 0.15;
+            return Math.max(0.3, Math.min(0.9, baseAccuracy + variation));
+        });
+        
+        return {
+            ...strategy,
+            accuracies: accuracies
+        };
+    });
+}
+
+// Create accuracy chart
+function createAccuracyChart() {
+    const canvas = document.getElementById('accuracy-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const accuracyData = generateAccuracyData();
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Chart dimensions
+    const padding = 60;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++) {
+        const y = padding + (chartHeight / 10) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(canvas.width - padding, y);
+        ctx.stroke();
+    }
+    
+    // Draw accuracy lines
+    accuracyData.forEach(strategy => {
+        ctx.beginPath();
+        strategy.accuracies.forEach((accuracy, index) => {
+            const x = padding + (chartWidth / (strategy.accuracies.length - 1)) * index;
+            const y = padding + chartHeight - (accuracy * chartHeight);
+            
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.strokeStyle = strategy.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Add points
+        strategy.accuracies.forEach((accuracy, index) => {
+            const x = padding + (chartWidth / (strategy.accuracies.length - 1)) * index;
+            const y = padding + chartHeight - (accuracy * chartHeight);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = strategy.color;
+            ctx.fill();
+        });
+    });
+    
+    // Draw Y-axis labels
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 10; i++) {
+        const value = (1 - i / 10) * 100;
+        const y = padding + (chartHeight / 10) * i + 5;
+        ctx.fillText(`${value.toFixed(0)}%`, padding - 5, y);
+    }
+}
+
+// Initialize all charts when page loads
+function initializePortfolioCharts() {
+    createPortfolioPieChart();
+    createBalanceChart();
+    createAccuracyChart();
+}
+
+// Clean up animation when leaving page
+function cleanupPortfolioAnimations() {
+    if (portfolioAnimationInterval) {
+        clearInterval(portfolioAnimationInterval);
+        portfolioAnimationInterval = null;
+    }
+}
+
 // Helper function to safely extract parameter values
 function getParameterValue(param) {
     if (param === null || param === undefined) return '';
