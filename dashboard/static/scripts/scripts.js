@@ -1647,6 +1647,7 @@ window.showStrategyEditModal = function(strategyId) {
     // Populate the modal fields
     document.getElementById('strategy-modal-id').value = strategy.id;
     document.getElementById('strategy-modal-name').textContent = strategy.name;
+    document.getElementById('strategy-modal-name-input').value = strategy.name;
     document.getElementById('strategy-modal-description').value = strategy.description || '';
 
     const parametersContainer = document.getElementById('strategy-modal-parameters');
@@ -3304,6 +3305,7 @@ if (editStrategyForm) {
     event.preventDefault();
     const form = event.target;
     const strategyId = form['strategy-modal-id'].value;
+    const newName = form['name'].value;
     const newDescription = form['description'].value;
     const newParameters = {};
     const parameterInputs = document.getElementById('strategy-modal-parameters').querySelectorAll('input');
@@ -3325,10 +3327,11 @@ if (editStrategyForm) {
     });
 
     await window.editStrategy(strategyId, {
+        name: newName,
         description: newDescription,
         parameters: newParameters
     });
-    window.closeModal('strategy-details-modal');
+    window.closeModal('strategy-edit-modal');
     });
 }
 
@@ -7049,6 +7052,7 @@ window.rejectInvestorRecommendation = rejectInvestorRecommendation;
 window.toggleStrategySizingOptions = toggleStrategySizingOptions;
 window.displayStrategies = displayStrategies;
 window.updateStrategySelects = updateStrategySelects;
+window.showOnboardingGuide = showOnboardingGuide;
 
 // Add form handler for train model modal
 document.addEventListener('DOMContentLoaded', function() {
