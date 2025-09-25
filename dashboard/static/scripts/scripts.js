@@ -1358,7 +1358,7 @@ function displayStrategies() {
         return `
             <div class="bg-gradient-to-br ${cardColor} p-4 rounded-lg text-white relative group">
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onclick="window.showStrategyDetails('${strategy.id}')" class="text-white hover:text-gray-200 mx-1 text-sm">✏️</button>
+                    <button onclick="window.showStrategyEditModal('${strategy.id}')" class="text-white hover:text-gray-200 mx-1 text-sm">✏️</button>
                     <button onclick="window.deleteStrategy('${strategy.id}')" class="text-white hover:text-red-300 mx-1 text-sm">🗑️</button>
                 </div>
                 
@@ -1476,7 +1476,7 @@ window.showBotDetails = function(botId) {
     window.showModal('investor-details-modal');
 };
 
-window.showStrategyDetails = function(strategyId) {
+window.showStrategyEditModal = function(strategyId) {
     // Convert strategyId to number for comparison (HTML attributes are strings)
     const numericStrategyId = typeof strategyId === 'string' ? parseInt(strategyId, 10) : strategyId;
     const strategy = strategies.find(s => s.id === numericStrategyId);
@@ -1577,8 +1577,8 @@ window.showBotLog = async function(botId) {
         console.error('Bot not found:', botId);
         return;
     }
-    document.getElementById('log-bot-name').textContent = bot.name;
-    const logContent = document.getElementById('bot-log-content');
+    document.getElementById('log-investor-name').textContent = bot.name;
+    const logContent = document.getElementById('investor-log-content');
     logContent.textContent = 'Loading log...';
 
     try {
@@ -1596,7 +1596,7 @@ window.showBotLog = async function(botId) {
     }
 
     // Show the modal
-    window.showModal('bot-log-modal');
+    window.showModal('investor-log-modal');
 };
 
 // --- DATA MODIFICATION FUNCTIONS ---
