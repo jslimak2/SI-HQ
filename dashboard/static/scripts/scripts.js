@@ -534,6 +534,164 @@ async function loadDemoBots() {
     }
 }
 
+// Initialize demo data for new users
+async function initializeDemoDataIfNeeded() {
+    try {
+        // Only initialize if we have very few strategies or bots (new user)
+        if (firebaseAvailable && db && userId !== 'demo-user' && userId !== 'anonymous') {
+            const strategiesQuery = collection(db, `users/${userId}/strategies`);
+            const strategiesSnapshot = await getDocs(strategiesQuery);
+            
+            const botsQuery = collection(db, `users/${userId}/bots`);
+            const botsSnapshot = await getDocs(botsQuery);
+            
+            // If user has no strategies, create starter strategies
+            if (strategiesSnapshot.empty) {
+                console.log("New user detected - initializing starter strategies");
+                
+                const starterStrategies = [
+                    {
+                        name: "Conservative Starter",
+                        type: "conservative",
+                        description: "Low-risk strategy perfect for beginners",
+                        parameters: {
+                            min_confidence: 75,
+                            max_bet_percentage: 2.0
+                        }
+                    },
+                    {
+                        name: "Value Hunter", 
+                        type: "expected_value",
+                        description: "Find bets with positive expected value",
+                        parameters: {
+                            min_expected_value: 5.0,
+                            max_bet_percentage: 3.0
+                        }
+                    }
+                ];
+                
+                for (const strategyData of starterStrategies) {
+                    try {
+                        const strategyRef = collection(db, `users/${userId}/strategies`);
+                        await addDoc(strategyRef, {
+                            ...strategyData,
+                            created_at: new Date().toISOString()
+                        });
+                    } catch (e) {
+                        console.error("Error creating starter strategy:", e);
+                    }
+                }
+                
+                // Refresh strategies after adding them
+                await fetchStrategies();
+            }
+            
+            // If user has no bots, create a starter bot
+            if (botsSnapshot.empty && strategies.length > 0) {
+                console.log("Creating starter investor for new user");
+                
+                const starterBot = {
+                    name: "My First Investor",
+                    starting_balance: 1000,
+                    bet_percentage: 2.0,
+                    max_bets_per_week: 5,
+                    strategy_id: strategies[0].id,
+                    assigned_strategy_id: strategies[0].id,
+                    sport: "NBA",
+                    bet_type: "Moneyline"
+                };
+                
+                try {
+                    const botRef = collection(db, `users/${userId}/bots`);
+                    await addDoc(botRef, {
+                        ...starterBot,
+                        status: 'stopped',
+                        current_balance: starterBot.starting_balance,
+                        total_wagers: 0,
+                        total_wins: 0,
+                        profit_loss: 0,
+                        created_at: new Date().toISOString()
+                    });
+                    
+                    // Refresh bots after adding
+                    await fetchBots();
+                } catch (e) {
+                    console.error("Error creating starter bot:", e);
+                }
+            }
+        }
+    } catch (error) {
+        console.log("Demo initialization not needed or failed:", error);
+    }
+}
+
+// Show onboarding guide for new users
+function showOnboardingGuide() {
+    const onboardingContent = `
+        <div class="text-left max-w-2xl">
+            <h3 class="text-xl font-bold mb-4 text-center">🎯 Welcome to SI-HQ Sports Investment Platform</h3>
+            
+            <div class="space-y-4">
+                <div class="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                    <h4 class="font-bold text-blue-800">Getting Started (5 minutes)</h4>
+                    <ol class="list-decimal list-inside text-sm mt-2 space-y-1">
+                        <li>Create your first <strong>Strategy</strong> (defines how to pick investments)</li>
+                        <li>Add an <strong>Investor</strong> (automated bot that follows your strategy)</li>
+                        <li>Review <strong>Investment Recommendations</strong> on the dashboard</li>
+                        <li>Monitor performance and adjust as needed</li>
+                    </ol>
+                </div>
+                
+                <div class="bg-green-50 p-3 rounded border-l-4 border-green-400">
+                    <h4 class="font-bold text-green-800">For Daily Use</h4>
+                    <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                        <li><strong>Dashboard:</strong> Check daily recommendations from your investors</li>
+                        <li><strong>Strategy Builder:</strong> Create and refine betting strategies</li>
+                        <li><strong>Analytics:</strong> Track performance and ROI</li>
+                        <li><strong>Model Gallery:</strong> Use AI models for predictions</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
+                    <h4 class="font-bold text-yellow-800">Demo Mode vs Production</h4>
+                    <p class="text-sm mt-2">
+                        <strong>Demo Mode (Current):</strong> Safe testing with fake data<br>
+                        <strong>Production Mode:</strong> Real strategies, live data, actual performance tracking
+                    </p>
+                    <p class="text-xs mt-2 text-gray-600">
+                        Configure real Firebase credentials and set DISABLE_DEMO_MODE=true for production use.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <button onclick="closeModal('onboarding-modal')" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Get Started!
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('onboarding-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'onboarding-modal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content bg-white rounded-lg p-6 max-w-3xl">
+                <span class="modal-close" onclick="closeModal('onboarding-modal')">&times;</span>
+                <div id="onboarding-content">${onboardingContent}</div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        document.getElementById('onboarding-content').innerHTML = onboardingContent;
+    }
+    
+    showModal('onboarding-modal');
+}
+
 // Strategy Builder help function
 window.showStrategyBuilderHelp = function() {
     const helpContent = `
@@ -3031,6 +3189,10 @@ async function startListeners() {
             // Fetch strategies first, then bots
             await fetchStrategies();
             await fetchBots();
+            
+            // Initialize demo data for new users if needed
+            await initializeDemoDataIfNeeded();
+            
             // Check auto-refresh after everything is loaded AND settings are available
             setTimeout(() => {
                 if (userSettings) {
