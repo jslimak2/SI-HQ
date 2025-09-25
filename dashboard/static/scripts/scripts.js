@@ -901,7 +901,7 @@ window.showBotDetails = function(botId) {
     });
 
     // Show the modal
-    window.showModal('bot-details-modal');
+    window.showModal('investor-details-modal');
 };
 
 window.showStrategyDetails = function(strategyId) {
@@ -2415,7 +2415,7 @@ if (editBotForm) {
         allowable_platforms: allowablePlatforms
     };
     await window.editBot(botData);
-    window.closeModal('bot-details-modal');
+    window.closeModal('investor-details-modal');
     });
 }
 
