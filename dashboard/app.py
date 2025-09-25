@@ -51,7 +51,7 @@ except ImportError as e:
 
 # Import standardized schemas
 from schemas import (
-    BotSchema, StrategySchema, ModelSchema, InvestorStatus, StrategyType, Sport,
+    InvestorSchema, StrategySchema, ModelSchema, InvestorStatus, StrategyType, Sport,
     RiskManagement, PerformanceMetrics, SchemaValidator
 )
 from data_service import data_service
@@ -4522,7 +4522,7 @@ def validate_schema():
                 
         elif schema_type == 'investor':
             try:
-                investor = BotSchema.from_dict(schema_data)
+                investor = InvestorSchema.from_dict(schema_data)
                 validation_issues = SchemaValidator.validate_investor(investor)
             except Exception as e:
                 validation_issues.append(f"Schema parsing error: {str(e)}")
