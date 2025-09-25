@@ -316,7 +316,7 @@ function displayBots() {
             </thead>
             <tbody class="divide-y divide-gray-200 post9-card">
                 ${botsList.map(bot => {
-                    const strategy = strategies.find(s => s.id === bot.assigned_strategy_id || s.id === bot.strategy_id);
+                    const strategy = strategies.find(s => s.id == bot.assigned_strategy_id || s.id == bot.strategy_id);
                     const strategyName = strategy ? strategy.name : 'Unknown';
                     const profitLoss = (bot.current_balance - bot.starting_balance).toFixed(2);
                     const profitLossClass = profitLoss >= 0 ? 'text-green-600' : 'text-red-600';
@@ -380,16 +380,8 @@ function displayBots() {
 // Load strategies from demo data initially
 async function loadDemoStrategies() {
     try {
-        const response = await fetch('/static/../data/strategies.json');
-        const demoStrategies = await response.json();
-        strategies = demoStrategies || [];
-        window.strategies = strategies;
-        displayStrategies();
-        updateStrategySelects();
-        hideLoading();
-    } catch (error) {
-        console.error("Error loading demo strategies:", error);
-        // Fallback to hardcoded demo strategies
+        console.log("Loading hardcoded demo strategies");
+        // Use hardcoded demo strategies directly
         strategies = [
             {
                 "id": 1,
@@ -430,18 +422,20 @@ async function loadDemoStrategies() {
                 "type": "expected_value",
                 "description": "Focus on bets with positive expected value. Calculates probability vs odds to find profitable opportunities",
                 "parameters": {
-                    "min_expected_value": 5.0,
-                    "max_bet_percentage": 3.0,
-                    "confidence_threshold": 65,
-                    "max_odds": 3.0,
-                    "kelly_fraction": 0.25
-                },
-                "created_from_template": "positive_ev"
+                    "min_confidence": 65,
+                    "max_bet_percentage": 4.0,
+                    "min_expected_value": 5.0
+                }
             }
         ];
         window.strategies = strategies;
         displayStrategies();
         updateStrategySelects();
+        hideLoading();
+        console.log("Demo strategies loaded successfully");
+    } catch (error) {
+        console.error("Error loading demo strategies:", error);
+        showMessage("Failed to load demo strategies.", true);
         hideLoading();
     }
 }
