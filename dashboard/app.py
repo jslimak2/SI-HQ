@@ -2211,6 +2211,7 @@ def generate_real_bot_recommendations(user_id):
                     'bot_id': f'real_bot_{user_id}_1',
                     'name': 'NBA Value Finder',
                     'strategy': 'Conservative',
+                    'assigned_strategy_id': '1',  # Conservative strategy ID
                     'sport_filter': 'NBA',
                     'current_balance': 1000.0,
                     'bet_percentage': 2.5,
@@ -2221,6 +2222,7 @@ def generate_real_bot_recommendations(user_id):
                     'bot_id': f'real_bot_{user_id}_2',
                     'name': 'Conservative Sports',
                     'strategy': 'Conservative',
+                    'assigned_strategy_id': '1',  # Conservative strategy ID
                     'sport_filter': 'NFL',
                     'current_balance': 500.0,
                     'bet_percentage': 1.5,
