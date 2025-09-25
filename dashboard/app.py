@@ -2399,9 +2399,26 @@ def generate_demo_strategy_picks(strategy_id):
     [MOCK] FAKE STRATEGY PICKS GENERATOR [MOCK]
     Generate demo strategy picks for testing - NOT REAL BETTING RECOMMENDATIONS
     All picks, odds, and amounts are fake for demonstration only
+    Now generates strategy-specific picks based on strategy type
     """
     print(f"[DEMO] GENERATING FAKE STRATEGY PICKS for strategy {strategy_id}")
     import random
+    
+    # Get the demo strategy data to make picks contextual  
+    strategy_templates = {
+        "1": {"name": "Conservative", "type": "conservative", "min_confidence": 75, "max_bet_pct": 2.0},
+        "2": {"name": "Aggressive", "type": "aggressive", "min_confidence": 60, "max_bet_pct": 5.0},
+        "3": {"name": "Loss Recovery", "type": "recovery", "min_confidence": 65, "max_bet_pct": 7.0},
+        "4": {"name": "+eV Strategy", "type": "expected_value", "min_confidence": 65, "max_bet_pct": 4.0}
+    }
+    
+    strategy_info = strategy_templates.get(str(strategy_id), strategy_templates["4"])
+    strategy_name = strategy_info["name"]
+    min_confidence = strategy_info["min_confidence"]
+    max_bet_pct = strategy_info["max_bet_pct"]
+    
+    # Simulate demo balance for bet calculations
+    demo_balance = 1250.0
     
     # Demo games for different sports
     demo_games = [
@@ -2412,15 +2429,17 @@ def generate_demo_strategy_picks(strategy_id):
         {'teams': 'Yankees vs Red Sox', 'sport': 'MLB', 'odds': 1.75, 'bet_type': 'Moneyline'},
     ]
     
-    # Generate 2-4 picks for demo
-    num_picks = random.randint(2, 4)
+    # Generate 2-3 picks for demo
+    num_picks = random.randint(2, 3)
     selected_games = random.sample(demo_games, min(len(demo_games), num_picks))
     
     picks = []
     for game in selected_games:
-        bet_amount = random.uniform(25.0, 150.0)  # Demo bet amounts
+        # Calculate bet amount based on strategy
+        base_bet_amount = demo_balance * (max_bet_pct / 100)
+        bet_amount = base_bet_amount * random.uniform(0.8, 1.2)  # Add some variation
         potential_payout = bet_amount * game['odds']
-        confidence = random.randint(60, 85)
+        confidence = min_confidence + random.randint(0, 15)  # Confidence within strategy range
         
         pick = {
             'teams': game['teams'],
@@ -2430,7 +2449,51 @@ def generate_demo_strategy_picks(strategy_id):
             'recommended_amount': round(bet_amount, 2),
             'potential_payout': round(potential_payout, 2),
             'confidence': confidence,
-            'strategy_reason': f"Demo strategy match: {confidence}% confidence",
+            'strategy_reason': f"{strategy_name}: {confidence}% confidence meets {strategy_info['type']} criteria",
+            'demo_mode': True
+        }
+        
+        # Apply strategy-specific modifications
+        if strategy_info["type"] == "conservative":
+            # Conservative strategy: only picks with high confidence and low odds
+            if pick['confidence'] >= 75 and pick['odds'] <= 2.2:
+                pick['strategy_reason'] = f"Conservative: {pick['confidence']}% confidence, low-risk odds"
+                picks.append(pick)
+                
+        elif strategy_info["type"] == "aggressive":
+            # Aggressive strategy: accept more picks with higher amounts
+            pick['recommended_amount'] = round(pick['recommended_amount'] * 1.2, 2)  # 20% more aggressive
+            pick['potential_payout'] = round(pick['recommended_amount'] * pick['odds'], 2)
+            pick['strategy_reason'] = f"Aggressive: {pick['confidence']}% confidence, high-stakes approach"
+            picks.append(pick)
+            
+        elif strategy_info["type"] == "recovery":
+            # Recovery strategy: larger bets to recover losses
+            pick['recommended_amount'] = round(pick['recommended_amount'] * 1.5, 2)  # 50% larger bets
+            pick['potential_payout'] = round(pick['recommended_amount'] * pick['odds'], 2)
+            pick['strategy_reason'] = f"Recovery: {pick['confidence']}% confidence, aggressive sizing for loss recovery"
+            picks.append(pick)
+            
+        else:  # expected_value or default
+            # +eV strategy: focus on expected value
+            expected_value = (pick['confidence'] / 100) * pick['odds'] - 1
+            if expected_value > 0.05:  # Only positive EV picks
+                pick['strategy_reason'] = f"+eV Strategy: {pick['confidence']}% confidence, +{expected_value*100:.1f}% expected value"
+                picks.append(pick)
+    
+    # Ensure we have at least one pick
+    if not picks and selected_games:
+        game = selected_games[0]
+        bet_amount = demo_balance * (max_bet_pct / 100)
+        pick = {
+            'teams': game['teams'],
+            'sport': game['sport'],
+            'bet_type': game['bet_type'],
+            'odds': game['odds'],
+            'recommended_amount': round(bet_amount, 2),
+            'potential_payout': round(bet_amount * game['odds'], 2),
+            'confidence': min_confidence,
+            'strategy_reason': f"{strategy_name}: Minimum criteria met",
             'demo_mode': True
         }
         picks.append(pick)

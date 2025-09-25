@@ -317,7 +317,7 @@ function displayBots() {
             <tbody class="divide-y divide-gray-200 post9-card">
                 ${botsList.map(bot => {
                     const strategy = strategies.find(s => s.id == bot.assigned_strategy_id || s.id == bot.strategy_id);
-                    const strategyName = strategy ? strategy.name : 'Unknown';
+                    const strategyName = strategy ? strategy.name : 'No Strategy Assigned';
                     const profitLoss = (bot.current_balance - bot.starting_balance).toFixed(2);
                     const profitLossClass = profitLoss >= 0 ? 'text-green-600' : 'text-red-600';
                     const botStatus = bot.active_status || bot.status;
