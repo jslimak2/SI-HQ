@@ -1605,15 +1605,57 @@ window.showBotLog = async function(botId) {
 window.addBot = async function(botData) {
     showLoading();
     try {
+        // Handle demo mode or when Firebase is not available
+        if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+            console.log("Adding bot in demo mode");
+            
+            // Create demo bot with proper structure
+            const demoBot = {
+                id: `demo_bot_${Date.now()}`,
+                name: botData.name,
+                starting_balance: parseFloat(botData.starting_balance),
+                current_balance: parseFloat(botData.starting_balance),
+                initial_balance: parseFloat(botData.starting_balance),
+                bet_percentage: parseFloat(botData.bet_percentage),
+                max_bets_per_week: parseInt(botData.max_bets_per_week, 10),
+                strategy_id: botData.strategy_id,
+                assigned_strategy_id: botData.strategy_id, // For API compatibility
+                sport: botData.sport,
+                bet_type: botData.bet_type,
+                status: 'stopped',
+                total_wagers: 0,
+                total_wins: 0,
+                profit_loss: 0,
+                win_rate: 0,
+                last_run: null,
+                created_at: new Date().toISOString(),
+                description: `Demo investor for ${botData.sport || 'multiple sports'}`,
+                demo_mode: true
+            };
+            
+            // Add to local bots array
+            bots.push(demoBot);
+            
+            // Refresh display
+            displayBots();
+            updateOverallStats();
+            
+            showMessage("Demo investor added successfully!");
+            return;
+        }
+        
+        // Production mode - use Firebase
         const botRef = collection(db, `users/${userId}/bots`);
         await addDoc(botRef, {
             ...botData,
+            assigned_strategy_id: botData.strategy_id, // Ensure strategy assignment
             status: 'stopped',
             current_balance: parseFloat(botData.starting_balance),
             total_wagers: 0,
             total_wins: 0,
             profit_loss: 0,
-            last_run: null
+            last_run: null,
+            created_at: new Date().toISOString()
         });
         showMessage("Bot added successfully!");
     } catch (e) {
@@ -1706,10 +1748,41 @@ window.toggleBotStatus = async function(botId, currentStatus) {
 window.addStrategy = async function(strategyData) {
     showLoading();
     try {
+        // Handle demo mode or when Firebase is not available
+        if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+            console.log("Adding strategy in demo mode");
+            
+            // Create demo strategy with proper structure
+            const demoStrategy = {
+                id: `demo_strategy_${Date.now()}`,
+                name: strategyData.name,
+                type: strategyData.type,
+                description: strategyData.description || `Demo ${strategyData.name} strategy`,
+                parameters: strategyData.sizing_parameters || {},
+                linked_strategy_id: strategyData.linked_strategy_id || null,
+                created_by: userId,
+                created_at: new Date().toISOString(),
+                demo_mode: true
+            };
+            
+            // Add to local strategies array
+            strategies.push(demoStrategy);
+            window.strategies = strategies;
+            
+            // Refresh display and dropdowns
+            displayStrategies();
+            updateStrategySelects();
+            
+            showMessage("Demo strategy added successfully!");
+            return;
+        }
+        
+        // Production mode - use Firebase
         const strategyRef = collection(db, `users/${userId}/strategies`);
         await addDoc(strategyRef, {
             ...strategyData,
-            parameters: {}
+            parameters: strategyData.sizing_parameters || {},
+            created_at: new Date().toISOString()
         });
         showMessage("Strategy added successfully!");
     } catch (e) {
