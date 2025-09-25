@@ -712,68 +712,87 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- +eV Template -->
-                    <div class="bg-gradient-to-br from-green-500 to-green-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('positive_ev')">
+                    <div class="bg-gradient-to-br from-green-500 to-green-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('positive_ev')">
                         <div class="text-4xl mb-4">💰</div>
                         <h4 class="text-xl font-bold mb-2">Expected Value (+eV)</h4>
                         <p class="text-sm opacity-90 mb-4">Focus on bets with positive expected value. Calculates probability vs. odds to find profitable opportunities.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Expected Value > 5%) THEN Place Bet
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('positive_ev')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Conservative Template -->
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('conservative')">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('conservative')">
                         <div class="text-4xl mb-4">🛡️</div>
                         <h4 class="text-xl font-bold mb-2">Conservative Strategy</h4>
                         <p class="text-sm opacity-90 mb-4">Low risk approach with smaller bet sizes and higher confidence requirements.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Confidence > 75% AND Odds < 2.0) THEN Bet 1-2%
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('conservative')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Aggressive Template -->
-                    <div class="bg-gradient-to-br from-orange-500 to-red-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('aggressive')">
+                    <div class="bg-gradient-to-br from-orange-500 to-red-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('aggressive')">
                         <div class="text-4xl mb-4">🚀</div>
                         <h4 class="text-xl font-bold mb-2">Aggressive Strategy</h4>
                         <p class="text-sm opacity-90 mb-4">Higher risk, higher reward with larger bet sizes and more frequent betting.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Confidence > 60% AND Value > 3%) THEN Bet 3-5%
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('aggressive')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Recovery Template -->
-                    <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('recovery')">
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('recovery')">
                         <div class="text-4xl mb-4">🔄</div>
                         <h4 class="text-xl font-bold mb-2">Loss Recovery</h4>
                         <p class="text-sm opacity-90 mb-4">Recover losses with calculated risk management and progressive betting.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Down > 10%) THEN Increase Bet Size by 50%
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('recovery')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Value Hunting Template -->
-                    <div class="bg-gradient-to-br from-teal-500 to-cyan-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('value_hunting')">
+                    <div class="bg-gradient-to-br from-teal-500 to-cyan-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('value_hunting')">
                         <div class="text-4xl mb-4">🎯</div>
                         <h4 class="text-xl font-bold mb-2">Value Hunter</h4>
                         <p class="text-sm opacity-90 mb-4">Finds undervalued odds across multiple sportsbooks for maximum profit.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Best Odds > Market Average + 5%) THEN Place Bet
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('value_hunting')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Arbitrage Template -->
-                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('arbitrage')">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('arbitrage')">
                         <div class="text-4xl mb-4">⚖️</div>
                         <h4 class="text-xl font-bold mb-2">Arbitrage</h4>
                         <p class="text-sm opacity-90 mb-4">Risk-free profit by betting both sides across different sportsbooks.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Arbitrage Opportunity > 1%) THEN Place Both Bets
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('arbitrage')" title="Show detailed explanation">?</button>
                     </div>
                 </div>
                 
                 <div class="mt-6 text-center">
                     <button onclick="closeModal('strategy-templates-modal')" class="post9-btn px-6 py-2">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Strategy Details Modal -->
+        <div id="strategy-details-modal" class="modal">
+            <div class="modal-content post9-card max-w-3xl">
+                <span class="modal-close" onclick="closeModal('strategy-details-modal')">&times;</span>
+                <div id="strategy-details-content">
+                    <!-- Strategy details will be populated here -->
+                </div>
+                <div class="mt-6 text-center">
+                    <button onclick="closeModal('strategy-details-modal')" class="post9-btn px-6 py-2">Close</button>
                 </div>
             </div>
         </div>

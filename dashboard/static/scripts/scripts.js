@@ -741,6 +741,244 @@ window.createFromTemplate = function(templateKey) {
     });
 };
 
+// Show detailed strategy explanation
+window.showStrategyDetails = function(strategyKey) {
+    const strategyDetails = {
+        'positive_ev': {
+            title: 'Expected Value (+eV) Strategy',
+            icon: '💰',
+            description: 'This strategy focuses on finding bets where the expected value is positive, meaning the potential profit outweighs the risk based on mathematical probability.',
+            howItWorks: [
+                'Calculates the true probability of an outcome using statistical models',
+                'Compares this to the implied probability from bookmaker odds',
+                'Only places bets when our calculated probability shows positive expected value',
+                'Uses Kelly Criterion for optimal bet sizing'
+            ],
+            parameters: [
+                { name: 'Minimum EV Threshold', value: '5%', description: 'Only bet when expected value exceeds this percentage' },
+                { name: 'Max Bet Size', value: '3%', description: 'Maximum percentage of bankroll to risk on single bet' },
+                { name: 'Confidence Filter', value: '65%', description: 'Minimum confidence level required for model predictions' }
+            ],
+            pros: [
+                'Mathematically sound approach to profitable betting',
+                'Long-term profit potential when odds are consistently mispriced',
+                'Disciplined approach reduces emotional betting'
+            ],
+            cons: [
+                'Requires accurate probability models',
+                'May have fewer betting opportunities',
+                'Short-term variance can be high'
+            ],
+            bestFor: 'Disciplined bettors who understand variance and want mathematically optimal betting'
+        },
+        'conservative': {
+            title: 'Conservative Strategy',
+            icon: '🛡️',
+            description: 'A risk-averse approach that prioritizes capital preservation with smaller bet sizes and higher confidence requirements.',
+            howItWorks: [
+                'Only bets on outcomes with very high confidence (75%+)',
+                'Prefers lower odds with higher probability of success',
+                'Uses smaller bet sizes to minimize downside risk',
+                'Implements strict stop-loss mechanisms'
+            ],
+            parameters: [
+                { name: 'Confidence Threshold', value: '75%', description: 'Minimum confidence required to place any bet' },
+                { name: 'Max Odds', value: '2.0 (+100)', description: 'Will not bet on odds higher than this' },
+                { name: 'Bet Size', value: '1-2%', description: 'Conservative percentage of bankroll per bet' },
+                { name: 'Stop Loss', value: '10%', description: 'Pause strategy if down this percentage' }
+            ],
+            pros: [
+                'Lower risk of significant losses',
+                'More predictable returns',
+                'Good for beginners or risk-averse investors',
+                'Steady, consistent growth potential'
+            ],
+            cons: [
+                'Lower profit potential',
+                'Fewer betting opportunities',
+                'May miss high-value bets due to strict criteria'
+            ],
+            bestFor: 'Risk-averse bettors, beginners, or those with smaller bankrolls who prioritize preservation over growth'
+        },
+        'aggressive': {
+            title: 'Aggressive Strategy',
+            icon: '🚀',
+            description: 'High-risk, high-reward approach that seeks maximum profit through larger bet sizes and more frequent betting opportunities.',
+            howItWorks: [
+                'Takes more betting opportunities with lower confidence thresholds',
+                'Uses larger bet sizes to maximize profit potential',
+                'Focuses on value bets even with moderate confidence',
+                'Actively seeks undervalued odds across all markets'
+            ],
+            parameters: [
+                { name: 'Confidence Threshold', value: '60%', description: 'Lower confidence requirement allows more bets' },
+                { name: 'Minimum Value', value: '3%', description: 'Minimum edge required to place bet' },
+                { name: 'Bet Size', value: '3-5%', description: 'Aggressive percentage of bankroll per bet' },
+                { name: 'Max Bets/Week', value: '10+', description: 'Higher betting frequency' }
+            ],
+            pros: [
+                'Higher profit potential',
+                'More betting opportunities',
+                'Can capitalize on market inefficiencies quickly',
+                'Faster bankroll growth when successful'
+            ],
+            cons: [
+                'Higher risk of significant losses',
+                'Greater bankroll volatility',
+                'Requires larger bankroll to handle swings',
+                'More susceptible to bad runs'
+            ],
+            bestFor: 'Experienced bettors with larger bankrolls who can handle volatility and want maximum growth potential'
+        },
+        'recovery': {
+            title: 'Loss Recovery Strategy',
+            icon: '🔄',
+            description: 'Designed to recover from losing streaks through calculated adjustments to bet sizing and selection criteria.',
+            howItWorks: [
+                'Monitors performance and adjusts strategy when losses occur',
+                'Gradually increases bet sizes to recover losses faster',
+                'Tightens selection criteria during losing streaks',
+                'Implements progressive betting systems safely'
+            ],
+            parameters: [
+                { name: 'Loss Trigger', value: '10%', description: 'Drawdown percentage that activates recovery mode' },
+                { name: 'Bet Size Increase', value: '50%', description: 'How much to increase bet sizes during recovery' },
+                { name: 'Recovery Target', value: '5%', description: 'Profit above break-even before returning to normal' },
+                { name: 'Max Recovery Bets', value: '5', description: 'Maximum consecutive recovery bets' }
+            ],
+            pros: [
+                'Systematic approach to handling losses',
+                'Can recover from drawdowns more quickly',
+                'Prevents emotional decision-making during tough periods',
+                'Built-in safeguards against excessive risk'
+            ],
+            cons: [
+                'Can amplify losses if recovery bets also lose',
+                'Requires discipline to follow system exactly',
+                'May encourage risky behavior',
+                'Complex to implement properly'
+            ],
+            bestFor: 'Experienced bettors who understand progressive betting risks and want systematic loss recovery'
+        },
+        'value_hunting': {
+            title: 'Value Hunter Strategy',
+            icon: '🎯',
+            description: 'Actively searches for the best odds across multiple sportsbooks to maximize profit on every bet.',
+            howItWorks: [
+                'Compares odds across multiple sportsbooks in real-time',
+                'Identifies significant discrepancies in market pricing',
+                'Places bets only when finding superior odds',
+                'Focuses on market inefficiencies and slow-moving lines'
+            ],
+            parameters: [
+                { name: 'Odds Advantage', value: '5%', description: 'Minimum odds advantage over market average' },
+                { name: 'Sportsbooks', value: '5+', description: 'Number of books to compare for best odds' },
+                { name: 'Line Movement', value: 'Track', description: 'Monitor for favorable line movements' },
+                { name: 'Market Depth', value: 'Deep', description: 'Prefer liquid markets with tight spreads' }
+            ],
+            pros: [
+                'Maximizes value on every bet placed',
+                'Takes advantage of market inefficiencies',
+                'Higher profit margins per bet',
+                'Reduces the edge needed from prediction models'
+            ],
+            cons: [
+                'Requires accounts at multiple sportsbooks',
+                'Time-intensive to monitor odds constantly',
+                'May miss betting opportunities waiting for best odds',
+                'Limited by account limits at different books'
+            ],
+            bestFor: 'Serious bettors with multiple sportsbook accounts who want to maximize every betting opportunity'
+        },
+        'arbitrage': {
+            title: 'Arbitrage Strategy',
+            icon: '⚖️',
+            description: 'Risk-free profit strategy that exploits price differences between sportsbooks by betting both sides of the same event.',
+            howItWorks: [
+                'Identifies price discrepancies for the same event across books',
+                'Calculates exact bet amounts to guarantee profit regardless of outcome',
+                'Places simultaneous bets on both sides of the market',
+                'Locks in guaranteed profit through mathematical precision'
+            ],
+            parameters: [
+                { name: 'Minimum Arbitrage', value: '1%', description: 'Minimum guaranteed profit percentage required' },
+                { name: 'Speed Requirement', value: 'Fast', description: 'Must execute bets quickly before odds change' },
+                { name: 'Book Limits', value: 'Monitor', description: 'Track betting limits across sportsbooks' },
+                { name: 'Calculation Precision', value: 'Exact', description: 'Precise bet sizing for guaranteed profit' }
+            ],
+            pros: [
+                'Guaranteed profit regardless of game outcome',
+                'No prediction skill required',
+                'Eliminates betting risk when executed properly',
+                'Consistent returns when opportunities exist'
+            ],
+            cons: [
+                'Opportunities are rare and brief',
+                'Requires significant capital for meaningful profits',
+                'Sportsbooks may limit accounts that arbitrage',
+                'High time investment for small profit margins'
+            ],
+            bestFor: 'Dedicated bettors with large bankrolls, multiple accounts, and time to monitor markets constantly'
+        }
+    };
+
+    const details = strategyDetails[strategyKey];
+    if (!details) return;
+
+    const content = document.getElementById('strategy-details-content');
+    content.innerHTML = `
+        <div class="text-center mb-6">
+            <div class="text-6xl mb-4">${details.icon}</div>
+            <h3 class="text-2xl font-bold text-white mb-2">${details.title}</h3>
+            <p class="text-gray-300">${details.description}</p>
+        </div>
+        
+        <div class="space-y-6">
+            <div class="bg-gray-700 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold text-blue-400 mb-3">How It Works</h4>
+                <ul class="space-y-2">
+                    ${details.howItWorks.map(item => `<li class="text-gray-300">• ${item}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div class="bg-gray-700 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold text-purple-400 mb-3">Key Parameters</h4>
+                <div class="space-y-3">
+                    ${details.parameters.map(param => `
+                        <div class="border-l-2 border-purple-400 pl-3">
+                            <div class="font-medium text-white">${param.name}: <span class="text-purple-300">${param.value}</span></div>
+                            <div class="text-sm text-gray-300">${param.description}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-green-900 bg-opacity-50 p-4 rounded-lg">
+                    <h4 class="text-lg font-semibold text-green-400 mb-3">Pros</h4>
+                    <ul class="space-y-1">
+                        ${details.pros.map(pro => `<li class="text-green-300 text-sm">✓ ${pro}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="bg-red-900 bg-opacity-50 p-4 rounded-lg">
+                    <h4 class="text-lg font-semibold text-red-400 mb-3">Cons</h4>
+                    <ul class="space-y-1">
+                        ${details.cons.map(con => `<li class="text-red-300 text-sm">⚠ ${con}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="bg-blue-900 bg-opacity-50 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold text-blue-400 mb-2">Best For</h4>
+                <p class="text-blue-300">${details.bestFor}</p>
+            </div>
+        </div>
+    `;
+
+    showModal('strategy-details-modal');
+};
+
 // Helper function to safely extract parameter values
 function getParameterValue(param) {
     if (param === null || param === undefined) return '';
