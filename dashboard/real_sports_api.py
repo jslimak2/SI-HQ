@@ -306,6 +306,57 @@ class RealSportsDataService:
         self.results_provider = ESPNProvider(espn_api_key)
         self.cache = {}
         self.cache_ttl = 300  # 5 minutes cache
+        
+        # Sport name mapping to handle various input formats
+        self.sport_name_mapping = {
+            # Common names to SportType enum values
+            'nba': SportType.NBA,
+            'nfl': SportType.NFL,
+            'mlb': SportType.MLB,
+            'nhl': SportType.NHL,
+            'ncaab': SportType.NCAAB,
+            'ncaaf': SportType.NCAAF,
+            # Full names
+            'basketball_nba': SportType.NBA,
+            'americanfootball_nfl': SportType.NFL,
+            'baseball_mlb': SportType.MLB,
+            'icehockey_nhl': SportType.NHL,
+            'basketball_ncaab': SportType.NCAAB,
+            'americanfootball_ncaaf': SportType.NCAAF,
+            # Alternative names
+            'basketball': SportType.NBA,
+            'football': SportType.NFL,
+            'baseball': SportType.MLB,
+            'hockey': SportType.NHL,
+        }
+    
+    def _normalize_sport_name(self, sport: str) -> SportType:
+        """
+        Normalize sport name to SportType enum, handling various input formats
+        
+        Args:
+            sport: Sport name in various formats (e.g., 'nba', 'NBA', 'basketball_nba')
+            
+        Returns:
+            SportType enum value
+            
+        Raises:
+            ValueError: If sport name cannot be mapped to a valid SportType
+        """
+        sport_lower = sport.lower().strip()
+        
+        if sport_lower in self.sport_name_mapping:
+            return self.sport_name_mapping[sport_lower]
+        
+        # Try direct SportType construction for exact matches
+        try:
+            return SportType(sport)
+        except ValueError:
+            pass
+        
+        # If no mapping found, default to NBA and log warning
+        logger.warning(f"Unknown sport '{sport}', defaulting to NBA")
+        return SportType.NBA
     
     def get_current_games(self, sport: str = 'basketball_nba') -> List[Dict]:
         """Get current games with odds (replaces mock data)"""
@@ -321,7 +372,7 @@ class RealSportsDataService:
         
         if self.odds_provider:
             try:
-                sport_enum = SportType(sport)
+                sport_enum = self._normalize_sport_name(sport)
                 odds_data = self.odds_provider.get_games(sport_enum)
                 
                 for game_odds in odds_data:
