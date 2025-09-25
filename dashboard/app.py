@@ -1144,11 +1144,69 @@ def add_strategy():
 @app.route('/api/strategies', methods=['GET'])
 def get_strategies():
     """Retrieves all strategies from the Firestore database (user-specific)."""
-    if not db:
-        return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
     user_id = request.args.get('user_id')
     if not user_id:
         return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+    
+    # Handle demo mode users or when database is not initialized
+    if not db or demo_mode or user_id == 'demo-user' or user_id == 'anonymous':
+        print(f"[DEMO MODE] Providing demo strategies for user {user_id}")
+        demo_strategies = [
+            {
+                "id": "1",
+                "name": "Conservative",
+                "type": "conservative",
+                "description": "Low risk approach with smaller bet sizes and higher confidence requirements",
+                "parameters": {
+                    "min_confidence": 75,
+                    "max_bet_percentage": 2.0,
+                    "max_odds": 2.0
+                },
+                "created_by": user_id,
+                "demo_mode": True
+            },
+            {
+                "id": "2",
+                "name": "Aggressive",
+                "type": "aggressive", 
+                "description": "Higher risk, higher reward with larger bet sizes and more frequent betting",
+                "parameters": {
+                    "min_confidence": 60,
+                    "max_bet_percentage": 5.0,
+                    "max_odds": 5.0
+                },
+                "created_by": user_id,
+                "demo_mode": True
+            },
+            {
+                "id": "3",
+                "name": "Loss Recovery",
+                "type": "recovery",
+                "description": "Recover losses with calculated risk management and progressive betting",
+                "parameters": {
+                    "loss_threshold": 10.0,
+                    "max_bet_percentage": 7.0,
+                    "recovery_multiplier": 1.5
+                },
+                "created_by": user_id,
+                "demo_mode": True
+            },
+            {
+                "id": "4",
+                "name": "+eV Strategy",
+                "type": "expected_value",
+                "description": "Focus on bets with positive expected value. Calculates probability vs odds to find profitable opportunities",
+                "parameters": {
+                    "min_confidence": 65,
+                    "max_bet_percentage": 4.0,
+                    "min_expected_value": 5.0
+                },
+                "created_by": user_id,
+                "demo_mode": True
+            }
+        ]
+        return jsonify({'success': True, 'strategies': demo_strategies, 'demo_mode': True}), 200
+    
     try:
         strategies_collection_user = db.collection(f'users/{user_id}/strategies')
         strategies_ref = strategies_collection_user.stream()
@@ -1156,7 +1214,20 @@ def get_strategies():
         return jsonify({'success': True, 'strategies': strategies}), 200
     except Exception as e:
         print(f"Failed to retrieve strategies: {e}")
-        return jsonify({'success': False, 'message': f'Failed to retrieve strategies: {e}'}), 500
+        # Fallback to demo data if database fails
+        print(f"[FALLBACK] Providing demo strategies due to database error")
+        demo_strategies = [
+            {
+                "id": "1",
+                "name": "Conservative",
+                "type": "conservative",
+                "description": "Low risk approach (Demo fallback)",
+                "parameters": {"min_confidence": 75, "max_bet_percentage": 2.0},
+                "created_by": user_id,
+                "demo_mode": True
+            }
+        ]
+        return jsonify({'success': True, 'strategies': demo_strategies, 'demo_mode': True, 'fallback': True}), 200
 
 @app.route('/api/strategy/<strategy_id>', methods=['PUT'])
 def update_strategy(strategy_id):
