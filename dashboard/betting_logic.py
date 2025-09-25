@@ -11,7 +11,7 @@ def simulate_single_bet(bot_data):
     Simulates a single bet using a simple probability model.
 
     Args:
-        bot_data (dict): The dictionary containing a single bot's data.
+        bot_data (dict): The dictionary containing a single investor's data.
 
     Returns:
         dict: A dictionary with the result of the bet simulation.
@@ -31,7 +31,7 @@ def simulate_single_bet(bot_data):
     ]
     team1, team2 = random.choice(teams)
     
-    # Calculate the bet amount based on the bot's configured bet percentage
+    # Calculate the bet amount based on the investor's configured bet percentage
     bet_amount = bot_data['current_balance'] * (bot_data['bet_percentage'] / 100)
     
     # Ensure there's enough balance to make the bet
@@ -46,7 +46,7 @@ def simulate_single_bet(bot_data):
         outcome = 'W'
         payout = bet_amount * (payout_multiplier - 1)
         
-    # Update the bot's balance
+    # Update the investor's balance
     bot_data['current_balance'] += payout
     
     # Generate a unique receipt for this bet
@@ -66,7 +66,7 @@ def simulate_real_world_bet(bot_data, num_bets):
     Simulates a series of bets and generates a report.
     
     Args:
-        bot_data (dict): The bot's configuration data.
+        bot_data (dict): The investor's configuration data.
         num_bets (int): The number of bets to simulate.
 
     Returns:
@@ -81,12 +81,12 @@ def simulate_real_world_bet(bot_data, num_bets):
     total_wins = 0
     total_losses = 0
 
-    # Ensure we don't modify the original bot data during the simulation
+    # Ensure we don't modify the original investor data during the simulation
     simulation_bot = bot_data.copy()
     simulation_bot['current_balance'] = initial_balance
     
     for i in range(num_bets):
-        # Simulate a single bet and get the updated bot data
+        # Simulate a single bet and get the updated investor data
         bet_receipt = simulate_single_bet(simulation_bot)
         
         # Update our tracking variables
@@ -114,7 +114,7 @@ def simulate_real_world_bet(bot_data, num_bets):
         'total_losses': total_losses,
         'win_rate': win_rate,
         'bankroll_history': bankroll_history,
-        'bets_history': [] # This is for the live bot, not simulation
+        'bets_history': [] # This is for the live investor, not simulation
     }
 
     return report

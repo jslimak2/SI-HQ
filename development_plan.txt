@@ -38,10 +38,10 @@ High-Tech:
 
 Interactive Dashboards: Heatmaps, scatter plots, and time series charts for profitability, risk, win rate, etc.
 Cohort Analysis: See how strategies/models performed in specific contexts (rainy games, late season, specific teams).
-Profit Attribution: Breakdown by strategy, bot, sport, market, and time period.
+Profit Attribution: Breakdown by strategy, investor, sport, market, and time period.
 Easy-to-Use:
 
-Simple Summaries: “Your NFL bot made $X last month, with 55% win rate.”
+Simple Summaries: “Your NFL investor made $X last month, with 55% win rate.”
 Drill-downs: Click to see details for any metric.
 Export Options: Excel, CSV, PDF, and sharable links.
 Alerts/Notifications: Send push/email if a strategy is underperforming, or if a significant opportunity is detected.

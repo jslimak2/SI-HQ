@@ -276,8 +276,8 @@ class OpenWager:
 
 
 @dataclass
-class BotSchema:
-    """Complete automated investor/bot data schema"""
+class InvestorSchema:
+    """Complete automated investor/investor data schema"""
     # Core identification
     bot_id: str
     name: str
@@ -328,7 +328,7 @@ class BotSchema:
         return data
     
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'BotSchema':
+    def from_dict(cls, data: Dict[str, Any]) -> 'InvestorSchema':
         # Handle enums
         if 'active_status' in data and isinstance(data['active_status'], str):
             data['active_status'] = InvestorStatus(data['active_status'])
@@ -469,19 +469,19 @@ class SchemaValidator:
         return issues
     
     @staticmethod
-    def validate_bot(bot: BotSchema) -> List[str]:
-        """Validate bot schema and return list of issues"""
+    def validate_bot(investor: InvestorSchema) -> List[str]:
+        """Validate investor schema and return list of issues"""
         issues = []
         
-        if not bot.bot_id:
-            issues.append("Bot ID is required")
-        if not bot.name:
-            issues.append("Bot name is required")
-        if bot.current_balance < 0:
-            issues.append("Bot balance cannot be negative")
-        if bot.risk_management.max_bet_percentage <= 0 or bot.risk_management.max_bet_percentage > 100:
+        if not investor.bot_id:
+            issues.append("Investor ID is required")
+        if not investor.name:
+            issues.append("Investor name is required")
+        if investor.current_balance < 0:
+            issues.append("Investor balance cannot be negative")
+        if investor.risk_management.max_bet_percentage <= 0 or investor.risk_management.max_bet_percentage > 100:
             issues.append("Max bet percentage must be between 0.1 and 100")
-        if bot.risk_management.max_bets_per_week <= 0:
+        if investor.risk_management.max_bets_per_week <= 0:
             issues.append("Max bets per week must be positive")
         
         return issues
@@ -531,8 +531,8 @@ def migrate_legacy_model(legacy_data: Dict[str, Any]) -> ModelSchema:
     return ModelSchema.from_dict(model_data)
 
 
-def migrate_legacy_bot(legacy_data: Dict[str, Any]) -> BotSchema:
-    """Migrate legacy bot data to new schema"""
+def migrate_legacy_bot(legacy_data: Dict[str, Any]) -> InvestorSchema:
+    """Migrate legacy investor data to new schema"""
     bot_data = {
         'bot_id': legacy_data.get('id', legacy_data.get('bot_id', '')),
         'name': legacy_data.get('name', ''),
@@ -572,7 +572,7 @@ def migrate_legacy_bot(legacy_data: Dict[str, Any]) -> BotSchema:
     if risk_data:
         bot_data['risk_management'] = RiskManagement.from_dict(risk_data)
     
-    return BotSchema.from_dict(bot_data)
+    return InvestorSchema.from_dict(bot_data)
 
 
 def migrate_legacy_strategy(legacy_data: Dict[str, Any]) -> StrategySchema:

@@ -371,10 +371,10 @@ def handle_generic_error(error):
 
 # Firestore Collection references
 if not demo_mode and db:
-    bots_collection = db.collection(f'artifacts/{app_id}/public/data/bots')
+    investors_collection = db.collection(f'artifacts/{app_id}/public/data/investors')
     strategies_collection = db.collection(f'artifacts/{app_id}/public/data/strategies')
 else:
-    bots_collection = None
+    investors_collection = None
     strategies_collection = None
 
 # User-specific collections for the new caching functionality
@@ -390,35 +390,35 @@ def get_user_collections(user_id):
 
 # --- Sports Data Helper Functions ---
 
-def get_bot_sport(bot_data, default='NBA'):
+def get_investor_sport(investor_data, default='NBA'):
     """
-    Extract sport preference from bot data, handling multiple field names and data types.
+    Extract sport preference from investor data, handling multiple field names and data types.
     
     Args:
-        bot_data: Bot configuration dictionary
+        investor_data: Investor configuration dictionary
         default: Default sport if none found
     
     Returns:
         str: Sport name (e.g., 'NFL', 'NBA')
     """
-    bot_sport = None
+    investor_sport = None
     
-    # Try different ways the sport might be stored in bot_data
-    if 'sport_filter' in bot_data:
-        bot_sport = bot_data['sport_filter']
-    elif 'sport' in bot_data:
-        bot_sport = bot_data['sport']
+    # Try different ways the sport might be stored in investor_data
+    if 'sport_filter' in investor_data:
+        investor_sport = investor_data['sport_filter']
+    elif 'sport' in investor_data:
+        investor_sport = investor_data['sport']
     
     # Handle case where sport is stored as an enum object
-    if hasattr(bot_sport, 'value'):
-        bot_sport = bot_sport.value
+    if hasattr(investor_sport, 'value'):
+        investor_sport = investor_sport.value
     
     # Return default if no sport found or if it's None/empty
-    if not bot_sport:
-        bot_sport = default
-        logger.warning(f"No sport preference found in investor data, defaulting to {bot_sport}")
+    if not investor_sport:
+        investor_sport = default
+        logger.warning(f"No sport preference found in investor data, defaulting to {investor_sport}")
     
-    return bot_sport
+    return investor_sport
 
 def get_sports_games_data(sport='NBA', max_games=10):
     """
@@ -809,7 +809,7 @@ def troubleshoot():
 
 @app.route('/demo')
 def demo():
-    """Renders a demo page showing the new bot functionality."""
+    """Renders a demo page showing the new investor functionality."""
     return render_template('demo.html')
 
 @app.route('/ml')
@@ -872,24 +872,24 @@ def get_firebase_config():
 
 @app.route('/api/overall-stats', methods=['GET'])
 def get_overall_stats():
-    """Calculates and returns overall stats for all bots."""
+    """Calculates and returns overall stats for all investors."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
     try:
-        bots_ref = bots_collection.stream()
+        investors_ref = investors_collection.stream()
         total_profit = 0
         total_bets = 0
         total_wagered = 0
         total_wins = 0
         total_losses = 0
 
-        for bot_doc in bots_ref:
-            bot_data = bot_doc.to_dict()
-            total_profit += bot_data.get('total_profit', 0)
-            total_bets += bot_data.get('total_bets', 0)
-            total_wagered += bot_data.get('total_wagered', 0)
-            total_wins += bot_data.get('total_wins', 0)
-            total_losses += bot_data.get('total_losses', 0)
+        for investor_doc in investors_ref:
+            investor_data = investor_doc.to_dict()
+            total_profit += investor_data.get('total_profit', 0)
+            total_bets += investor_data.get('total_bets', 0)
+            total_wagered += investor_data.get('total_wagered', 0)
+            total_wins += investor_data.get('total_wins', 0)
+            total_losses += investor_data.get('total_losses', 0)
         
         win_rate = (total_wins / total_bets) * 100 if total_bets > 0 else 0
         
@@ -909,13 +909,13 @@ def get_overall_stats():
         print(f"Failed to get overall stats: {e}")
         return jsonify({'success': False, 'message': f'Failed to get overall stats: {e}'}), 500
 
-@app.route('/api/bots', methods=['POST'])
+@app.route('/api/investors', methods=['POST'])
 @handle_errors
 @require_authentication
 @rate_limit(requests_per_hour=100)
 @sanitize_request_data(required_fields=['name', 'initial_balance'], optional_fields=['bet_percentage', 'max_bets_per_week', 'sport', 'model_id'])
-def add_bot():
-    """Adds a new bot using the standardized schema with professional validation."""
+def add_investor():
+    """Adds a new investor using the standardized schema with professional validation."""
     if not db:
         raise ValidationError("Database not available in demo mode")
     
@@ -990,8 +990,8 @@ def add_bot():
             kelly_fraction=0.25
         )
         
-        # Create bot using standardized schema
-        bot_data = {
+        # Create investor using standardized schema
+        investor_data = {
             'name': data.get('name'),
             'current_balance': initial_balance,
             'starting_balance': initial_balance,
@@ -1003,33 +1003,33 @@ def add_bot():
             'created_by': user_id,
             'active_status': InvestorStatus.STOPPED.value,
             'tags': ['auto-created'],
-            'description': f"Bot created for {sport_filter.value if sport_filter else 'multiple sports'} with ${initial_balance} starting balance"
+            'description': f"Investor created for {sport_filter.value if sport_filter else 'multiple sports'} with ${initial_balance} starting balance"
         }
         
-        # Create bot through data service
-        bot_id = data_service.create_bot(bot_data)
-        bot = data_service.get_bot(bot_id)
+        # Create investor through data service
+        investor_id = data_service.create_investor(investor_data)
+        investor = data_service.get_investor(investor_id)
         
         # Also save to Firestore for compatibility
-        bot_ref = bots_collection.document(bot_id)
-        firestore_data = bot.to_dict()
+        investor_ref = investors_collection.document(investor_id)
+        firestore_data = investor.to_dict()
         # Convert complex objects to simple dict for Firestore
         firestore_data['sport'] = sport_filter.value if sport_filter else None
-        firestore_data['status'] = bot.active_status.value
+        firestore_data['status'] = investor.active_status.value
         firestore_data['bet_percentage'] = risk_management.max_bet_percentage
         firestore_data['max_bets_per_week'] = risk_management.max_bets_per_week
         firestore_data['sport_auto_detected'] = sport_auto_detected
         firestore_data['sport_detection_source'] = sport_detection_source
         
-        bot_ref.set(firestore_data)
+        investor_ref.set(firestore_data)
         
-        logger.info(f"Investor created successfully: {bot_id} by user {user_id}")
+        logger.info(f"Investor created successfully: {investor_id} by user {user_id}")
         
         return jsonify({
             'success': True, 
-            'message': 'Bot created successfully with standardized schema.', 
-            'bot_id': bot_id,
-            'bot_data': bot.to_dict(),
+            'message': 'Investor created successfully with standardized schema.', 
+            'investor_id': investor_id,
+            'investor_data': investor.to_dict(),
             'schema_version': '2.0',
             'sport_auto_detected': sport_auto_detected,
             'detected_sport': sport_filter.value if sport_filter else None
@@ -1039,27 +1039,27 @@ def add_bot():
         raise ValidationError(f"Invalid numeric value: {str(e)}")
     except Exception as e:
         logger.error(f"Failed to add investor: {e}")
-        raise ValidationError(f'Failed to add bot: {e}')
+        raise ValidationError(f'Failed to add investor: {e}')
 
-@app.route('/api/bots/simulate', methods=['POST'])
-def simulate_bot_bet():
-    """Simulates a single bet for a bot and updates its record."""
+@app.route('/api/investors/simulate', methods=['POST'])
+def simulate_investor_bet():
+    """Simulates a single bet for a investor and updates its record."""
     if not db:
         return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
     try:
         data = request.json
-        bot_id = data.get('bot_id')
-        if not bot_id:
-            return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
+        investor_id = data.get('investor_id')
+        if not investor_id:
+            return jsonify({'success': False, 'message': 'Investor ID is required.'}), 400
 
-        bot_ref = bots_collection.document(bot_id)
-        bot_doc = bot_ref.get()
+        investor_ref = investors_collection.document(investor_id)
+        investor_doc = investor_ref.get()
 
-        if not bot_doc.exists:
+        if not investor_doc.exists:
             return jsonify({'success': False, 'message': 'Investor not found.'}), 404
 
-        bot_data = bot_doc.to_dict()
-        bet_receipt = simulate_single_bet(bot_data)
+        investor_data = investor_doc.to_dict()
+        bet_receipt = simulate_single_bet(investor_data)
         
         updates = {
             'total_bets': firestore.Increment(1),
@@ -1074,7 +1074,7 @@ def simulate_bot_bet():
         else:
             updates['total_losses'] = firestore.Increment(1)
         
-        bot_ref.update({
+        investor_ref.update({
             **updates,
             'bet_history': firestore.ArrayUnion([bet_receipt])
         })
@@ -1089,33 +1089,33 @@ def simulate_bot_bet():
         print(f"Failed to simulate bet: {e}")
         return jsonify({'success': False, 'message': f'Failed to simulate bet: {e}'}), 500
 
-@app.route('/api/bots/<bot_id>', methods=['PUT'])
+@app.route('/api/investors/<investor_id>', methods=['PUT'])
 @handle_errors
 @require_authentication
 @rate_limit(requests_per_hour=200)
 @sanitize_request_data(required_fields=['name'], optional_fields=['strategy_id', 'bet_percentage', 'max_bets_per_week', 'minimum_confidence', 'kelly_fraction', 'allowable_platforms'])
-def update_bot(bot_id):
-    """Updates an existing bot/investor."""
+def update_investor(investor_id):
+    """Updates an existing investor/investor."""
     try:
         data = g.sanitized_request_data
         user_id = data.get('user_id', 'demo_user')  # Default for demo mode
         
         # Handle demo mode - return success without actual database operation
         if not db or not FIREBASE_AVAILABLE:
-            logger.info(f"Demo mode: Simulating update for bot {bot_id}")
+            logger.info(f"Demo mode: Simulating update for investor {investor_id}")
             return jsonify({
                 'success': True,
                 'message': 'Investor updated successfully (Demo Mode).',
-                'bot_id': bot_id,
+                'investor_id': investor_id,
                 'demo_mode': True
             })
 
-        # Get the bot reference
-        bots_collection_user = db.collection(f'users/{user_id}/bots')
-        bot_ref = bots_collection_user.document(bot_id)
-        bot_doc = bot_ref.get()
+        # Get the investor reference
+        investors_collection_user = db.collection(f'users/{user_id}/investors')
+        investor_ref = investors_collection_user.document(investor_id)
+        investor_doc = investor_ref.get()
 
-        if not bot_doc.exists:
+        if not investor_doc.exists:
             return jsonify({'success': False, 'message': 'Investor not found.'}), 404
 
         # Prepare update data
@@ -1143,13 +1143,13 @@ def update_bot(bot_id):
         if 'allowable_platforms' in data and data['allowable_platforms'] is not None:
             update_data['allowable_platforms'] = data['allowable_platforms']
 
-        # Update the bot
-        bot_ref.update(update_data)
+        # Update the investor
+        investor_ref.update(update_data)
         
         return jsonify({
             'success': True,
             'message': 'Investor updated successfully.',
-            'bot_id': bot_id
+            'investor_id': investor_id
         })
 
     except Exception as e:
@@ -1346,16 +1346,16 @@ def delete_strategy(strategy_id):
         
 @app.route('/api/strategy/<strategy_id>/picks', methods=['GET'])
 def get_strategy_picks(strategy_id):
-    """Get recommended investments from a strategy for a bot (user-specific)."""
+    """Get recommended investments from a strategy for a investor (user-specific)."""
     if not db:
         # Demo mode: generate mock strategy picks
         user_id = request.args.get('user_id', 'demo_user')
-        bot_id = request.args.get('bot_id', 'demo_bot')
+        investor_id = request.args.get('investor_id', 'demo_investor')
         
         if not user_id:
             return jsonify({'success': False, 'message': 'User ID is required.'}), 400
-        if not bot_id:
-            return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
+        if not investor_id:
+            return jsonify({'success': False, 'message': 'Investor ID is required.'}), 400
             
         # Generate demo picks for demo mode
         demo_picks = generate_demo_strategy_picks(strategy_id)
@@ -1368,14 +1368,14 @@ def get_strategy_picks(strategy_id):
         })
     
     user_id = request.args.get('user_id')
-    bot_id = request.args.get('bot_id')
+    investor_id = request.args.get('investor_id')
     if not user_id:
         return jsonify({'success': False, 'message': 'User ID is required.'}), 400
-    if not bot_id:
-        return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
+    if not investor_id:
+        return jsonify({'success': False, 'message': 'Investor ID is required.'}), 400
     
     # Check if this is demo mode user (even when Firebase is available)
-    if user_id == 'demo-user' or bot_id.startswith('demo_bot_'):
+    if user_id == 'demo-user' or investor_id.startswith('demo_investor_'):
         # Handle demo mode data
         demo_picks = generate_demo_strategy_picks(strategy_id)
         return jsonify({
@@ -1387,24 +1387,24 @@ def get_strategy_picks(strategy_id):
         })
     
     try:
-        # Get user-specific bot data
-        bot_ref = db.collection(f'users/{user_id}/bots').document(bot_id)
-        bot_doc = bot_ref.get()
-        if not bot_doc.exists:
+        # Get user-specific investor data
+        investor_ref = db.collection(f'users/{user_id}/investors').document(investor_id)
+        investor_doc = investor_ref.get()
+        if not investor_doc.exists:
             return jsonify({'success': False, 'message': 'Investor not found.'}), 404
-        bot_data = bot_doc.to_dict()
+        investor_data = investor_doc.to_dict()
         
-        # Check if bot has a strategy assigned (protection for bots without strategies)
-        bot_assigned_strategy = bot_data.get('assigned_strategy_id')
-        if not bot_assigned_strategy:
+        # Check if investor has a strategy assigned (protection for investors without strategies)
+        assigned_strategy = investor_data.get('assigned_strategy_id')
+        if not assigned_strategy:
             return jsonify({
                 'success': False, 
                 'message': 'This investor does not have a strategy assigned. Please select a strategy first.',
                 'requires_strategy_selection': True
             }), 400
         
-        # If a specific strategy_id is provided in URL, use that; otherwise use bot's assigned strategy
-        effective_strategy_id = strategy_id if strategy_id else bot_assigned_strategy
+        # If a specific strategy_id is provided in URL, use that; otherwise use investor's assigned strategy
+        effective_strategy_id = strategy_id if strategy_id else assigned_strategy
         
         # Fetch strategy from user-specific collection
         strategy_ref = db.collection(f'users/{user_id}/strategies').document(effective_strategy_id)
@@ -1417,9 +1417,9 @@ def get_strategy_picks(strategy_id):
                 'missing_strategy_id': effective_strategy_id
             }), 404
         strategy_data = strategy_doc.to_dict()
-        # Check if bot has reached max bets for the week
-        max_bets = bot_data.get('max_bets_per_week', 5)
-        bets_this_week = bot_data.get('bets_this_week', 0)
+        # Check if investor has reached max bets for the week
+        max_bets = investor_data.get('max_bets_per_week', 5)
+        bets_this_week = investor_data.get('bets_this_week', 0)
         if bets_this_week >= max_bets:
             return jsonify({
                 'success': True,
@@ -1429,11 +1429,11 @@ def get_strategy_picks(strategy_id):
             })
         # Try to generate real strategy picks, fall back to demo if needed
         try:
-            picks = generate_real_strategy_picks(strategy_data, bot_data, max_bets - bets_this_week)
+            picks = generate_real_strategy_picks(strategy_data, investor_data, max_bets - bets_this_week)
             data_source = 'real'
         except Exception as real_error:
             logger.warning(f"Failed to generate real strategy picks, falling back to demo: {real_error}")
-            picks = generate_strategy_picks(strategy_data, bot_data, max_bets - bets_this_week)
+            picks = generate_strategy_picks(strategy_data, investor_data, max_bets - bets_this_week)
             data_source = 'demo_fallback'
         
         return jsonify({
@@ -1447,27 +1447,27 @@ def get_strategy_picks(strategy_id):
         print(f"Failed to get strategy picks: {e}")
         return jsonify({'success': False, 'message': f'Failed to get picks: {e}'}), 500
 
-def generate_strategy_picks(strategy_data, bot_data, max_picks):
+def generate_strategy_picks(strategy_data, investor_data, max_picks):
     """Generate betting picks based on strategy type."""
     strategy_type = strategy_data.get('type', 'basic')
     
     # Expected Value strategy
     if strategy_type == 'expected_value':
-        return generate_expected_value_picks(strategy_data, bot_data, max_picks)
+        return generate_expected_value_picks(strategy_data, investor_data, max_picks)
     elif strategy_type == 'conservative':
-        return generate_conservative_strategy_picks(strategy_data, bot_data, max_picks)
+        return generate_conservative_strategy_picks(strategy_data, investor_data, max_picks)
     elif strategy_type == 'aggressive':
-        return generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks)
+        return generate_aggressive_strategy_picks(strategy_data, investor_data, max_picks)
     elif strategy_type == 'recovery':
-        return generate_recovery_strategy_picks(bot_data, max_picks)
+        return generate_recovery_strategy_picks(investor_data, max_picks)
     elif strategy_type == 'value_hunting':
-        return generate_value_hunting_picks(strategy_data, bot_data, max_picks)
+        return generate_value_hunting_picks(strategy_data, investor_data, max_picks)
     elif strategy_type == 'arbitrage':
-        return generate_arbitrage_picks(strategy_data, bot_data, max_picks)
+        return generate_arbitrage_picks(strategy_data, investor_data, max_picks)
     else:
-        return generate_basic_strategy_picks(bot_data, max_picks)
+        return generate_basic_strategy_picks(investor_data, max_picks)
 
-def generate_expected_value_picks(strategy_data, bot_data, max_picks):
+def generate_expected_value_picks(strategy_data, investor_data, max_picks):
     """Generate +eV (Expected Value) strategy picks."""
     picks = []
     
@@ -1496,10 +1496,10 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
     kelly_fraction = safe_float_extract(params.get('kelly_fraction', 0.25), 0.25)
     
     # Get sports games data (real or demo depending on configuration)
-    # Get bot's sport preference using helper function
-    bot_sport = get_bot_sport(bot_data)
+    # Get investor's sport preference using helper function
+    investor_sport = get_investor_sport(investor_data)
     
-    all_games = get_sports_games_data(bot_sport, max_picks * 2)  # Get more than needed for filtering
+    all_games = get_sports_games_data(investor_sport, max_picks * 2)  # Get more than needed for filtering
     
     # Filter games based on +eV criteria
     for game in all_games:
@@ -1514,7 +1514,7 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
             # Calculate bet size using Kelly Criterion fraction
             optimal_fraction = (game['true_probability'] * game['odds'] - 1) / (game['odds'] - 1)
             bet_fraction = min(optimal_fraction * kelly_fraction, max_bet_pct / 100)
-            bet_amount = bot_data['current_balance'] * bet_fraction
+            bet_amount = investor_data['current_balance'] * bet_fraction
             
             potential_payout = bet_amount * game['odds']
             
@@ -1537,7 +1537,7 @@ def generate_expected_value_picks(strategy_data, bot_data, max_picks):
     
     return picks
 
-def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
+def generate_conservative_strategy_picks(strategy_data, investor_data, max_picks):
     """Generate conservative strategy picks with enhanced logic."""
     params = strategy_data.get('parameters', {})
     
@@ -1560,7 +1560,7 @@ def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
     max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 2.0), 2.0)
     max_odds = safe_float_extract(params.get('max_odds', 2.0), 2.0)
     
-    basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
+    basic_picks = generate_basic_strategy_picks(investor_data, max_picks)
     
     # Filter and adjust for conservative parameters
     conservative_picks = []
@@ -1571,7 +1571,7 @@ def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
             # Reduce bet size for conservative approach
             pick['recommended_amount'] = min(
                 pick['recommended_amount'], 
-                bot_data['current_balance'] * (max_bet_pct / 100)
+                investor_data['current_balance'] * (max_bet_pct / 100)
             )
             pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
             pick['strategy_reason'] = f"Conservative: {pick['confidence']}% confidence, Low odds"
@@ -1579,7 +1579,7 @@ def generate_conservative_strategy_picks(strategy_data, bot_data, max_picks):
     
     return conservative_picks
 
-def generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks):
+def generate_aggressive_strategy_picks(strategy_data, investor_data, max_picks):
     """Generate aggressive strategy picks with enhanced logic."""
     params = strategy_data.get('parameters', {})
     
@@ -1601,19 +1601,19 @@ def generate_aggressive_strategy_picks(strategy_data, bot_data, max_picks):
     min_confidence = safe_float_extract(params.get('min_confidence', 60), 60)
     max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 5.0), 5.0)
     
-    basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
+    basic_picks = generate_basic_strategy_picks(investor_data, max_picks)
     
     # Adjust for aggressive parameters
     for pick in basic_picks:
         if pick['confidence'] >= min_confidence:
             # Increase bet size for aggressive approach
-            pick['recommended_amount'] = bot_data['current_balance'] * (max_bet_pct / 100)
+            pick['recommended_amount'] = investor_data['current_balance'] * (max_bet_pct / 100)
             pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
             pick['strategy_reason'] = f"Aggressive: {pick['confidence']}% confidence, High stakes"
     
     return basic_picks
 
-def generate_value_hunting_picks(strategy_data, bot_data, max_picks):
+def generate_value_hunting_picks(strategy_data, investor_data, max_picks):
     """Generate value hunting strategy picks."""
     params = strategy_data.get('parameters', {})
     
@@ -1635,7 +1635,7 @@ def generate_value_hunting_picks(strategy_data, bot_data, max_picks):
     min_odds_edge = safe_float_extract(params.get('min_odds_edge', 5.0), 5.0)
     max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 3.5), 3.5)
     
-    picks = generate_basic_strategy_picks(bot_data, max_picks)
+    picks = generate_basic_strategy_picks(investor_data, max_picks)
     
     # Add value hunting logic - simulate finding better odds
     for pick in picks:
@@ -1644,13 +1644,13 @@ def generate_value_hunting_picks(strategy_data, bot_data, max_picks):
         odds_edge = ((pick['odds'] - market_average) / market_average) * 100
         
         if odds_edge >= min_odds_edge:
-            pick['recommended_amount'] = bot_data['current_balance'] * (max_bet_pct / 100)
+            pick['recommended_amount'] = investor_data['current_balance'] * (max_bet_pct / 100)
             pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
             pick['strategy_reason'] = f"Value: {odds_edge:.1f}% better than market average"
     
     return picks
 
-def generate_arbitrage_picks(strategy_data, bot_data, max_picks):
+def generate_arbitrage_picks(strategy_data, investor_data, max_picks):
     """Generate arbitrage strategy picks."""
     params = strategy_data.get('parameters', {})
     
@@ -1686,7 +1686,7 @@ def generate_arbitrage_picks(strategy_data, bot_data, max_picks):
     
     if arbitrage_opportunity['arbitrage_profit'] >= min_profit:
         # Calculate optimal bet distribution
-        total_investment = bot_data['current_balance'] * 0.10  # 10% for arbitrage
+        total_investment = investor_data['current_balance'] * 0.10  # 10% for arbitrage
         
         pick = {
             'teams': arbitrage_opportunity['teams'],
@@ -1702,7 +1702,7 @@ def generate_arbitrage_picks(strategy_data, bot_data, max_picks):
     
     return arbitrage_picks
 
-def generate_basic_strategy_picks(bot_data, max_picks):
+def generate_basic_strategy_picks(investor_data, max_picks):
     """Generate basic strategy picks - simple random selection with some logic."""
     picks = []
     
@@ -1715,12 +1715,12 @@ def generate_basic_strategy_picks(bot_data, max_picks):
         {'teams': 'Yankees vs Red Sox', 'sport': 'MLB', 'odds': 1.75, 'bet_type': 'Moneyline'},
     ]
     
-    # Filter by bot's preferred sport if specified
-    # Get bot's sport preference using helper function
-    bot_sport = get_bot_sport(bot_data, default=None)
+    # Filter by investor's preferred sport if specified
+    # Get investor's sport preference using helper function
+    investor_sport = get_investor_sport(investor_data, default=None)
     
-    if bot_sport and bot_sport != 'All':
-        filtered_games = [g for g in demo_games if g['sport'] == bot_sport]
+    if investor_sport and investor_sport != 'All':
+        filtered_games = [g for g in demo_games if g['sport'] == investor_sport]
         if filtered_games:
             demo_games = filtered_games
     
@@ -1729,7 +1729,7 @@ def generate_basic_strategy_picks(bot_data, max_picks):
     selected_games = random.sample(demo_games, min(len(demo_games), max_picks))
     
     for game in selected_games:
-        bet_amount = bot_data['current_balance'] * (bot_data['bet_percentage'] / 100)
+        bet_amount = investor_data['current_balance'] * (investor_data['bet_percentage'] / 100)
         potential_payout = bet_amount * game['odds']
         
         pick = {
@@ -1745,13 +1745,13 @@ def generate_basic_strategy_picks(bot_data, max_picks):
     
     return picks
 
-def generate_recovery_strategy_picks(bot_data, max_picks):
+def generate_recovery_strategy_picks(investor_data, max_picks):
     """Generate recovery strategy picks - more aggressive to recover losses."""
-    basic_picks = generate_basic_strategy_picks(bot_data, max_picks)
+    basic_picks = generate_basic_strategy_picks(investor_data, max_picks)
     
-    # If bot is down, increase bet amounts and focus on higher odds
-    current_balance = bot_data.get('current_balance', 0)
-    starting_balance = bot_data.get('starting_balance', current_balance)
+    # If investor is down, increase bet amounts and focus on higher odds
+    current_balance = investor_data.get('current_balance', 0)
+    starting_balance = investor_data.get('starting_balance', current_balance)
     
     if current_balance < starting_balance:
         # Increase bet percentage for recovery
@@ -2152,29 +2152,29 @@ def get_investment_stats():
         print(f"Error fetching investment stats: {e}")
         return jsonify({'success': False, 'message': f'Failed to fetch stats: {e}'}), 500
 
-@app.route('/api/bot-recommendations', methods=['GET'])
-def get_bot_recommendations():
-    """Get bot recommendations for current investment opportunities"""
+@app.route('/api/investor-recommendations', methods=['GET'])
+def get_investor_recommendations():
+    """Get investor recommendations for current investment opportunities"""
     user_id = request.args.get('user_id', 'anonymous')
     
     try:
         # In demo mode, generate mock recommendations
         if demo_mode or not db:
-            recommendations = generate_demo_bot_recommendations()
+            recommendations = generate_demo_investor_recommendations()
             return jsonify({
                 'success': True,
                 'recommendations': recommendations,
                 'demo_mode': True
             }), 200
         
-        # Get user's bots
+        # Get user's investors
         collections = get_user_collections(user_id)
         if not collections:
             return jsonify({'success': False, 'message': 'Database not available'}), 500
         
         # Use real investor recommendations in production mode
         try:
-            recommendations = generate_real_bot_recommendations(user_id)
+            recommendations = generate_real_investor_recommendations(user_id)
             return jsonify({
                 'success': True,
                 'recommendations': recommendations,
@@ -2184,7 +2184,7 @@ def get_bot_recommendations():
         except Exception as real_error:
             logger.warning(f"Failed to generate real recommendations, falling back to demo: {real_error}")
             # Fallback to demo recommendations if real data fails
-            recommendations = generate_demo_bot_recommendations()
+            recommendations = generate_demo_investor_recommendations()
             return jsonify({
                 'success': True,
                 'recommendations': recommendations,
@@ -2194,22 +2194,22 @@ def get_bot_recommendations():
             }), 200
         
     except Exception as e:
-        print(f"Error getting bot recommendations: {e}")
+        print(f"Error getting investor recommendations: {e}")
         return jsonify({'success': False, 'message': f'Failed to get recommendations: {str(e)}'}), 500
 
-def generate_demo_bot_recommendations():
+def generate_demo_investor_recommendations():
     """
     [MOCK] FAKE BOT RECOMMENDATIONS GENERATOR [MOCK]
-    Generate demo bot recommendations for testing - NOT REAL BOTS OR MONEY
-    All bots, balances, and recommendations are fake for demonstration only
+    Generate demo investor recommendations for testing - NOT REAL BOTS OR MONEY
+    All investors, balances, and recommendations are fake for demonstration only
     """
     print("[DEMO] GENERATING FAKE INVESTOR RECOMMENDATIONS for demo purposes")
     import random
     
-    # Demo bots with different characteristics
-    demo_bots = [
+    # Demo investors with different characteristics
+    demo_investors = [
         {
-            'id': 'demo_bot_1',
+            'id': 'demo_investor_1',
             'name': 'Value Hunter',
             'strategy': 'Finds undervalued bets',
             'confidence_style': 'conservative',  # 60-75% confidence range
@@ -2217,7 +2217,7 @@ def generate_demo_bot_recommendations():
             'color': '#10B981'  # green
         },
         {
-            'id': 'demo_bot_2', 
+            'id': 'demo_investor_2', 
             'name': 'Safe Bet',
             'strategy': 'Low risk, steady gains',
             'confidence_style': 'safe',  # 70-85% confidence range
@@ -2225,7 +2225,7 @@ def generate_demo_bot_recommendations():
             'color': '#3B82F6'  # blue
         },
         {
-            'id': 'demo_bot_3',
+            'id': 'demo_investor_3',
             'name': 'High Roller',
             'strategy': 'High risk, high reward',
             'confidence_style': 'aggressive',  # 55-90% confidence range
@@ -2254,14 +2254,14 @@ def generate_demo_bot_recommendations():
     for game in demo_games:
         game_recommendations = []
         
-        for bot in demo_bots:
-            # Each bot might recommend different markets/selections
-            if random.random() < 0.7:  # 70% chance bot has a recommendation
+        for investor in demo_investors:
+            # Each investor might recommend different markets/selections
+            if random.random() < 0.7:  # 70% chance investor has a recommendation
                 
-                # Determine confidence based on bot's style
-                if bot['confidence_style'] == 'conservative':
+                # Determine confidence based on investor's style
+                if investor['confidence_style'] == 'conservative':
                     confidence = random.randint(60, 75)
-                elif bot['confidence_style'] == 'safe':
+                elif investor['confidence_style'] == 'safe':
                     confidence = random.randint(70, 85)
                 else:  # aggressive
                     confidence = random.randint(55, 90)
@@ -2284,17 +2284,17 @@ def generate_demo_bot_recommendations():
                 recommended_amount = round((demo_balance * bet_percentage / 100), 2)
                 
                 recommendation = {
-                    'bot_id': bot['id'],
-                    'bot_name': bot['name'],
-                    'bot_strategy': bot['strategy'],
-                    'bot_color': bot['color'],
+                    'investor_id': investor['id'],
+                    'investor_name': investor['name'],
+                    'investor_strategy': investor['strategy'],
+                    'investor_color': investor['color'],
                     'sportsbook': selected_sportsbook,
                     'market_key': selected_market['key'],
                     'market_name': selected_market['name'],
                     'selection': selected_selection,
                     'confidence': confidence,
                     'recommended_amount': recommended_amount,
-                    'reasoning': f"{bot['strategy']} - {confidence}% confidence",
+                    'reasoning': f"{investor['strategy']} - {confidence}% confidence",
                     'status': 'recommended'  # vs 'placed'
                 }
                 
@@ -2304,11 +2304,11 @@ def generate_demo_bot_recommendations():
     
     return recommendations
 
-def generate_real_bot_recommendations(user_id):
+def generate_real_investor_recommendations(user_id):
     """
     [REAL] REAL BOT RECOMMENDATIONS GENERATOR [REAL]
     Generate real investor recommendations using actual user investors and live sports data
-    Uses real bots, strategies, and current sports games
+    Uses real investors, strategies, and current sports games
     """
     print("[BOT_RECS] GENERATING REAL INVESTOR RECOMMENDATIONS using live data")
     logger.info(f"Generating real investor recommendations for user {user_id}")
@@ -2317,36 +2317,36 @@ def generate_real_bot_recommendations(user_id):
     
     try:
         # 1. Get user's active investors from the database
-        user_bots = []
-        if db and bots_collection:
+        user_investors = []
+        if db and investors_collection:
             try:
-                # Get bots from Firestore
-                bots_ref = bots_collection.where('created_by', '==', user_id).where('active_status', '==', 'RUNNING').stream()
-                for bot_doc in bots_ref:
-                    bot_data = bot_doc.to_dict()
-                    bot_data['bot_id'] = bot_doc.id
-                    user_bots.append(bot_data)
+                # Get investors from Firestore
+                investors_ref = investors_collection.where('created_by', '==', user_id).where('active_status', '==', 'RUNNING').stream()
+                for investor_doc in investors_ref:
+                    investor_data = investor_doc.to_dict()
+                    investor_data['investor_id'] = investor_doc.id
+                    user_investors.append(investor_data)
                     
-                logger.info(f"Found {len(user_bots)} active investors for user {user_id}")
+                logger.info(f"Found {len(user_investors)} active investors for user {user_id}")
             except Exception as e:
                 logger.error(f"Failed to fetch user investors from Firestore: {e}")
                 
         # Also try to get from data service if available
         try:
             from data_service import data_service
-            service_bots = data_service.list_bots({'created_by': user_id, 'active_status': 'RUNNING'})
-            for bot in service_bots:
-                user_bots.append(bot.to_dict())
-            logger.info(f"Found additional {len(service_bots)} bots from data service")
+            service_investors = data_service.list_investors({'created_by': user_id, 'active_status': 'RUNNING'})
+            for investor in service_investors:
+                user_investors.append(investor.to_dict())
+            logger.info(f"Found additional {len(service_investors)} investors from data service")
         except Exception as e:
             logger.debug(f"Data service not available or failed: {e}")
         
-        # If no real bots found, create some sample active investors
-        if not user_bots:
+        # If no real investors found, create some sample active investors
+        if not user_investors:
             logger.info("No active investors found, creating sample active investors for demonstration")
-            user_bots = [
+            user_investors = [
                 {
-                    'bot_id': f'real_bot_{user_id}_1',
+                    'investor_id': f'real_investor_{user_id}_1',
                     'name': 'NBA Value Finder',
                     'strategy': 'Conservative',
                     'assigned_strategy_id': '1',  # Conservative strategy ID
@@ -2357,7 +2357,7 @@ def generate_real_bot_recommendations(user_id):
                     'risk_management': {'max_bet_percentage': 2.5, 'minimum_confidence': 55.0}
                 },
                 {
-                    'bot_id': f'real_bot_{user_id}_2',
+                    'investor_id': f'real_investor_{user_id}_2',
                     'name': 'Conservative Sports',
                     'strategy': 'Conservative',
                     'assigned_strategy_id': '1',  # Conservative strategy ID
@@ -2371,8 +2371,8 @@ def generate_real_bot_recommendations(user_id):
         
         # 2. Get current sports games with real data
         sports_to_check = set()
-        for bot in user_bots:
-            sport = get_bot_sport(bot)
+        for investor in user_investors:
+            sport = get_investor_sport(investor)
             sports_to_check.add(sport)
         
         # Default to NBA if no sports specified
@@ -2399,14 +2399,14 @@ def generate_real_bot_recommendations(user_id):
             game_id = game.get('id', f"game_{game.get('teams', 'unknown')}")
             game_recommendations = []
             
-            # Check each bot against this game
-            for bot in user_bots:
+            # Check each investor against this game
+            for investor in user_investors:
                 try:
-                    recommendation = _generate_bot_recommendation_for_game(bot, game)
+                    recommendation = _generate_investor_recommendation_for_game(investor, game)
                     if recommendation:
                         game_recommendations.append(recommendation)
                 except Exception as e:
-                    logger.error(f"Failed to generate recommendation for investor {bot.get('bot_id', 'unknown')}: {e}")
+                    logger.error(f"Failed to generate recommendation for investor {investor.get('investor_id', 'unknown')}: {e}")
             
             if game_recommendations:
                 recommendations[game_id] = game_recommendations
@@ -2418,26 +2418,26 @@ def generate_real_bot_recommendations(user_id):
         logger.error(f"Failed to generate real investor recommendations: {e}")
         raise e
 
-def _generate_bot_recommendation_for_game(bot, game):
+def _generate_investor_recommendation_for_game(investor, game):
     """
-    Generate a specific recommendation for a bot and game combination
+    Generate a specific recommendation for a investor and game combination
     """
     try:
-        # Get bot preferences
-        bot_sport = get_bot_sport(bot, default=None)
+        # Get investor preferences
+        investor_sport = get_investor_sport(investor, default=None)
         game_sport = game.get('sport', 'NBA')
         
-        # Skip if bot doesn't match this sport
-        if bot_sport and bot_sport != game_sport:
+        # Skip if investor doesn't match this sport
+        if investor_sport and investor_sport != game_sport:
             return None
         
-        # Get bot risk management settings
-        risk_mgmt = bot.get('risk_management', {})
+        # Get investor risk management settings
+        risk_mgmt = investor.get('risk_management', {})
         min_confidence = risk_mgmt.get('minimum_confidence', 60.0)
-        max_bet_percentage = risk_mgmt.get('max_bet_percentage', bot.get('bet_percentage', 2.0))
+        max_bet_percentage = risk_mgmt.get('max_bet_percentage', investor.get('bet_percentage', 2.0))
         
         # Calculate confidence based on game data
-        # This would normally use the bot's ML model, but for now we'll use game metrics
+        # This would normally use the investor's ML model, but for now we'll use game metrics
         base_confidence = 60.0  # Start higher to ensure recommendations are generated
         
         # Adjust confidence based on game odds and expected value
@@ -2464,12 +2464,12 @@ def _generate_bot_recommendation_for_game(bot, game):
         confidence = base_confidence + random.uniform(-3, 7)  # Slightly bias upward
         confidence = max(50, min(95, confidence))  # Clamp between 50-95%
         
-        # Skip if confidence is below bot's minimum
+        # Skip if confidence is below investor's minimum
         if confidence < min_confidence:
             return None
         
         # Calculate bet amount
-        current_balance = bot.get('current_balance', 1000.0)
+        current_balance = investor.get('current_balance', 1000.0)
         bet_amount = current_balance * (max_bet_percentage / 100)
         
         # Determine which market to bet on
@@ -2507,10 +2507,10 @@ def _generate_bot_recommendation_for_game(bot, game):
         selected_sportsbook = random.choice(sportsbooks)
         
         recommendation = {
-            'bot_id': bot['bot_id'],
-            'bot_name': bot.get('name', 'Unknown Bot'),
-            'bot_strategy': bot.get('strategy', 'Unknown Strategy'),
-            'bot_color': bot.get('color', '#3B82F6'),  # Default blue
+            'investor_id': investor['investor_id'],
+            'investor_name': investor.get('name', 'Unknown Investor'),
+            'investor_strategy': investor.get('strategy', 'Unknown Strategy'),
+            'investor_color': investor.get('color', '#3B82F6'),  # Default blue
             'sportsbook': selected_sportsbook,
             'market_key': selected_market.lower(),
             'market_name': selected_market,
@@ -2519,7 +2519,7 @@ def _generate_bot_recommendation_for_game(bot, game):
             'confidence': round(confidence, 1),
             'recommended_amount': round(bet_amount, 2),
             'potential_payout': round(potential_payout, 2),
-            'reasoning': f"{bot.get('strategy', 'Bot strategy')} - {confidence:.1f}% confidence, EV: {game.get('expected_value', 0):.1f}%",
+            'reasoning': f"{investor.get('strategy', 'Investor strategy')} - {confidence:.1f}% confidence, EV: {game.get('expected_value', 0):.1f}%",
             'status': 'recommended',
             'real_data': True,
             'game_sport': game_sport,
@@ -2575,35 +2575,35 @@ def generate_demo_strategy_picks(strategy_id):
     
     return picks
 
-def generate_real_strategy_picks(strategy_data, bot_data, max_picks):
+def generate_real_strategy_picks(strategy_data, investor_data, max_picks):
     """
     [REAL] REAL STRATEGY PICKS GENERATOR [REAL]
-    Generate real strategy picks using actual sports data and bot configuration
+    Generate real strategy picks using actual sports data and investor configuration
     """
     logger.info(f"Generating real strategy picks for strategy {strategy_data.get('name', 'unknown')}")
     
     try:
-        # Get bot's sport preference using helper function
-        bot_sport = get_bot_sport(bot_data)
+        # Get investor's sport preference using helper function
+        investor_sport = get_investor_sport(investor_data)
         
-        # Get real games data for the bot's sport
-        real_games = get_sports_games_data(bot_sport, max_picks * 2)  # Get more than needed for filtering
+        # Get real games data for the investor's sport
+        real_games = get_sports_games_data(investor_sport, max_picks * 2)  # Get more than needed for filtering
         
         if not real_games:
-            logger.warning(f"No real games available for {bot_sport}, falling back to demo")
-            raise Exception(f"No real games available for {bot_sport}")
+            logger.warning(f"No real games available for {investor_sport}, falling back to demo")
+            raise Exception(f"No real games available for {investor_sport}")
         
         # Generate picks based on strategy type
         strategy_type = strategy_data.get('type', 'basic')
         
         if strategy_type == 'expected_value':
-            picks = generate_real_expected_value_picks(strategy_data, bot_data, real_games, max_picks)
+            picks = generate_real_expected_value_picks(strategy_data, investor_data, real_games, max_picks)
         elif strategy_type == 'conservative':
-            picks = generate_real_conservative_picks(strategy_data, bot_data, real_games, max_picks)
+            picks = generate_real_conservative_picks(strategy_data, investor_data, real_games, max_picks)
         elif strategy_type == 'aggressive':
-            picks = generate_real_aggressive_picks(strategy_data, bot_data, real_games, max_picks)
+            picks = generate_real_aggressive_picks(strategy_data, investor_data, real_games, max_picks)
         else:
-            picks = generate_real_basic_picks(strategy_data, bot_data, real_games, max_picks)
+            picks = generate_real_basic_picks(strategy_data, investor_data, real_games, max_picks)
         
         # Add real data flag to all picks
         for pick in picks:
@@ -2617,7 +2617,7 @@ def generate_real_strategy_picks(strategy_data, bot_data, max_picks):
         logger.error(f"Failed to generate real strategy picks: {e}")
         raise e
 
-def generate_real_expected_value_picks(strategy_data, bot_data, games, max_picks):
+def generate_real_expected_value_picks(strategy_data, investor_data, games, max_picks):
     """Generate +EV picks using real game data"""
     picks = []
     
@@ -2651,7 +2651,7 @@ def generate_real_expected_value_picks(strategy_data, bot_data, games, max_picks
         confidence = game.get('true_probability', 0.5) * 100
         
         if ev >= min_ev and confidence >= min_confidence:
-            bet_amount = bot_data['current_balance'] * (bot_data.get('bet_percentage', 2.0) / 100)
+            bet_amount = investor_data['current_balance'] * (investor_data.get('bet_percentage', 2.0) / 100)
             
             pick = {
                 'teams': game.get('teams', 'Unknown vs Unknown'),
@@ -2669,7 +2669,7 @@ def generate_real_expected_value_picks(strategy_data, bot_data, games, max_picks
     
     return picks
 
-def generate_real_conservative_picks(strategy_data, bot_data, games, max_picks):
+def generate_real_conservative_picks(strategy_data, investor_data, games, max_picks):
     """Generate conservative picks using real game data"""
     picks = []
     
@@ -2685,7 +2685,7 @@ def generate_real_conservative_picks(strategy_data, bot_data, games, max_picks):
         odds = game.get('odds', 2.0)
         
         if confidence >= min_confidence and odds <= max_odds:
-            bet_amount = bot_data['current_balance'] * (bot_data.get('bet_percentage', 1.5) / 100)
+            bet_amount = investor_data['current_balance'] * (investor_data.get('bet_percentage', 1.5) / 100)
             
             pick = {
                 'teams': game.get('teams', 'Unknown vs Unknown'),
@@ -2702,7 +2702,7 @@ def generate_real_conservative_picks(strategy_data, bot_data, games, max_picks):
     
     return picks
 
-def generate_real_aggressive_picks(strategy_data, bot_data, games, max_picks):
+def generate_real_aggressive_picks(strategy_data, investor_data, games, max_picks):
     """Generate aggressive picks using real game data"""
     picks = []
     
@@ -2717,7 +2717,7 @@ def generate_real_aggressive_picks(strategy_data, bot_data, games, max_picks):
         confidence = game.get('true_probability', 0.5) * 100
         
         if confidence >= min_confidence:
-            bet_amount = bot_data['current_balance'] * (bot_data.get('bet_percentage', 3.0) / 100) * bet_multiplier
+            bet_amount = investor_data['current_balance'] * (investor_data.get('bet_percentage', 3.0) / 100) * bet_multiplier
             
             pick = {
                 'teams': game.get('teams', 'Unknown vs Unknown'),
@@ -2734,12 +2734,12 @@ def generate_real_aggressive_picks(strategy_data, bot_data, games, max_picks):
     
     return picks
 
-def generate_real_basic_picks(strategy_data, bot_data, games, max_picks):
+def generate_real_basic_picks(strategy_data, investor_data, games, max_picks):
     """Generate basic picks using real game data"""
     picks = []
     
     for game in games[:max_picks]:
-        bet_amount = bot_data['current_balance'] * (bot_data.get('bet_percentage', 2.0) / 100)
+        bet_amount = investor_data['current_balance'] * (investor_data.get('bet_percentage', 2.0) / 100)
         confidence = game.get('true_probability', 0.5) * 100
         
         pick = {
@@ -4107,17 +4107,17 @@ def create_model_based_strategy():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Failed to create strategy: {e}'}), 500
 
-@app.route('/api/bots/<bot_id>/assign-model', methods=['POST'])
-def assign_model_to_bot():
-    """Assign a trained model to a bot for recommendations and auto-detect sport"""
+@app.route('/api/investors/<investor_id>/assign-model', methods=['POST'])
+def assign_model_to_investor():
+    """Assign a trained model to a investor for recommendations and auto-detect sport"""
     try:
         data = request.json
-        bot_id = data.get('bot_id')
+        investor_id = data.get('investor_id')
         model_id = data.get('model_id')
         user_id = data.get('user_id')
         
-        if not all([bot_id, model_id, user_id]):
-            return jsonify({'success': False, 'message': 'Bot ID, Model ID, and User ID required'}), 400
+        if not all([investor_id, model_id, user_id]):
+            return jsonify({'success': False, 'message': 'Investor ID, Model ID, and User ID required'}), 400
         
         if not db:
             return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
@@ -4148,11 +4148,11 @@ def assign_model_to_bot():
                     logger.info(f"Auto-detected sport '{detected_sport}' from model ID pattern")
                     break
         
-        # Update bot configuration to use the model
-        bot_ref = bots_collection.document(bot_id)
-        bot_doc = bot_ref.get()
+        # Update investor configuration to use the model
+        investor_ref = investors_collection.document(investor_id)
+        investor_doc = investor_ref.get()
         
-        if not bot_doc.exists:
+        if not investor_doc.exists:
             return jsonify({'success': False, 'message': 'Investor not found'}), 404
         
         # Prepare update data
@@ -4168,16 +4168,16 @@ def assign_model_to_bot():
             update_data['sport_auto_detected'] = True
             update_data['sport_detected_from'] = 'model_metadata' if model_metadata else 'model_id_pattern'
         
-        bot_ref.update(update_data)
+        investor_ref.update(update_data)
         
-        response_message = f'Model {model_id} assigned to investor {bot_id}'
+        response_message = f'Model {model_id} assigned to investor {investor_id}'
         if detected_sport:
             response_message += f' and sport auto-detected as {detected_sport}'
         
         return jsonify({
             'success': True,
             'message': response_message,
-            'bot_id': bot_id,
+            'investor_id': investor_id,
             'model_id': model_id,
             'auto_detected_sport': detected_sport,
             'sport_detection_source': 'model_metadata' if model_metadata else ('model_id_pattern' if detected_sport else None)
@@ -4187,9 +4187,9 @@ def assign_model_to_bot():
         logger.error(f"Failed to assign model to investor: {e}")
         return jsonify({'success': False, 'message': f'Failed to assign model: {e}'}), 500
 
-@app.route('/api/bots/<bot_id>/model-recommendations', methods=['GET'])
-def get_bot_model_recommendations(bot_id):
-    """Get ML model-powered recommendations for a bot"""
+@app.route('/api/investors/<investor_id>/model-recommendations', methods=['GET'])
+def get_investor_model_recommendations(investor_id):
+    """Get ML model-powered recommendations for a investor"""
     try:
         user_id = request.args.get('user_id')
         
@@ -4199,15 +4199,15 @@ def get_bot_model_recommendations(bot_id):
         if not db:
             return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
         
-        # Get bot data
-        bot_ref = bots_collection.document(bot_id)
-        bot_doc = bot_ref.get()
+        # Get investor data
+        investor_ref = investors_collection.document(investor_id)
+        investor_doc = investor_ref.get()
         
-        if not bot_doc.exists:
+        if not investor_doc.exists:
             return jsonify({'success': False, 'message': 'Investor not found'}), 404
         
-        bot_data = bot_doc.to_dict()
-        assigned_model_id = bot_data.get('assigned_model_id')
+        investor_data = investor_doc.to_dict()
+        assigned_model_id = investor_data.get('assigned_model_id')
         
         if not assigned_model_id:
             return jsonify({
@@ -4257,9 +4257,9 @@ def get_bot_model_recommendations(bot_id):
             if 'error' not in prediction:
                 confidence = prediction.get('confidence', 0.5) * 100
                 
-                # Only recommend if confidence meets bot's threshold
-                if confidence >= bot_data.get('confidence_threshold', 60):
-                    bet_amount = bot_data.get('current_balance', 1000) * (bot_data.get('bet_percentage', 2.0) / 100)
+                # Only recommend if confidence meets investor's threshold
+                if confidence >= investor_data.get('confidence_threshold', 60):
+                    bet_amount = investor_data.get('current_balance', 1000) * (investor_data.get('bet_percentage', 2.0) / 100)
                     
                     recommendations.append({
                         'game': game,
@@ -4276,7 +4276,7 @@ def get_bot_model_recommendations(bot_id):
         return jsonify({
             'success': True,
             'recommendations': recommendations,
-            'bot_id': bot_id,
+            'investor_id': investor_id,
             'model_id': assigned_model_id,
             'total_recommendations': len(recommendations)
         }), 200
@@ -4520,10 +4520,10 @@ def validate_schema():
             except Exception as e:
                 validation_issues.append(f"Schema parsing error: {str(e)}")
                 
-        elif schema_type == 'bot':
+        elif schema_type == 'investor':
             try:
-                bot = BotSchema.from_dict(schema_data)
-                validation_issues = SchemaValidator.validate_bot(bot)
+                investor = BotSchema.from_dict(schema_data)
+                validation_issues = SchemaValidator.validate_investor(investor)
             except Exception as e:
                 validation_issues.append(f"Schema parsing error: {str(e)}")
                 
@@ -4569,9 +4569,9 @@ def get_schema_info():
                         'market_types': [market.value for market in MarketType]
                     }
                 },
-                'bot': {
-                    'description': 'Automated investor/bot schema with risk management',
-                    'required_fields': ['bot_id', 'name', 'current_balance', 'created_by'],
+                'investor': {
+                    'description': 'Automated investor/investor schema with risk management',
+                    'required_fields': ['investor_id', 'name', 'current_balance', 'created_by'],
                     'enums': {
                         'active_status': [status.value for status in InvestorStatus],
                         'sport_filter': [sport.value for sport in Sport]
