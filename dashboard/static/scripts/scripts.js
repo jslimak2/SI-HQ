@@ -291,8 +291,8 @@ function updateStrategySelects() {
 }
 
 function displayBots() {
-    const activeBots = bots.filter(bot => bot.status === 'running');
-    const inactiveBots = bots.filter(bot => bot.status !== 'running');
+    const activeBots = bots.filter(bot => bot.active_status === 'RUNNING' || bot.status === 'running');
+    const inactiveBots = bots.filter(bot => bot.active_status !== 'RUNNING' && bot.status !== 'running');
 
     function createBotTable(container, botsList, title, showControls = true) {
         if (botsList.length === 0) {
@@ -316,16 +316,18 @@ function displayBots() {
             </thead>
             <tbody class="divide-y divide-gray-200 post9-card">
                 ${botsList.map(bot => {
-                    const strategy = strategies.find(s => s.id === bot.strategy_id);
+                    const strategy = strategies.find(s => s.id === bot.assigned_strategy_id || s.id === bot.strategy_id);
                     const strategyName = strategy ? strategy.name : 'Unknown';
                     const profitLoss = (bot.current_balance - bot.starting_balance).toFixed(2);
                     const profitLossClass = profitLoss >= 0 ? 'text-green-600' : 'text-red-600';
-                    const statusColor = bot.status === 'running' ? 'bg-blue-500' : 'bg-gray-500';
-                    const statusText = bot.status.charAt(0).toUpperCase() + bot.status.slice(1);
+                    const botStatus = bot.active_status || bot.status;
+                    const isRunning = botStatus === 'RUNNING' || botStatus === 'running';
+                    const statusColor = isRunning ? 'bg-blue-500' : 'bg-gray-500';
+                    const statusText = isRunning ? 'Running' : 'Stopped';
                     return `
                         <tr class="cursor-pointer post9-card" onclick="window.toggleBotWagers('${bot.id}')">
                             <td class="px-6 py-4 whitespace-nowrap font-semibold">${bot.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport_filter || bot.sport || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${strategyName}</td>
                             <td class="px-6 py-4 whitespace-nowrap">$${bot.current_balance.toFixed(2)}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${bot.bet_percentage}%</td>
@@ -335,7 +337,7 @@ function displayBots() {
                                 <button onclick="event.stopPropagation(); window.showBotDetails('${bot.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
                                 <button onclick="event.stopPropagation(); window.showBotHistory('${bot.id}')" class="text-blue-400 hover:text-blue-200 mx-1">History</button>
                                 <button onclick="event.stopPropagation(); window.showBotLog('${bot.id}')" class="text-gray-300 hover:text-gray-100 mx-1">Log</button>
-                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${bot.status}')" class="text-green-400 hover:text-green-200 mx-1">${bot.status === 'running' ? 'Stop' : 'Start'}</button>
+                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${botStatus}')" class="text-green-400 hover:text-green-200 mx-1">${isRunning ? 'Stop' : 'Start'}</button>
                                 <button onclick="event.stopPropagation(); window.deleteBot('${bot.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
                             </td>
                         </tr>
@@ -1092,11 +1094,22 @@ window.toggleBotWagers = function(botId) {
         
         // Auto-populate recommended investments when expanding investor details
         if (!wagersRow.classList.contains('hidden')) {
-            // Find the bot data to get strategy_id
+            // Find the bot data to get assigned_strategy_id
             const bot = bots.find(b => b.id === botId);
-            if (bot && bot.strategy_id) {
+            if (bot && bot.assigned_strategy_id) {
                 // Automatically trigger strategy picks
-                window.getStrategyPicks(botId, bot.strategy_id);
+                window.getStrategyPicks(botId, bot.assigned_strategy_id);
+            } else {
+                // If no strategy assigned, show appropriate message
+                const picksContent = document.getElementById(`picks-content-${botId}`);
+                if (picksContent) {
+                    picksContent.innerHTML = `
+                        <div class="text-center py-4 text-yellow-600">
+                            <div class="text-lg font-medium mb-2">No Strategy Assigned</div>
+                            <div class="text-sm">This investor needs a strategy to generate recommendations.</div>
+                        </div>
+                    `;
+                }
             }
         }
     }
