@@ -1236,6 +1236,18 @@ def get_strategy_picks(strategy_id):
     if not bot_id:
         return jsonify({'success': False, 'message': 'Bot ID is required.'}), 400
     
+    # Check if this is demo mode user (even when Firebase is available)
+    if user_id == 'demo-user' or bot_id.startswith('demo_bot_'):
+        # Handle demo mode data
+        demo_picks = generate_demo_strategy_picks(strategy_id)
+        return jsonify({
+            'success': True,
+            'picks': demo_picks,
+            'remaining_bets': 3,
+            'strategy_name': f'Demo Strategy {strategy_id}',
+            'demo_mode': True
+        })
+    
     try:
         # Get user-specific bot data
         bot_ref = db.collection(f'users/{user_id}/bots').document(bot_id)

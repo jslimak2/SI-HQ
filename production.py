@@ -7,6 +7,9 @@ import os
 import sys
 from pathlib import Path
 
+# Suppress TensorFlow oneDNN verbose messages
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 # Add the dashboard directory to Python path
 dashboard_dir = Path(__file__).parent / "dashboard"
 sys.path.insert(0, str(dashboard_dir))

@@ -862,8 +862,8 @@ window.showBotDetails = function(botId) {
     }
     
     // Populate the modal fields
-    document.getElementById('modal-bot-id').value = bot.id;
-    document.getElementById('modal-bot-name').textContent = bot.name;
+    document.getElementById('modal-investor-id').value = bot.id;
+    document.getElementById('modal-investor-name').textContent = bot.name;
     document.getElementById('modal-name').value = bot.name;
     document.getElementById('modal-balance').value = bot.current_balance;
     document.getElementById('modal-bet-percent').value = bot.bet_percentage;
