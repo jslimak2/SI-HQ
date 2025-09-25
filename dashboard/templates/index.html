@@ -1055,6 +1055,22 @@
             </div>
             
             <div id="system-status-content" style="display: none;">
+                <!-- Total Systems Summary -->
+                <div class="bg-gray-900 rounded-lg p-4 mb-6 border border-gray-700">
+                    <div class="text-center">
+                        <h3 class="text-lg font-semibold text-white mb-2">Systems Online</h3>
+                        <div class="flex justify-center items-center gap-4">
+                            <div class="text-3xl font-bold text-green-400">
+                                <span id="systems-online-count">0</span> / <span id="systems-total-count">0</span>
+                            </div>
+                            <div class="text-2xl font-bold text-gray-300">
+                                (<span id="systems-online-percentage">0</span>%)
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm mt-1">Systems currently operational</p>
+                    </div>
+                </div>
+                
                 <!-- Overall Status Summary -->
                 <div class="bg-gray-800 rounded-lg p-6 mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -4576,6 +4592,24 @@
                     modeText.textContent = 'Production Mode';
                 }
             }
+
+            // Calculate and update systems online summary
+            const features = status.features || {};
+            let onlineCount = 0;
+            let totalCount = 0;
+            
+            Object.values(features).forEach(feature => {
+                totalCount++;
+                if (feature.status === 'enabled' || feature.status === 'production') {
+                    onlineCount++;
+                }
+            });
+            
+            const onlinePercentage = totalCount > 0 ? Math.round((onlineCount / totalCount) * 100) : 0;
+            
+            document.getElementById('systems-online-count').textContent = onlineCount;
+            document.getElementById('systems-total-count').textContent = totalCount;
+            document.getElementById('systems-online-percentage').textContent = onlinePercentage;
 
             // Update counts
             document.getElementById('production-count').textContent = status.summary.production_features;
