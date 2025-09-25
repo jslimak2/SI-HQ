@@ -840,7 +840,7 @@
         
         <!-- Strategy Details Modal -->
         <div id="strategy-details-modal" class="modal">
-            <div class="modal-content post9-card max-w-3xl">
+            <div class="modal-content post9-card max-w-5xl">
                 <span class="modal-close" onclick="closeModal('strategy-details-modal')">&times;</span>
                 <div id="strategy-details-content">
                     <!-- Strategy details will be populated here -->
@@ -1990,9 +1990,9 @@
         </div>
     </div>
     
-    <div id="strategy-details-modal" class="modal">
-        <div class="modal-content max-w-2xl">
-            <span class="modal-close" onclick="window.closeModal('strategy-details-modal')">&times;</span>
+    <div id="strategy-edit-modal" class="modal">
+        <div class="modal-content max-w-4xl">
+            <span class="modal-close" onclick="window.closeModal('strategy-edit-modal')">&times;</span>
             <h2 class="text-2xl font-bold mb-4">Edit Strategy: <span id="strategy-modal-name"></span></h2>
             <form id="edit-strategy-form" class="space-y-4">
                 <input type="hidden" id="strategy-modal-id">
@@ -4296,7 +4296,7 @@
             document.getElementById('strategy-modal-description').value = strategyDescription || '';
             
             // Show the modal
-            showModal('strategy-details-modal');
+            showModal('strategy-edit-modal');
         }
         
         function saveStrategyChanges() {
@@ -4328,7 +4328,7 @@
                 updateStrategySelects();
                 
                 // Close the modal and show success message
-                closeModal('strategy-details-modal');
+                closeModal('strategy-edit-modal');
                 showMessage(`Strategy "${newName}" updated successfully.`, 'success');
                 
                 return true;

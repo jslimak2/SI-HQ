@@ -1358,6 +1358,7 @@ function displayStrategies() {
         return `
             <div class="bg-gradient-to-br ${cardColor} p-4 rounded-lg text-white relative group">
                 <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="event.stopPropagation(); window.showStrategyDetails('${strategy.type}')" class="text-white hover:text-gray-200 mx-1 text-sm" title="Show strategy details">?</button>
                     <button onclick="window.showStrategyEditModal('${strategy.id}')" class="text-white hover:text-gray-200 mx-1 text-sm">✏️</button>
                     <button onclick="window.deleteStrategy('${strategy.id}')" class="text-white hover:text-red-300 mx-1 text-sm">🗑️</button>
                 </div>
@@ -1477,11 +1478,17 @@ window.showBotDetails = function(botId) {
 };
 
 window.showStrategyEditModal = function(strategyId) {
-    // Convert strategyId to number for comparison (HTML attributes are strings)
-    const numericStrategyId = typeof strategyId === 'string' ? parseInt(strategyId, 10) : strategyId;
-    const strategy = strategies.find(s => s.id === numericStrategyId);
+    // Handle both string and numeric IDs - try both exact match and numeric conversion
+    let strategy = strategies.find(s => s.id === strategyId);
+    if (!strategy && typeof strategyId === 'string') {
+        // Try parsing as number for backward compatibility
+        const numericStrategyId = parseInt(strategyId, 10);
+        if (!isNaN(numericStrategyId)) {
+            strategy = strategies.find(s => s.id === numericStrategyId);
+        }
+    }
     if (!strategy) {
-        console.error('Strategy not found:', strategyId);
+        console.error('Strategy not found:', strategyId, 'Available strategies:', strategies.map(s => ({ id: s.id, name: s.name })));
         return;
     }
 
@@ -1521,7 +1528,7 @@ window.showStrategyEditModal = function(strategyId) {
     }
 
     // Show the modal
-    window.showModal('strategy-details-modal');
+    window.showModal('strategy-edit-modal');
 };
 
 window.showBotHistory = async function(botId) {
