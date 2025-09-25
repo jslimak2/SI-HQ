@@ -291,8 +291,8 @@ function updateStrategySelects() {
 }
 
 function displayBots() {
-    const activeBots = bots.filter(bot => bot.status === 'running');
-    const inactiveBots = bots.filter(bot => bot.status !== 'running');
+    const activeBots = bots.filter(bot => bot.active_status === 'RUNNING' || bot.status === 'running');
+    const inactiveBots = bots.filter(bot => bot.active_status !== 'RUNNING' && bot.status !== 'running');
 
     function createBotTable(container, botsList, title, showControls = true) {
         if (botsList.length === 0) {
@@ -316,16 +316,18 @@ function displayBots() {
             </thead>
             <tbody class="divide-y divide-gray-200 post9-card">
                 ${botsList.map(bot => {
-                    const strategy = strategies.find(s => s.id === bot.strategy_id);
+                    const strategy = strategies.find(s => s.id === bot.assigned_strategy_id || s.id === bot.strategy_id);
                     const strategyName = strategy ? strategy.name : 'Unknown';
                     const profitLoss = (bot.current_balance - bot.starting_balance).toFixed(2);
                     const profitLossClass = profitLoss >= 0 ? 'text-green-600' : 'text-red-600';
-                    const statusColor = bot.status === 'running' ? 'bg-blue-500' : 'bg-gray-500';
-                    const statusText = bot.status.charAt(0).toUpperCase() + bot.status.slice(1);
+                    const botStatus = bot.active_status || bot.status;
+                    const isRunning = botStatus === 'RUNNING' || botStatus === 'running';
+                    const statusColor = isRunning ? 'bg-blue-500' : 'bg-gray-500';
+                    const statusText = isRunning ? 'Running' : 'Stopped';
                     return `
                         <tr class="cursor-pointer post9-card" onclick="window.toggleBotWagers('${bot.id}')">
                             <td class="px-6 py-4 whitespace-nowrap font-semibold">${bot.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport_filter || bot.sport || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${strategyName}</td>
                             <td class="px-6 py-4 whitespace-nowrap">$${bot.current_balance.toFixed(2)}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${bot.bet_percentage}%</td>
@@ -335,7 +337,7 @@ function displayBots() {
                                 <button onclick="event.stopPropagation(); window.showBotDetails('${bot.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
                                 <button onclick="event.stopPropagation(); window.showBotHistory('${bot.id}')" class="text-blue-400 hover:text-blue-200 mx-1">History</button>
                                 <button onclick="event.stopPropagation(); window.showBotLog('${bot.id}')" class="text-gray-300 hover:text-gray-100 mx-1">Log</button>
-                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${bot.status}')" class="text-green-400 hover:text-green-200 mx-1">${bot.status === 'running' ? 'Stop' : 'Start'}</button>
+                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${botStatus}')" class="text-green-400 hover:text-green-200 mx-1">${isRunning ? 'Stop' : 'Start'}</button>
                                 <button onclick="event.stopPropagation(); window.deleteBot('${bot.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
                             </td>
                         </tr>
@@ -356,12 +358,10 @@ function displayBots() {
                                             : '<p class="text-gray-400">No open wagers</p>'
                                         }
                                     </div>
-                                    ${bot.strategy_id ? `
-                                        <div class="mt-4 pt-4 border-t border-gray-200">
-                                            <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
-                                            <div id="picks-content-${bot.id}" class="mt-2"></div>
-                                        </div>
-                                    ` : ''}
+                                    <div class="mt-4 pt-4 border-t border-gray-200">
+                                        <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
+                                        <div id="picks-content-${bot.id}" class="mt-2"></div>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -739,6 +739,578 @@ window.createFromTemplate = function(templateKey) {
     });
 };
 
+// Show detailed strategy explanation
+window.showStrategyDetails = function(strategyKey) {
+    const strategyDetails = {
+        'positive_ev': {
+            title: 'Expected Value (+eV) Strategy',
+            icon: '💰',
+            description: 'This strategy focuses on finding bets where the expected value is positive, meaning the potential profit outweighs the risk based on mathematical probability.',
+            howItWorks: [
+                'Calculates the true probability of an outcome using statistical models',
+                'Compares this to the implied probability from bookmaker odds',
+                'Only places bets when our calculated probability shows positive expected value',
+                'Uses Kelly Criterion for optimal bet sizing'
+            ],
+            parameters: [
+                { name: 'Minimum EV Threshold', value: '5%', description: 'Only bet when expected value exceeds this percentage' },
+                { name: 'Max Bet Size', value: '3%', description: 'Maximum percentage of bankroll to risk on single bet' },
+                { name: 'Confidence Filter', value: '65%', description: 'Minimum confidence level required for model predictions' }
+            ],
+            pros: [
+                'Mathematically sound approach to profitable betting',
+                'Long-term profit potential when odds are consistently mispriced',
+                'Disciplined approach reduces emotional betting'
+            ],
+            cons: [
+                'Requires accurate probability models',
+                'May have fewer betting opportunities',
+                'Short-term variance can be high'
+            ],
+            bestFor: 'Disciplined bettors who understand variance and want mathematically optimal betting'
+        },
+        'conservative': {
+            title: 'Conservative Strategy',
+            icon: '🛡️',
+            description: 'A risk-averse approach that prioritizes capital preservation with smaller bet sizes and higher confidence requirements.',
+            howItWorks: [
+                'Only bets on outcomes with very high confidence (75%+)',
+                'Prefers lower odds with higher probability of success',
+                'Uses smaller bet sizes to minimize downside risk',
+                'Implements strict stop-loss mechanisms'
+            ],
+            parameters: [
+                { name: 'Confidence Threshold', value: '75%', description: 'Minimum confidence required to place any bet' },
+                { name: 'Max Odds', value: '2.0 (+100)', description: 'Will not bet on odds higher than this' },
+                { name: 'Bet Size', value: '1-2%', description: 'Conservative percentage of bankroll per bet' },
+                { name: 'Stop Loss', value: '10%', description: 'Pause strategy if down this percentage' }
+            ],
+            pros: [
+                'Lower risk of significant losses',
+                'More predictable returns',
+                'Good for beginners or risk-averse investors',
+                'Steady, consistent growth potential'
+            ],
+            cons: [
+                'Lower profit potential',
+                'Fewer betting opportunities',
+                'May miss high-value bets due to strict criteria'
+            ],
+            bestFor: 'Risk-averse bettors, beginners, or those with smaller bankrolls who prioritize preservation over growth'
+        },
+        'aggressive': {
+            title: 'Aggressive Strategy',
+            icon: '🚀',
+            description: 'High-risk, high-reward approach that seeks maximum profit through larger bet sizes and more frequent betting opportunities.',
+            howItWorks: [
+                'Takes more betting opportunities with lower confidence thresholds',
+                'Uses larger bet sizes to maximize profit potential',
+                'Focuses on value bets even with moderate confidence',
+                'Actively seeks undervalued odds across all markets'
+            ],
+            parameters: [
+                { name: 'Confidence Threshold', value: '60%', description: 'Lower confidence requirement allows more bets' },
+                { name: 'Minimum Value', value: '3%', description: 'Minimum edge required to place bet' },
+                { name: 'Bet Size', value: '3-5%', description: 'Aggressive percentage of bankroll per bet' },
+                { name: 'Max Bets/Week', value: '10+', description: 'Higher betting frequency' }
+            ],
+            pros: [
+                'Higher profit potential',
+                'More betting opportunities',
+                'Can capitalize on market inefficiencies quickly',
+                'Faster bankroll growth when successful'
+            ],
+            cons: [
+                'Higher risk of significant losses',
+                'Greater bankroll volatility',
+                'Requires larger bankroll to handle swings',
+                'More susceptible to bad runs'
+            ],
+            bestFor: 'Experienced bettors with larger bankrolls who can handle volatility and want maximum growth potential'
+        },
+        'recovery': {
+            title: 'Loss Recovery Strategy',
+            icon: '🔄',
+            description: 'Designed to recover from losing streaks through calculated adjustments to bet sizing and selection criteria.',
+            howItWorks: [
+                'Monitors performance and adjusts strategy when losses occur',
+                'Gradually increases bet sizes to recover losses faster',
+                'Tightens selection criteria during losing streaks',
+                'Implements progressive betting systems safely'
+            ],
+            parameters: [
+                { name: 'Loss Trigger', value: '10%', description: 'Drawdown percentage that activates recovery mode' },
+                { name: 'Bet Size Increase', value: '50%', description: 'How much to increase bet sizes during recovery' },
+                { name: 'Recovery Target', value: '5%', description: 'Profit above break-even before returning to normal' },
+                { name: 'Max Recovery Bets', value: '5', description: 'Maximum consecutive recovery bets' }
+            ],
+            pros: [
+                'Systematic approach to handling losses',
+                'Can recover from drawdowns more quickly',
+                'Prevents emotional decision-making during tough periods',
+                'Built-in safeguards against excessive risk'
+            ],
+            cons: [
+                'Can amplify losses if recovery bets also lose',
+                'Requires discipline to follow system exactly',
+                'May encourage risky behavior',
+                'Complex to implement properly'
+            ],
+            bestFor: 'Experienced bettors who understand progressive betting risks and want systematic loss recovery'
+        },
+        'value_hunting': {
+            title: 'Value Hunter Strategy',
+            icon: '🎯',
+            description: 'Actively searches for the best odds across multiple sportsbooks to maximize profit on every bet.',
+            howItWorks: [
+                'Compares odds across multiple sportsbooks in real-time',
+                'Identifies significant discrepancies in market pricing',
+                'Places bets only when finding superior odds',
+                'Focuses on market inefficiencies and slow-moving lines'
+            ],
+            parameters: [
+                { name: 'Odds Advantage', value: '5%', description: 'Minimum odds advantage over market average' },
+                { name: 'Sportsbooks', value: '5+', description: 'Number of books to compare for best odds' },
+                { name: 'Line Movement', value: 'Track', description: 'Monitor for favorable line movements' },
+                { name: 'Market Depth', value: 'Deep', description: 'Prefer liquid markets with tight spreads' }
+            ],
+            pros: [
+                'Maximizes value on every bet placed',
+                'Takes advantage of market inefficiencies',
+                'Higher profit margins per bet',
+                'Reduces the edge needed from prediction models'
+            ],
+            cons: [
+                'Requires accounts at multiple sportsbooks',
+                'Time-intensive to monitor odds constantly',
+                'May miss betting opportunities waiting for best odds',
+                'Limited by account limits at different books'
+            ],
+            bestFor: 'Serious bettors with multiple sportsbook accounts who want to maximize every betting opportunity'
+        },
+        'arbitrage': {
+            title: 'Arbitrage Strategy',
+            icon: '⚖️',
+            description: 'Risk-free profit strategy that exploits price differences between sportsbooks by betting both sides of the same event.',
+            howItWorks: [
+                'Identifies price discrepancies for the same event across books',
+                'Calculates exact bet amounts to guarantee profit regardless of outcome',
+                'Places simultaneous bets on both sides of the market',
+                'Locks in guaranteed profit through mathematical precision'
+            ],
+            parameters: [
+                { name: 'Minimum Arbitrage', value: '1%', description: 'Minimum guaranteed profit percentage required' },
+                { name: 'Speed Requirement', value: 'Fast', description: 'Must execute bets quickly before odds change' },
+                { name: 'Book Limits', value: 'Monitor', description: 'Track betting limits across sportsbooks' },
+                { name: 'Calculation Precision', value: 'Exact', description: 'Precise bet sizing for guaranteed profit' }
+            ],
+            pros: [
+                'Guaranteed profit regardless of game outcome',
+                'No prediction skill required',
+                'Eliminates betting risk when executed properly',
+                'Consistent returns when opportunities exist'
+            ],
+            cons: [
+                'Opportunities are rare and brief',
+                'Requires significant capital for meaningful profits',
+                'Sportsbooks may limit accounts that arbitrage',
+                'High time investment for small profit margins'
+            ],
+            bestFor: 'Dedicated bettors with large bankrolls, multiple accounts, and time to monitor markets constantly'
+        }
+    };
+
+    const details = strategyDetails[strategyKey];
+    if (!details) return;
+
+    const content = document.getElementById('strategy-details-content');
+    content.innerHTML = `
+        <div class="text-center mb-6">
+            <div class="text-6xl mb-4">${details.icon}</div>
+            <h3 class="text-2xl font-bold text-white mb-2">${details.title}</h3>
+            <p class="text-gray-300">${details.description}</p>
+        </div>
+        
+        <div class="space-y-6">
+            <div class="bg-gray-700 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold text-blue-400 mb-3">How It Works</h4>
+                <ul class="space-y-2">
+                    ${details.howItWorks.map(item => `<li class="text-gray-300">• ${item}</li>`).join('')}
+                </ul>
+            </div>
+            
+            <div class="bg-gray-700 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold text-purple-400 mb-3">Key Parameters</h4>
+                <div class="space-y-3">
+                    ${details.parameters.map(param => `
+                        <div class="border-l-2 border-purple-400 pl-3">
+                            <div class="font-medium text-white">${param.name}: <span class="text-purple-300">${param.value}</span></div>
+                            <div class="text-sm text-gray-300">${param.description}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-green-900 bg-opacity-50 p-4 rounded-lg">
+                    <h4 class="text-lg font-semibold text-green-400 mb-3">Pros</h4>
+                    <ul class="space-y-1">
+                        ${details.pros.map(pro => `<li class="text-green-300 text-sm">✓ ${pro}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="bg-red-900 bg-opacity-50 p-4 rounded-lg">
+                    <h4 class="text-lg font-semibold text-red-400 mb-3">Cons</h4>
+                    <ul class="space-y-1">
+                        ${details.cons.map(con => `<li class="text-red-300 text-sm">⚠ ${con}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="bg-blue-900 bg-opacity-50 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold text-blue-400 mb-2">Best For</h4>
+                <p class="text-blue-300">${details.bestFor}</p>
+            </div>
+        </div>
+    `;
+
+    showModal('strategy-details-modal');
+};
+
+// Portfolio Analytics Functions
+let portfolioAnimationInterval = null;
+let currentWeek = 4;
+
+// Generate demo portfolio data for the last 4 weeks
+function generatePortfolioData() {
+    const investors = [
+        { name: 'NBA Value Finder', color: '#3B82F6', baseBalance: 1000 },
+        { name: 'Conservative Sports', color: '#10B981', baseBalance: 500 },
+        { name: 'Aggressive NFL', color: '#F59E0B', baseBalance: 750 },
+        { name: 'Recovery Strategy', color: '#8B5CF6', baseBalance: 600 }
+    ];
+    
+    const weeklyData = [];
+    for (let week = 1; week <= 4; week++) {
+        const weekData = {
+            week: week,
+            investors: investors.map(investor => ({
+                ...investor,
+                balance: investor.baseBalance + (Math.random() - 0.3) * 200 * week,
+                isActive: Math.random() > 0.2 // 80% chance of being active
+            }))
+        };
+        weekData.total = weekData.investors.reduce((sum, inv) => sum + inv.balance, 0);
+        weeklyData.push(weekData);
+    }
+    
+    return weeklyData;
+}
+
+// Create animated portfolio pie chart
+function createPortfolioPieChart() {
+    const canvas = document.getElementById('portfolio-pie-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const portfolioData = generatePortfolioData();
+    
+    function drawPieChart(weekIndex) {
+        const data = portfolioData[weekIndex];
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 100;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        let startAngle = -Math.PI / 2;
+        
+        data.investors.forEach((investor, index) => {
+            const percentage = investor.balance / data.total;
+            const sliceAngle = percentage * 2 * Math.PI;
+            
+            // Draw slice
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fillStyle = investor.color;
+            ctx.fill();
+            
+            // Add stroke
+            ctx.strokeStyle = '#1F2937';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            startAngle += sliceAngle;
+        });
+        
+        // Update center text
+        document.getElementById('portfolio-total').textContent = `$${data.total.toFixed(0)}`;
+        document.getElementById('portfolio-period').textContent = `Week ${weekIndex + 1} of 4`;
+        
+        // Update legend
+        updatePortfolioLegend(data.investors);
+    }
+    
+    function updatePortfolioLegend(investors) {
+        const legend = document.getElementById('portfolio-legend');
+        legend.innerHTML = investors.map(investor => `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-4 h-4 rounded mr-3" style="background-color: ${investor.color}"></div>
+                    <span class="text-white">${investor.name}</span>
+                </div>
+                <div class="text-gray-300">$${investor.balance.toFixed(0)}</div>
+            </div>
+        `).join('');
+    }
+    
+    // Start animation
+    drawPieChart(currentWeek - 1);
+    
+    portfolioAnimationInterval = setInterval(() => {
+        currentWeek = currentWeek >= 4 ? 1 : currentWeek + 1;
+        drawPieChart(currentWeek - 1);
+    }, 3000);
+}
+
+// Generate balance over time data
+function generateBalanceData() {
+    const investors = [
+        { name: 'NBA Value Finder', color: '#3B82F6' },
+        { name: 'Conservative Sports', color: '#10B981' },
+        { name: 'Aggressive NFL', color: '#F59E0B' },
+        { name: 'Recovery Strategy', color: '#8B5CF6' }
+    ];
+    
+    const dates = [];
+    const now = new Date();
+    for (let i = 30; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+    }
+    
+    return investors.map(investor => {
+        let balance = 1000;
+        const balances = dates.map((date, index) => {
+            // Simulate balance changes with some volatility
+            const change = (Math.random() - 0.45) * 50;
+            balance = Math.max(balance + change, 100);
+            
+            // Determine if active (some periods inactive)
+            const isActive = index < 10 || index > 20 || Math.random() > 0.3;
+            
+            return {
+                date: date,
+                balance: balance,
+                isActive: isActive
+            };
+        });
+        
+        return {
+            ...investor,
+            balances: balances
+        };
+    });
+}
+
+// Create balance over time chart
+function createBalanceChart() {
+    const canvas = document.getElementById('balance-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const balanceData = generateBalanceData();
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Chart dimensions
+    const padding = 40;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // Find min/max values for scaling
+    const allBalances = balanceData.flatMap(inv => inv.balances.map(b => b.balance));
+    const minBalance = Math.min(...allBalances) * 0.9;
+    const maxBalance = Math.max(...allBalances) * 1.1;
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+        const y = padding + (chartHeight / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(canvas.width - padding, y);
+        ctx.stroke();
+    }
+    
+    // Draw investor lines
+    balanceData.forEach(investor => {
+        let isDrawing = false;
+        
+        investor.balances.forEach((point, index) => {
+            const x = padding + (chartWidth / (investor.balances.length - 1)) * index;
+            const y = padding + chartHeight - ((point.balance - minBalance) / (maxBalance - minBalance)) * chartHeight;
+            
+            if (point.isActive) {
+                if (!isDrawing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    isDrawing = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = investor.color;
+                ctx.lineWidth = 3;
+            } else {
+                if (isDrawing) {
+                    ctx.stroke();
+                    isDrawing = false;
+                }
+                // Draw inactive point
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = '#6B7280';
+                ctx.fill();
+            }
+        });
+        
+        if (isDrawing) {
+            ctx.stroke();
+        }
+    });
+    
+    // Draw labels
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 5; i++) {
+        const value = minBalance + (maxBalance - minBalance) * (1 - i / 5);
+        const y = padding + (chartHeight / 5) * i + 5;
+        ctx.fillText(`$${value.toFixed(0)}`, padding - 5, y);
+    }
+}
+
+// Generate accuracy data
+function generateAccuracyData() {
+    const strategies = [
+        { name: 'Overall', color: '#3B82F6' },
+        { name: 'Conservative', color: '#8B5CF6' },
+        { name: 'Aggressive', color: '#F59E0B' },
+        { name: 'Value', color: '#10B981' }
+    ];
+    
+    const dates = [];
+    const now = new Date();
+    for (let i = 30; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+    }
+    
+    return strategies.map(strategy => {
+        let baseAccuracy = strategy.name === 'Conservative' ? 0.75 : 
+                          strategy.name === 'Aggressive' ? 0.65 : 
+                          strategy.name === 'Value' ? 0.70 : 0.68;
+        
+        const accuracies = dates.map(() => {
+            // Add some volatility but keep within reasonable bounds
+            const variation = (Math.random() - 0.5) * 0.15;
+            return Math.max(0.3, Math.min(0.9, baseAccuracy + variation));
+        });
+        
+        return {
+            ...strategy,
+            accuracies: accuracies
+        };
+    });
+}
+
+// Create accuracy chart
+function createAccuracyChart() {
+    const canvas = document.getElementById('accuracy-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const accuracyData = generateAccuracyData();
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Chart dimensions
+    const padding = 60;
+    const chartWidth = canvas.width - 2 * padding;
+    const chartHeight = canvas.height - 2 * padding;
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 10; i++) {
+        const y = padding + (chartHeight / 10) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(canvas.width - padding, y);
+        ctx.stroke();
+    }
+    
+    // Draw accuracy lines
+    accuracyData.forEach(strategy => {
+        ctx.beginPath();
+        strategy.accuracies.forEach((accuracy, index) => {
+            const x = padding + (chartWidth / (strategy.accuracies.length - 1)) * index;
+            const y = padding + chartHeight - (accuracy * chartHeight);
+            
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        
+        ctx.strokeStyle = strategy.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Add points
+        strategy.accuracies.forEach((accuracy, index) => {
+            const x = padding + (chartWidth / (strategy.accuracies.length - 1)) * index;
+            const y = padding + chartHeight - (accuracy * chartHeight);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = strategy.color;
+            ctx.fill();
+        });
+    });
+    
+    // Draw Y-axis labels
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 10; i++) {
+        const value = (1 - i / 10) * 100;
+        const y = padding + (chartHeight / 10) * i + 5;
+        ctx.fillText(`${value.toFixed(0)}%`, padding - 5, y);
+    }
+}
+
+// Initialize all charts when page loads
+function initializePortfolioCharts() {
+    createPortfolioPieChart();
+    createBalanceChart();
+    createAccuracyChart();
+}
+
+// Clean up animation when leaving page
+function cleanupPortfolioAnimations() {
+    if (portfolioAnimationInterval) {
+        clearInterval(portfolioAnimationInterval);
+        portfolioAnimationInterval = null;
+    }
+}
+
 // Helper function to safely extract parameter values
 function getParameterValue(param) {
     if (param === null || param === undefined) return '';
@@ -1092,11 +1664,22 @@ window.toggleBotWagers = function(botId) {
         
         // Auto-populate recommended investments when expanding investor details
         if (!wagersRow.classList.contains('hidden')) {
-            // Find the bot data to get strategy_id
+            // Find the bot data to get assigned_strategy_id
             const bot = bots.find(b => b.id === botId);
-            if (bot && bot.strategy_id) {
+            if (bot && bot.assigned_strategy_id) {
                 // Automatically trigger strategy picks
-                window.getStrategyPicks(botId, bot.strategy_id);
+                window.getStrategyPicks(botId, bot.assigned_strategy_id);
+            } else {
+                // If no strategy assigned, show appropriate message
+                const picksContent = document.getElementById(`picks-content-${botId}`);
+                if (picksContent) {
+                    picksContent.innerHTML = `
+                        <div class="text-center py-4 text-yellow-600">
+                            <div class="text-lg font-medium mb-2">No Strategy Assigned</div>
+                            <div class="text-sm">This investor needs a strategy to generate recommendations.</div>
+                        </div>
+                    `;
+                }
             }
         }
     }
@@ -1174,7 +1757,20 @@ window.getStrategyPicks = async function(botId, strategyId) {
         
         const picksContent = document.getElementById(`picks-content-${botId}`);
         
-        if (data.success && data.picks.length > 0) {
+        // Check if the response was successful
+        if (!response.ok) {
+            // Handle 400 and other HTTP errors
+            picksContent.innerHTML = `
+                <div class="text-center py-4 text-red-600">
+                    <div class="text-lg font-medium mb-2">Error Loading Picks</div>
+                    <div class="text-sm">${data.message || 'Unable to load strategy picks for this investor.'}</div>
+                </div>
+            `;
+            showMessage(data.message || "Failed to load strategy picks", true);
+            return;
+        }
+        
+        if (data.success && data.picks && data.picks.length > 0) {
             const picksHtml = data.picks.map(pick => `
                 <div class="mb-2 p-3 bg-purple-50 rounded border border-purple-200">
                     <div class="font-semibold text-purple-800">${pick.teams} (${pick.sport})</div>
@@ -1197,14 +1793,24 @@ window.getStrategyPicks = async function(botId, strategyId) {
             showMessage(`Generated ${data.picks.length} picks from strategy`, false);
         } else {
             picksContent.innerHTML = `
-                <div class="text-sm text-gray-500 p-2 bg-gray-100 rounded">
-                    ${data.message || 'No picks available from strategy'}
+                <div class="text-center py-4 text-yellow-600">
+                    <div class="text-lg font-medium mb-2">No Picks Available</div>
+                    <div class="text-sm">${data.message || 'No picks available from this strategy at the moment.'}</div>
                 </div>
             `;
             showMessage(data.message || "No picks available", false);
         }
     } catch (error) {
         console.error("Error getting strategy picks:", error);
+        const picksContent = document.getElementById(`picks-content-${botId}`);
+        if (picksContent) {
+            picksContent.innerHTML = `
+                <div class="text-center py-4 text-red-600">
+                    <div class="text-lg font-medium mb-2">Connection Error</div>
+                    <div class="text-sm">Unable to connect to the server. Please try again later.</div>
+                </div>
+            `;
+        }
         showMessage("Failed to get strategy picks", true);
     } finally {
         hideLoading();
@@ -4636,6 +5242,11 @@ window.exportAnalytics = function() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         initializeStrategyBuilder();
+        
+        // Initialize portfolio charts if elements exist
+        if (document.getElementById('portfolio-pie-chart')) {
+            initializePortfolioCharts();
+        }
         
         // Load models when model gallery page exists
         const modelGalleryPage = document.getElementById('model-gallery-page');

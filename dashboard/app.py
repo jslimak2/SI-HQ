@@ -1056,7 +1056,7 @@ def simulate_bot_bet():
         bot_doc = bot_ref.get()
 
         if not bot_doc.exists:
-            return jsonify({'success': False, 'message': 'Bot not found.'}), 404
+            return jsonify({'success': False, 'message': 'Investor not found.'}), 404
 
         bot_data = bot_doc.to_dict()
         bet_receipt = simulate_single_bet(bot_data)
@@ -1253,7 +1253,7 @@ def get_strategy_picks(strategy_id):
         bot_ref = db.collection(f'users/{user_id}/bots').document(bot_id)
         bot_doc = bot_ref.get()
         if not bot_doc.exists:
-            return jsonify({'success': False, 'message': 'Bot not found.'}), 404
+            return jsonify({'success': False, 'message': 'Investor not found.'}), 404
         bot_data = bot_doc.to_dict()
         
         # Check if bot has a strategy assigned (protection for bots without strategies)
@@ -1261,7 +1261,7 @@ def get_strategy_picks(strategy_id):
         if not bot_assigned_strategy:
             return jsonify({
                 'success': False, 
-                'message': 'This bot does not have a strategy assigned. Please select a strategy first.',
+                'message': 'This investor does not have a strategy assigned. Please select a strategy first.',
                 'requires_strategy_selection': True
             }), 400
         
@@ -1274,7 +1274,7 @@ def get_strategy_picks(strategy_id):
         if not strategy_doc.exists:
             return jsonify({
                 'success': False, 
-                'message': f'Strategy not found. The strategy may have been deleted. Please select a new strategy for this bot.',
+                'message': f'Strategy not found. The strategy may have been deleted. Please select a new strategy for this investor.',
                 'strategy_deleted': True,
                 'missing_strategy_id': effective_strategy_id
             }), 404
@@ -1286,7 +1286,7 @@ def get_strategy_picks(strategy_id):
             return jsonify({
                 'success': True,
                 'picks': [],
-                'message': f'Bot has reached maximum bets for this week ({max_bets})',
+                'message': f'Investor has reached maximum bets for this week ({max_bets})',
                 'remaining_bets': 0
             })
         # Try to generate real strategy picks, fall back to demo if needed
@@ -4002,7 +4002,7 @@ def assign_model_to_bot():
         bot_doc = bot_ref.get()
         
         if not bot_doc.exists:
-            return jsonify({'success': False, 'message': 'Bot not found'}), 404
+            return jsonify({'success': False, 'message': 'Investor not found'}), 404
         
         # Prepare update data
         update_data = {
@@ -4019,7 +4019,7 @@ def assign_model_to_bot():
         
         bot_ref.update(update_data)
         
-        response_message = f'Model {model_id} assigned to bot {bot_id}'
+        response_message = f'Model {model_id} assigned to investor {bot_id}'
         if detected_sport:
             response_message += f' and sport auto-detected as {detected_sport}'
         
@@ -4053,7 +4053,7 @@ def get_bot_model_recommendations(bot_id):
         bot_doc = bot_ref.get()
         
         if not bot_doc.exists:
-            return jsonify({'success': False, 'message': 'Bot not found'}), 404
+            return jsonify({'success': False, 'message': 'Investor not found'}), 404
         
         bot_data = bot_doc.to_dict()
         assigned_model_id = bot_data.get('assigned_model_id')
@@ -4062,7 +4062,7 @@ def get_bot_model_recommendations(bot_id):
             return jsonify({
                 'success': True,
                 'recommendations': [],
-                'message': 'No model assigned to this bot'
+                'message': 'No model assigned to this investor'
             }), 200
         
         # Get current games data (in demo mode, use sample data)

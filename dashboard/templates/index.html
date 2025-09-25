@@ -557,6 +557,60 @@
                     </div>
                 </div>
             </section>
+            
+            <!-- Portfolio Analytics Section -->
+            <section class="mb-12">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Portfolio Breakdown -->
+                    <div class="post9-card p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-white">Portfolio Breakdown</h3>
+                            <div class="text-sm text-gray-400" id="portfolio-period">Week 4 of 4</div>
+                        </div>
+                        <div id="portfolio-pie-container" class="relative">
+                            <canvas id="portfolio-pie-chart" width="300" height="300"></canvas>
+                            <div id="portfolio-center-text" class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <div class="text-2xl font-bold text-white" id="portfolio-total">$0</div>
+                                <div class="text-sm text-gray-400">Total Portfolio</div>
+                            </div>
+                        </div>
+                        <div id="portfolio-legend" class="mt-4 space-y-2">
+                            <!-- Legend items will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Balance Over Time Chart -->
+                    <div class="post9-card p-6">
+                        <h3 class="text-xl font-bold text-white mb-6">Investor Balance Over Time</h3>
+                        <div id="balance-chart-container" class="relative">
+                            <canvas id="balance-chart" width="400" height="300"></canvas>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-400">
+                            <span class="inline-block w-3 h-3 bg-green-500 rounded mr-2"></span>Active Period
+                            <span class="inline-block w-3 h-3 bg-gray-500 rounded mr-2 ml-4"></span>Inactive Period
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Betting Accuracy Chart -->
+                <div class="post9-card p-6 mt-6">
+                    <h3 class="text-xl font-bold text-white mb-6">Betting Accuracy Over Time</h3>
+                    <div id="accuracy-chart-container" class="relative">
+                        <canvas id="accuracy-chart" width="800" height="400"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-400 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <span class="inline-block w-3 h-3 bg-blue-500 rounded mr-2"></span>Overall Accuracy
+                            <span class="inline-block w-3 h-3 bg-purple-500 rounded mr-2 ml-4"></span>Conservative Strategy
+                        </div>
+                        <div>
+                            <span class="inline-block w-3 h-3 bg-orange-500 rounded mr-2"></span>Aggressive Strategy  
+                            <span class="inline-block w-3 h-3 bg-green-500 rounded mr-2 ml-4"></span>Value Strategy
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
             <section class="table-container mb-12 post9-card">
                 <h2 class="text-2xl font-bold mb-4 text-white">Active Investors</h2>
                 <div id="active-bots-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
@@ -712,68 +766,87 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- +eV Template -->
-                    <div class="bg-gradient-to-br from-green-500 to-green-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('positive_ev')">
+                    <div class="bg-gradient-to-br from-green-500 to-green-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('positive_ev')">
                         <div class="text-4xl mb-4">💰</div>
                         <h4 class="text-xl font-bold mb-2">Expected Value (+eV)</h4>
                         <p class="text-sm opacity-90 mb-4">Focus on bets with positive expected value. Calculates probability vs. odds to find profitable opportunities.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Expected Value > 5%) THEN Place Bet
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('positive_ev')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Conservative Template -->
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('conservative')">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('conservative')">
                         <div class="text-4xl mb-4">🛡️</div>
                         <h4 class="text-xl font-bold mb-2">Conservative Strategy</h4>
                         <p class="text-sm opacity-90 mb-4">Low risk approach with smaller bet sizes and higher confidence requirements.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Confidence > 75% AND Odds < 2.0) THEN Bet 1-2%
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('conservative')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Aggressive Template -->
-                    <div class="bg-gradient-to-br from-orange-500 to-red-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('aggressive')">
+                    <div class="bg-gradient-to-br from-orange-500 to-red-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('aggressive')">
                         <div class="text-4xl mb-4">🚀</div>
                         <h4 class="text-xl font-bold mb-2">Aggressive Strategy</h4>
                         <p class="text-sm opacity-90 mb-4">Higher risk, higher reward with larger bet sizes and more frequent betting.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Confidence > 60% AND Value > 3%) THEN Bet 3-5%
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('aggressive')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Recovery Template -->
-                    <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('recovery')">
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('recovery')">
                         <div class="text-4xl mb-4">🔄</div>
                         <h4 class="text-xl font-bold mb-2">Loss Recovery</h4>
                         <p class="text-sm opacity-90 mb-4">Recover losses with calculated risk management and progressive betting.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Down > 10%) THEN Increase Bet Size by 50%
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('recovery')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Value Hunting Template -->
-                    <div class="bg-gradient-to-br from-teal-500 to-cyan-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('value_hunting')">
+                    <div class="bg-gradient-to-br from-teal-500 to-cyan-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('value_hunting')">
                         <div class="text-4xl mb-4">🎯</div>
                         <h4 class="text-xl font-bold mb-2">Value Hunter</h4>
                         <p class="text-sm opacity-90 mb-4">Finds undervalued odds across multiple sportsbooks for maximum profit.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Best Odds > Market Average + 5%) THEN Place Bet
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('value_hunting')" title="Show detailed explanation">?</button>
                     </div>
                     
                     <!-- Arbitrage Template -->
-                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform" onclick="createFromTemplate('arbitrage')">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-lg text-white cursor-pointer hover:scale-105 transition-transform relative" onclick="createFromTemplate('arbitrage')">
                         <div class="text-4xl mb-4">⚖️</div>
                         <h4 class="text-xl font-bold mb-2">Arbitrage</h4>
                         <p class="text-sm opacity-90 mb-4">Risk-free profit by betting both sides across different sportsbooks.</p>
                         <div class="text-xs bg-black bg-opacity-30 p-2 rounded">
                             <strong>Logic:</strong> IF (Arbitrage Opportunity > 1%) THEN Place Both Bets
                         </div>
+                        <button class="absolute top-2 right-2 w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xs hover:bg-opacity-30" onclick="event.stopPropagation(); showStrategyDetails('arbitrage')" title="Show detailed explanation">?</button>
                     </div>
                 </div>
                 
                 <div class="mt-6 text-center">
                     <button onclick="closeModal('strategy-templates-modal')" class="post9-btn px-6 py-2">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Strategy Details Modal -->
+        <div id="strategy-details-modal" class="modal">
+            <div class="modal-content post9-card max-w-3xl">
+                <span class="modal-close" onclick="closeModal('strategy-details-modal')">&times;</span>
+                <div id="strategy-details-content">
+                    <!-- Strategy details will be populated here -->
+                </div>
+                <div class="mt-6 text-center">
+                    <button onclick="closeModal('strategy-details-modal')" class="post9-btn px-6 py-2">Close</button>
                 </div>
             </div>
         </div>
