@@ -39,6 +39,10 @@ let bots = [];
 let strategies = [];
 let userSettings = {};
 
+// Firebase listener unsubscribe functions
+let unsubscribeBots = null;
+let unsubscribeStrategies = null;
+
 // Make strategies globally accessible for inline scripts
 window.strategies = strategies;
 
@@ -209,6 +213,31 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
+// Clean up Firebase listeners when the page is about to unload
+function cleanupFirebaseListeners() {
+    if (unsubscribeBots) {
+        console.log("Cleaning up bots listener");
+        unsubscribeBots();
+        unsubscribeBots = null;
+    }
+    if (unsubscribeStrategies) {
+        console.log("Cleaning up strategies listener");
+        unsubscribeStrategies();
+        unsubscribeStrategies = null;
+    }
+}
+
+// Add cleanup listeners for page unload
+window.addEventListener('beforeunload', cleanupFirebaseListeners);
+window.addEventListener('pagehide', cleanupFirebaseListeners);
+
+// Also clean up when navigating away (for SPAs)
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        cleanupFirebaseListeners();
+    }
+});
+
 // --- CRUD OPERATIONS & DATA DISPLAY ---
 
 // Function to fetch and display strategies
@@ -219,10 +248,16 @@ async function fetchStrategies() {
         return;
     }
     
+    // Clean up existing listener
+    if (unsubscribeStrategies) {
+        unsubscribeStrategies();
+        unsubscribeStrategies = null;
+    }
+    
     showLoading();
     try {
         const q = collection(db, `users/${userId}/strategies`);
-        onSnapshot(q, (querySnapshot) => {
+        unsubscribeStrategies = onSnapshot(q, (querySnapshot) => {
             strategies = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             window.strategies = strategies;
             displayStrategies();
@@ -248,10 +283,16 @@ async function fetchBots() {
         return;
     }
     
+    // Clean up existing listener
+    if (unsubscribeBots) {
+        unsubscribeBots();
+        unsubscribeBots = null;
+    }
+    
     showLoading();
     try {
         const q = collection(db, `users/${userId}/bots`);
-        onSnapshot(q, (querySnapshot) => {
+        unsubscribeBots = onSnapshot(q, (querySnapshot) => {
             bots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             displayBots();
             updateOverallStats();
