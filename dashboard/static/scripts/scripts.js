@@ -862,8 +862,8 @@ window.showBotDetails = function(botId) {
     }
     
     // Populate the modal fields
-    document.getElementById('modal-bot-id').value = bot.id;
-    document.getElementById('modal-bot-name').textContent = bot.name;
+    document.getElementById('modal-investor-id').value = bot.id;
+    document.getElementById('modal-investor-name').textContent = bot.name;
     document.getElementById('modal-name').value = bot.name;
     document.getElementById('modal-balance').value = bot.current_balance;
     document.getElementById('modal-bet-percent').value = bot.bet_percentage;
@@ -901,7 +901,7 @@ window.showBotDetails = function(botId) {
     });
 
     // Show the modal
-    window.showModal('bot-details-modal');
+    window.showModal('investor-details-modal');
 };
 
 window.showStrategyDetails = function(strategyId) {
@@ -2415,7 +2415,7 @@ if (editBotForm) {
         allowable_platforms: allowablePlatforms
     };
     await window.editBot(botData);
-    window.closeModal('bot-details-modal');
+    window.closeModal('investor-details-modal');
     });
 }
 
