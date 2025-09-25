@@ -435,7 +435,7 @@ def get_sports_games_data(sport='NBA', max_games=10):
         # Try to use real sports API first
         if real_sports_service and config.api.sports_api_key and not config.disable_demo_mode:
             logger.info(f"[DATA] Fetching real sports data for {sport}")
-            real_games = real_sports_service.get_current_games(sport.lower())
+            real_games = real_sports_service.get_current_games(sport)
             
             if real_games and len(real_games) > 0:
                 # Limit to max_games and add calculated fields
