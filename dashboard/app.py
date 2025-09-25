@@ -2341,23 +2341,12 @@ def generate_real_bot_recommendations(user_id):
         except Exception as e:
             logger.debug(f"Data service not available or failed: {e}")
         
-        # If no real bots found, create some sample active investors
+        # If no real bots found, create a single sample active investor for demonstration
         if not user_bots:
-            logger.info("No active investors found, creating sample active investors for demonstration")
+            logger.info("No active investors found, creating sample active investor for demonstration")
             user_bots = [
                 {
                     'bot_id': f'real_bot_{user_id}_1',
-                    'name': 'NBA Value Finder',
-                    'strategy': 'Conservative',
-                    'assigned_strategy_id': '1',  # Conservative strategy ID
-                    'sport_filter': 'NBA',
-                    'current_balance': 1000.0,
-                    'bet_percentage': 2.5,
-                    'active_status': 'RUNNING',
-                    'risk_management': {'max_bet_percentage': 2.5, 'minimum_confidence': 55.0}
-                },
-                {
-                    'bot_id': f'real_bot_{user_id}_2',
                     'name': 'Conservative Sports',
                     'strategy': 'Conservative',
                     'assigned_strategy_id': '1',  # Conservative strategy ID
@@ -2375,9 +2364,9 @@ def generate_real_bot_recommendations(user_id):
             sport = get_bot_sport(bot)
             sports_to_check.add(sport)
         
-        # Default to NBA if no sports specified
+        # Default to NFL if no sports specified (matching our sample investor)
         if not sports_to_check:
-            sports_to_check = {'NBA'}
+            sports_to_check = {'NFL'}
         
         all_games = []
         for sport in sports_to_check:
