@@ -1013,8 +1013,9 @@ def add_investor():
         investor_id = data_service.create_investor(investor_data)
         investor = data_service.get_investor(investor_id)
         
-        # Also save to Firestore for compatibility
-        investor_ref = investors_collection.document(investor_id)
+        # Also save to Firestore for compatibility using user-specific collection
+        user_investors_collection = db.collection(f'users/{user_id}/investors')
+        investor_ref = user_investors_collection.document(investor_id)
         firestore_data = investor.to_dict()
         # Convert complex objects to simple dict for Firestore
         firestore_data['sport'] = sport_filter.value if sport_filter else None
@@ -2326,10 +2327,11 @@ def generate_real_investor_recommendations(user_id):
     try:
         # 1. Get user's active investors from the database
         user_investors = []
-        if db and investors_collection:
+        if db:
             try:
-                # Get investors from Firestore
-                investors_ref = investors_collection.where('created_by', '==', user_id).where('active_status', '==', 'RUNNING').stream()
+                # Get investors from user-specific collection (matches frontend storage)
+                user_investors_collection = db.collection(f'users/{user_id}/investors')
+                investors_ref = user_investors_collection.where('active_status', '==', 'RUNNING').stream()
                 for investor_doc in investors_ref:
                     investor_data = investor_doc.to_dict()
                     investor_data['investor_id'] = investor_doc.id
@@ -4143,7 +4145,8 @@ def assign_model_to_investor():
                     break
         
         # Update investor configuration to use the model
-        investor_ref = investors_collection.document(investor_id)
+        user_investors_collection = db.collection(f'users/{user_id}/investors')
+        investor_ref = user_investors_collection.document(investor_id)
         investor_doc = investor_ref.get()
         
         if not investor_doc.exists:
@@ -4193,8 +4196,9 @@ def get_investor_model_recommendations(investor_id):
         if not db:
             return jsonify({'success': False, 'message': 'Database not initialized.'}), 500
         
-        # Get investor data
-        investor_ref = investors_collection.document(investor_id)
+        # Get investor data from user-specific collection
+        user_investors_collection = db.collection(f'users/{user_id}/investors')
+        investor_ref = user_investors_collection.document(investor_id)
         investor_doc = investor_ref.get()
         
         if not investor_doc.exists:
