@@ -48,6 +48,18 @@ window.strategies = strategies;
 
 // Bet cart management
 let betCart = [];
+
+// Helper function to check if user is authenticated (not on login page)
+function isUserAuthenticated() {
+    // Check if we're on the authentication gate (login page)
+    const authGate = document.getElementById('auth-gate');
+    const dashboard = document.getElementById('dashboard');
+    
+    // User is authenticated if dashboard is visible and auth gate is hidden
+    return authGate && dashboard && 
+           (authGate.style.display === 'none' || authGate.classList.contains('hidden')) &&
+           (dashboard.style.display !== 'none' && !dashboard.classList.contains('hidden'));
+}
 let cartVisible = false;
 
 // Investor recommendations cache
@@ -488,10 +500,32 @@ function updateInvestorSummaryStats(investorsList = investors) {
 
 // Update ML model statistics dynamically
 async function updateMLModelStats() {
+    // Don't load models if user is not authenticated
+    if (!isUserAuthenticated()) {
+        console.log("Skipping model stats update - user not authenticated");
+        return;
+    }
+    
     try {
         // Try to get real model count from the registry
         let activeModelCount = 0;
         let isProductionMode = false;
+        
+        // First check if we're in production mode via demo-mode status API
+        try {
+            const demoModeResponse = await fetch('/api/system/demo-mode');
+            if (demoModeResponse.ok) {
+                const demoModeData = await demoModeResponse.json();
+                isProductionMode = demoModeData.demo_mode_disabled || false;
+                
+                // In production mode with demo disabled, don't use any demo fallbacks
+                if (isProductionMode && demoModeData.demo_mode_disabled) {
+                    console.log("🔒 Production mode: Demo mode disabled, no fallback models allowed");
+                }
+            }
+        } catch (demoError) {
+            console.warn("Could not determine demo mode status:", demoError);
+        }
         
         try {
             const response = await fetch('/api/models/registry');
@@ -536,17 +570,6 @@ async function updateMLModelStats() {
                     throw new Error(`Fallback API failed: ${fallbackResponse.status}`);
                 }
             } catch (fallbackError) {
-                // Check if we're in production mode via demo-mode status API
-                try {
-                    const demoModeResponse = await fetch('/api/system/demo-mode');
-                    if (demoModeResponse.ok) {
-                        const demoModeData = await demoModeResponse.json();
-                        isProductionMode = demoModeData.demo_mode_disabled || false;
-                    }
-                } catch (demoError) {
-                    // Ignore demo mode check error
-                }
-                
                 if (isProductionMode) {
                     console.error(`🚫 Production mode: Failed to get model count, no fallback available`);
                     activeModelCount = 0;
@@ -3247,6 +3270,9 @@ async function signInUser(email, password) {
         isAuthenticated = true;
         showAccountManagement();
         showMessage('Signed in successfully (Demo Mode)', false);
+        
+        // Trigger full app initialization
+        document.dispatchEvent(new CustomEvent('userAuthenticated'));
         return;
     }
 
@@ -3258,6 +3284,9 @@ async function signInUser(email, password) {
         isAuthenticated = true;
         showAccountManagement();
         showMessage('Signed in successfully!', false);
+        
+        // Trigger full app initialization
+        document.dispatchEvent(new CustomEvent('userAuthenticated'));
     } catch (error) {
         console.error('Sign in error:', error);
         showMessage(`Sign in failed: ${error.message}`, true);
@@ -3278,6 +3307,9 @@ async function signUpUser(email, password, confirmPassword) {
         isAuthenticated = true;
         showAccountManagement();
         showMessage('Account created successfully (Demo Mode)', false);
+        
+        // Trigger full app initialization
+        document.dispatchEvent(new CustomEvent('userAuthenticated'));
         return;
     }
 
@@ -3289,6 +3321,9 @@ async function signUpUser(email, password, confirmPassword) {
         isAuthenticated = true;
         showAccountManagement();
         showMessage('Account created successfully!', false);
+        
+        // Trigger full app initialization
+        document.dispatchEvent(new CustomEvent('userAuthenticated'));
     } catch (error) {
         console.error('Sign up error:', error);
         showMessage(`Sign up failed: ${error.message}`, true);
@@ -3907,11 +3942,11 @@ async function startListeners() {
         await fetchInvestors();
         
         // Initialize UI components for demo mode
-        // Load real models for investor creation dropdown
-        loadModelsForInvestor();
-        
-        // Update ML model statistics
-        updateMLModelStats();
+        // Only load models if user has actually selected demo mode and not on login page
+        if (isUserAuthenticated()) {
+            loadModelsForInvestor();
+            updateMLModelStats();
+        }
         
         // Check auto-refresh for demo mode too
         setTimeout(() => {
@@ -3944,11 +3979,11 @@ async function startListeners() {
             await initializeDemoDataIfNeeded();
             
             // Initialize UI components after authentication is confirmed
-            // Load real models for investor creation dropdown
-            loadModelsForInvestor();
-            
-            // Update ML model statistics
-            updateMLModelStats();
+            // Only load models after user is authenticated
+            if (isUserAuthenticated()) {
+                loadModelsForInvestor();
+                updateMLModelStats();
+            }
             
             // Check auto-refresh after everything is loaded AND settings are available
             setTimeout(() => {
@@ -4190,10 +4225,39 @@ function initializeAccountPage() {
     }
 }
 
-// Initial load
+// Set up authentication event listeners to trigger full app initialization
+function setupAuthenticationListeners() {
+    // Listen for demo mode button clicks
+    const demoBtns = document.querySelectorAll('#gate-demo-btn, [onclick*="showDemoMode"], [onclick*="continueDemo"]');
+    demoBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            console.log("Demo mode selected, starting full app initialization");
+            startListeners();
+        });
+    });
+    
+    // Listen for successful authentication events
+    document.addEventListener('userAuthenticated', function() {
+        console.log("User authenticated, starting full app initialization");
+        startListeners();
+    });
+    
+    // Also check if user is already authenticated on page load
+    setTimeout(() => {
+        if (isUserAuthenticated()) {
+            console.log("User already authenticated, starting full app initialization");
+            startListeners();
+        }
+    }, 1000);
+}
+
+// Initial load - only initialize Firebase modules, don't start full app yet
 initializeFirebase().then(() => {
-    startListeners();
+    // Only initialize basic listeners and account page, not full app functionality
     initializeAccountPage();
+    
+    // Set up event listeners for authentication actions
+    setupAuthenticationListeners();
 });
 
 function setupStatsCardClicks() {
@@ -6249,6 +6313,9 @@ document.addEventListener('DOMContentLoaded', function() {
             isAuthenticated = true;
             checkAuthAndShowContent();
             showMessage('Signed in with demo mode', false);
+            
+            // Trigger full app initialization for demo mode
+            document.dispatchEvent(new CustomEvent('userAuthenticated'));
         });
     }
     
@@ -7954,6 +8021,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load available models for investor creation dropdown
 async function loadModelsForInvestor() {
+    // Don't load models if user is not authenticated
+    if (!isUserAuthenticated()) {
+        console.log("Skipping model loading for investor - user not authenticated");
+        return;
+    }
+    
     try {
         const response = await fetch('/api/models/for-investor');
         const data = await response.json();
