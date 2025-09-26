@@ -2655,6 +2655,26 @@ function updateAccountUI() {
     }
 }
 
+function showSignInForm() {
+    // Show sign-in form, hide sign-up form
+    document.getElementById('signin-form-element').style.display = 'block';
+    document.getElementById('signup-form-element').style.display = 'none';
+    
+    // Update button styles
+    document.getElementById('show-signin-btn').className = 'post9-btn p-2 text-sm bg-blue-600';
+    document.getElementById('show-signup-btn').className = 'post9-btn p-2 text-sm bg-gray-600';
+}
+
+function showSignUpForm() {
+    // Show sign-up form, hide sign-in form
+    document.getElementById('signin-form-element').style.display = 'none';
+    document.getElementById('signup-form-element').style.display = 'block';
+    
+    // Update button styles
+    document.getElementById('show-signin-btn').className = 'post9-btn p-2 text-sm bg-gray-600';
+    document.getElementById('show-signup-btn').className = 'post9-btn p-2 text-sm bg-blue-600';
+}
+
 async function signInUser(email, password) {
     if (!firebaseAvailable) {
         // Demo mode sign in
