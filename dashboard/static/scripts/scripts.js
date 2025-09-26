@@ -491,6 +491,7 @@ async function updateMLModelStats() {
     try {
         // Try to get real model count from the registry
         let activeModelCount = 0;
+        let isProductionMode = false;
         
         try {
             const response = await fetch('/api/models/registry');
@@ -509,9 +510,7 @@ async function updateMLModelStats() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (apiError) {
-            console.warn(`Failed to get real model count: ${apiError.message}`);
-            
-            // Fallback: try to get models from the general models API
+            // Registry failed (might be auth issue), try the public models API
             try {
                 const fallbackResponse = await fetch('/api/models');
                 if (fallbackResponse.ok) {
@@ -520,13 +519,41 @@ async function updateMLModelStats() {
                         activeModelCount = fallbackData.models.filter(model => 
                             model.status === 'active'
                         ).length;
-                        console.log(`⚠️ Using fallback model count: ${activeModelCount}`);
+                        isProductionMode = fallbackData.production_mode || false;
+                        
+                        if (isProductionMode) {
+                            console.log(`🔒 Production mode: ${activeModelCount} models available`);
+                        } else {
+                            console.log(`⚠️ Demo mode: Using ${activeModelCount} models from fallback API`);
+                        }
+                    } else if (fallbackData.production_mode) {
+                        // Production mode with no models available
+                        console.log(`🚫 Production mode: No models available`);
+                        activeModelCount = 0;
+                        isProductionMode = true;
                     }
+                } else {
+                    throw new Error(`Fallback API failed: ${fallbackResponse.status}`);
                 }
             } catch (fallbackError) {
-                console.warn(`Fallback model count failed: ${fallbackError.message}`);
-                // Use hardcoded fallback
-                activeModelCount = 5; // Default fallback
+                // Check if we're in production mode via demo-mode status API
+                try {
+                    const demoModeResponse = await fetch('/api/system/demo-mode');
+                    if (demoModeResponse.ok) {
+                        const demoModeData = await demoModeResponse.json();
+                        isProductionMode = demoModeData.demo_mode_disabled || false;
+                    }
+                } catch (demoError) {
+                    // Ignore demo mode check error
+                }
+                
+                if (isProductionMode) {
+                    console.error(`🚫 Production mode: Failed to get model count, no fallback available`);
+                    activeModelCount = 0;
+                } else {
+                    console.warn(`⚠️ Demo mode: All APIs failed, using fallback count`);
+                    activeModelCount = 5; // Demo fallback
+                }
             }
         }
         
@@ -549,7 +576,7 @@ async function updateMLModelStats() {
                 mlModelsTrendElement.textContent = `${activeModelCount} Active`;
                 mlModelsTrendElement.className = 'stats-trend positive';
             } else {
-                mlModelsTrendElement.textContent = 'None Active';
+                mlModelsTrendElement.textContent = isProductionMode ? 'No Models' : 'None Active';
                 mlModelsTrendElement.className = 'stats-trend negative';
             }
         }
@@ -7943,8 +7970,11 @@ async function loadModelsForInvestor() {
             // Log data source for debugging
             if (data.data_source === 'real_registry') {
                 console.log(`✅ Loaded ${data.total_count} real trained models for investor dropdown`);
+            } else if (data.production_mode) {
+                // In production mode, don't show fallback messages
+                console.log(`🔒 Production mode: ${data.total_count} models available`);
             } else {
-                console.log(`⚠️ Using ${data.total_count} fallback models (${data.data_source})`);
+                console.log(`⚠️ Demo mode: Using ${data.total_count} fallback models (${data.data_source})`);
             }
         } else {
             console.error('Failed to load models:', data.message);
