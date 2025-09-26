@@ -1310,8 +1310,7 @@ def update_strategy(strategy_id):
     if not user_id:
         return jsonify({'success': False, 'message': 'User ID is required.'}), 400
     try:
-        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
-        strategy_ref = strategies_collection_user.document(strategy_id)
+        # Update in local data service first
         updates = {}
         if 'name' in data:
             updates['name'] = data['name']
@@ -1321,9 +1320,22 @@ def update_strategy(strategy_id):
             updates['description'] = data['description']
         if 'parameters' in data:
             updates['parameters'] = data['parameters']
-        updates['updated_at'] = datetime.datetime.now().isoformat()
-        strategy_ref.update(updates)
-        return jsonify({'success': True, 'message': 'Strategy updated successfully.'}), 200
+        
+        # Update the data service
+        try:
+            updated_strategy = data_service.update_strategy(strategy_id, updates)
+            print(f"✅ Updated strategy in data service: {strategy_id} -> name: {updated_strategy.name}")
+        except Exception as ds_error:
+            print(f"⚠️ Failed to update data service (proceeding with Firestore): {ds_error}")
+        
+        # Update Firestore
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        strategy_ref = strategies_collection_user.document(strategy_id)
+        firestore_updates = updates.copy()
+        firestore_updates['updated_at'] = datetime.datetime.now().isoformat()
+        strategy_ref.update(firestore_updates)
+        
+        return jsonify({'success': True, 'message': 'Strategy updated successfully.', 'updated_fields': list(updates.keys())}), 200
     except Exception as e:
         print(f"Failed to update strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to update strategy: {e}'}), 500

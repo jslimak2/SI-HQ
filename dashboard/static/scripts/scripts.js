@@ -2077,9 +2077,49 @@ window.deleteStrategy = async function(strategyId) {
     if (!confirm("Are you sure you want to delete this strategy? This will affect any investors using it.")) return;
     showLoading();
     try {
+        // Handle demo mode or when Firebase is not available
+        if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+            console.log("Deleting strategy in demo mode");
+            
+            // Remove the strategy from the global strategies array
+            const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+            if (strategyIndex !== -1) {
+                const strategyName = strategies[strategyIndex].name;
+                strategies.splice(strategyIndex, 1);
+                window.strategies = strategies;
+                
+                // Refresh display and dropdowns immediately
+                displayStrategies();
+                updateStrategySelects();
+                
+                showMessage(`Strategy "${strategyName}" deleted successfully (Demo Mode)!`);
+                return;
+            } else {
+                showMessage("Strategy not found in demo data", true);
+                return;
+            }
+        }
+        
+        // Production mode - use Firebase
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
         await deleteDoc(strategyRef);
-        showMessage("Strategy deleted successfully!");
+        
+        // Also remove from local strategies array to update UI immediately
+        const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+        if (strategyIndex !== -1) {
+            const strategyName = strategies[strategyIndex].name;
+            strategies.splice(strategyIndex, 1);
+            window.strategies = strategies;
+            
+            // Refresh display and dropdowns
+            displayStrategies();
+            updateStrategySelects();
+            
+            showMessage(`Strategy "${strategyName}" deleted successfully!`);
+        } else {
+            showMessage("Strategy deleted successfully!");
+        }
     } catch (e) {
         console.error("Error deleting strategy: ", e);
         showMessage("Failed to delete strategy.", true);
