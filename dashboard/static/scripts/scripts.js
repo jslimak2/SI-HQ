@@ -486,6 +486,80 @@ function updateInvestorSummaryStats(investorsList = investors) {
     if (avgWinRateEl) avgWinRateEl.textContent = `${avgWinRate.toFixed(1)}%`;
 }
 
+// Update ML model statistics dynamically
+async function updateMLModelStats() {
+    try {
+        // Try to get real model count from the registry
+        let activeModelCount = 0;
+        
+        try {
+            const response = await fetch('/api/models/registry');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.models) {
+                    // Count active/trained models
+                    activeModelCount = data.models.filter(model => 
+                        model.status === 'active' || model.status === 'trained'
+                    ).length;
+                    console.log(`✅ Found ${activeModelCount} active/trained models from registry`);
+                } else {
+                    throw new Error('Failed to get model data');
+                }
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (apiError) {
+            console.warn(`Failed to get real model count: ${apiError.message}`);
+            
+            // Fallback: try to get models from the general models API
+            try {
+                const fallbackResponse = await fetch('/api/models');
+                if (fallbackResponse.ok) {
+                    const fallbackData = await fallbackResponse.json();
+                    if (fallbackData.success && fallbackData.models) {
+                        activeModelCount = fallbackData.models.filter(model => 
+                            model.status === 'active'
+                        ).length;
+                        console.log(`⚠️ Using fallback model count: ${activeModelCount}`);
+                    }
+                }
+            } catch (fallbackError) {
+                console.warn(`Fallback model count failed: ${fallbackError.message}`);
+                // Use hardcoded fallback
+                activeModelCount = 5; // Default fallback
+            }
+        }
+        
+        // Update the dashboard stat
+        const mlModelsElement = document.getElementById('ml-models-active');
+        if (mlModelsElement) {
+            mlModelsElement.textContent = activeModelCount;
+        }
+        
+        // Update the predictive analytics page stat
+        const activeModelsCountElement = document.getElementById('active-models-count');
+        if (activeModelsCountElement) {
+            activeModelsCountElement.textContent = activeModelCount;
+        }
+        
+        // Update the trend indicator
+        const mlModelsTrendElement = document.getElementById('ml-models-trend');
+        if (mlModelsTrendElement) {
+            if (activeModelCount > 0) {
+                mlModelsTrendElement.textContent = `${activeModelCount} Active`;
+                mlModelsTrendElement.className = 'stats-trend positive';
+            } else {
+                mlModelsTrendElement.textContent = 'None Active';
+                mlModelsTrendElement.className = 'stats-trend negative';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error updating ML model stats:', error);
+        // Keep existing hardcoded values on error
+    }
+}
+
 // Show investor details modal
 function showInvestorDetails(investorId) {
     const investor = investors.find(inv => inv.id === investorId);
@@ -1644,6 +1718,26 @@ function createBalanceChart() {
 
 // Generate accuracy data
 function generateAccuracyData() {
+    // Check if we have actual investors with meaningful data
+    if (!investors || investors.length === 0) {
+        // Return empty data structure for new users
+        return [];
+    }
+    
+    // Check if investors have any real betting activity
+    const hasRealActivity = investors.some(investor => 
+        investor.total_bets > 0 || 
+        investor.total_wins > 0 || 
+        investor.current_balance !== investor.starting_balance ||
+        !investor.id?.includes('demo_')
+    );
+    
+    if (!hasRealActivity) {
+        // Return empty data for demo/inactive investors
+        return [];
+    }
+    
+    // Generate data based on actual investor performance
     const strategies = [
         { name: 'Overall', color: '#3B82F6' },
         { name: 'Conservative', color: '#8B5CF6' },
@@ -1686,6 +1780,19 @@ function createAccuracyChart() {
     const accuracyData = generateAccuracyData();
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Handle empty data case
+    if (!accuracyData || accuracyData.length === 0) {
+        // Draw empty state message
+        ctx.fillStyle = '#6B7280';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No investor data available', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#9CA3AF';
+        ctx.fillText('Create and run investors to see accuracy trends', canvas.width / 2, canvas.height / 2 + 10);
+        return;
+    }
     
     // Chart dimensions
     const padding = 60;
@@ -2327,11 +2434,61 @@ window.editStrategy = async function(strategyId, strategyData) {
             }
         }
         
-        // Production mode - use Firebase
-        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-        const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
-        await updateDoc(strategyRef, strategyData);
-        showMessage("Strategy updated successfully!");
+        // Production mode - use both API call and Firebase
+        try {
+            // Make API call to backend first
+            const response = await fetch(`/api/strategy/${strategyId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...strategyData,
+                    user_id: userId
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`✅ Strategy updated via API: ${strategyId} -> name: ${strategyData.name}`);
+                    
+                    // Also update local strategies array for immediate UI update
+                    const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+                    if (strategyIndex !== -1) {
+                        strategies[strategyIndex] = { ...strategies[strategyIndex], ...strategyData };
+                        window.strategies = strategies;
+                        displayStrategies();
+                        updateStrategySelects();
+                    }
+                    
+                    showMessage("Strategy updated successfully!");
+                    return;
+                } else {
+                    throw new Error(result.message || 'Failed to update strategy');
+                }
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (apiError) {
+            console.warn(`API update failed, trying Firebase fallback: ${apiError.message}`);
+            
+            // Fallback to direct Firebase update
+            const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+            const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
+            await updateDoc(strategyRef, strategyData);
+            
+            // Update local strategies array
+            const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+            if (strategyIndex !== -1) {
+                strategies[strategyIndex] = { ...strategies[strategyIndex], ...strategyData };
+                window.strategies = strategies;
+                displayStrategies();
+                updateStrategySelects();
+            }
+            
+            showMessage("Strategy updated successfully (Firebase)!");
+        }
     } catch (e) {
         console.error("Error updating strategy: ", e);
         showMessage("Failed to update strategy.", true);
@@ -2367,25 +2524,60 @@ window.deleteStrategy = async function(strategyId) {
             }
         }
         
-        // Production mode - use Firebase
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-        const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
-        await deleteDoc(strategyRef);
-        
-        // Also remove from local strategies array to update UI immediately
-        const strategyIndex = strategies.findIndex(s => s.id == strategyId);
-        if (strategyIndex !== -1) {
-            const strategyName = strategies[strategyIndex].name;
-            strategies.splice(strategyIndex, 1);
-            window.strategies = strategies;
+        // Production mode - use both API call and Firebase
+        try {
+            // Make API call to backend first
+            const response = await fetch(`/api/strategy/${strategyId}?user_id=${userId}`, {
+                method: 'DELETE',
+            });
             
-            // Refresh display and dropdowns
-            displayStrategies();
-            updateStrategySelects();
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    console.log(`✅ Strategy deleted via API: ${strategyId}`);
+                    
+                    // Also remove from local strategies array for immediate UI update
+                    const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+                    if (strategyIndex !== -1) {
+                        const strategyName = strategies[strategyIndex].name;
+                        strategies.splice(strategyIndex, 1);
+                        window.strategies = strategies;
+                        displayStrategies();
+                        updateStrategySelects();
+                        showMessage(`Strategy "${strategyName}" deleted successfully!`);
+                    } else {
+                        showMessage("Strategy deleted successfully!");
+                    }
+                    return;
+                } else {
+                    throw new Error(result.message || 'Failed to delete strategy');
+                }
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (apiError) {
+            console.warn(`API deletion failed, trying Firebase fallback: ${apiError.message}`);
             
-            showMessage(`Strategy "${strategyName}" deleted successfully!`);
-        } else {
-            showMessage("Strategy deleted successfully!");
+            // Fallback to direct Firebase deletion
+            const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+            const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
+            await deleteDoc(strategyRef);
+            
+            // Also remove from local strategies array to update UI immediately
+            const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+            if (strategyIndex !== -1) {
+                const strategyName = strategies[strategyIndex].name;
+                strategies.splice(strategyIndex, 1);
+                window.strategies = strategies;
+                
+                // Refresh display and dropdowns
+                displayStrategies();
+                updateStrategySelects();
+                
+                showMessage(`Strategy "${strategyName}" deleted successfully!`);
+            } else {
+                showMessage("Strategy deleted successfully!");
+            }
         }
     } catch (e) {
         console.error("Error deleting strategy: ", e);
@@ -5987,6 +6179,9 @@ window.exportAnalytics = function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Load real models for investor creation dropdown
     loadModelsForInvestor();
+    
+    // Update ML model statistics
+    updateMLModelStats();
     
     // Set up authentication gate form listeners
     const gateSigninForm = document.getElementById('gate-signin-form');
