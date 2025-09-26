@@ -21,15 +21,30 @@ This guide provides step-by-step instructions to deploy the SI-HQ Sports Investm
    ```
 
 2. **Update the `.env` file with your production values:**
+   
+   **⚠️ IMPORTANT: Replace ALL placeholder values that start with "your-"**
+   
+   The template contains these critical settings that MUST be updated:
    ```bash
    # Critical Production Settings
    DISABLE_DEMO_MODE=true
+   SECRET_KEY=your-secure-secret-key-generate-new-one
+   
+   # Firebase Configuration (REQUIRED)
    FIREBASE_PROJECT_ID=your-real-project-id
    FIREBASE_API_KEY=your-real-api-key
-   GOOGLE_APPLICATION_CREDENTIALS=./your_real_service_account.json
+   GOOGLE_APPLICATION_CREDENTIALS=./your_production_service_account.json
+   
+   # Sports API (REQUIRED)
    SPORTS_API_KEY=your-sports-api-key
-   SECRET_KEY=your-secure-secret-key
    ```
+
+3. **Validate your configuration:**
+   ```bash
+   python deploy_production.py --check-only
+   ```
+   
+   You should see: `✅ All production requirements met!`
 
 ### Step 2: API Setup (10 minutes)
 
