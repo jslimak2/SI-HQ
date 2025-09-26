@@ -6423,4 +6423,4 @@ def get_gpu_status():
 if __name__ == '__main__':
     # The app has already been created and initialized above
     # Just run it directly on port 5001 to avoid conflicts
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
