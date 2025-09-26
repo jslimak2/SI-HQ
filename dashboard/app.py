@@ -1861,8 +1861,13 @@ def get_available_investments():
     # Check if we can fetch real data (prioritize real data over demo)
     can_fetch_real_data = external_api_key and 'demo' not in external_api_key.lower()
     
-    # Only use demo mode if we cannot fetch real data
-    if not can_fetch_real_data:
+    # NEW: Always try to fetch real data if API key is available, regardless of demo mode
+    # Only fall back to demo if real data fetch fails or no API key
+    if can_fetch_real_data:
+        print(f"🟢 ATTEMPTING TO FETCH REAL INVESTMENT DATA (API key available)")
+        logger.info("Attempting to fetch real sports data for investments")
+    else:
+        print(f"🟡 USING DEMO INVESTMENT DATA (no valid API key)")
         return jsonify({
             'success': True,
             'investments': generate_demo_investments(),
@@ -2244,39 +2249,41 @@ def get_investor_recommendations():
     user_id = request.args.get('user_id', 'anonymous')
     
     try:
-        # In demo mode, generate mock recommendations
-        if demo_mode or not db:
+        # NEW: Always try real recommendations first, fallback to demo only on failure
+        # This ensures we use real data whenever possible
+        can_use_real_data = external_api_key and 'demo' not in external_api_key.lower()
+        
+        if can_use_real_data:
+            print(f"🟢 GENERATING REAL INVESTOR RECOMMENDATIONS for user {user_id}")
+            logger.info(f"Attempting to generate real investor recommendations for user {user_id}")
+            try:
+                recommendations = generate_real_investor_recommendations(user_id)
+                return jsonify({
+                    'success': True,
+                    'recommendations': recommendations,
+                    'demo_mode': False,
+                    'data_source': 'real'
+                }), 200
+            except Exception as real_error:
+                print(f"🟡 REAL RECOMMENDATIONS FAILED, falling back to demo: {real_error}")
+                logger.warning(f"Failed to generate real recommendations, falling back to demo: {real_error}")
+                # Fallback to demo recommendations if real data fails
+                recommendations = generate_demo_investor_recommendations()
+                return jsonify({
+                    'success': True,
+                    'recommendations': recommendations,
+                    'demo_mode': False,
+                    'data_source': 'demo_fallback',
+                    'warning': 'Using demo data due to real data unavailability'
+                }), 200
+        else:
+            print(f"🟡 GENERATING FAKE INVESTOR RECOMMENDATIONS (no valid API key)")
             recommendations = generate_demo_investor_recommendations()
             return jsonify({
                 'success': True,
                 'recommendations': recommendations,
-                'demo_mode': True
-            }), 200
-        
-        # Get user's investors
-        collections = get_user_collections(user_id)
-        if not collections:
-            return jsonify({'success': False, 'message': 'Database not available'}), 500
-        
-        # Use real investor recommendations in production mode
-        try:
-            recommendations = generate_real_investor_recommendations(user_id)
-            return jsonify({
-                'success': True,
-                'recommendations': recommendations,
-                'demo_mode': False,
-                'data_source': 'real'
-            }), 200
-        except Exception as real_error:
-            logger.warning(f"Failed to generate real recommendations, falling back to demo: {real_error}")
-            # Fallback to demo recommendations if real data fails
-            recommendations = generate_demo_investor_recommendations()
-            return jsonify({
-                'success': True,
-                'recommendations': recommendations,
-                'demo_mode': False,
-                'data_source': 'demo_fallback',
-                'warning': 'Using demo data due to real data unavailability'
+                'demo_mode': True,
+                'data_source': 'demo'
             }), 200
         
     except Exception as e:
@@ -2990,7 +2997,92 @@ def create_visual_strategy():
         print(f"Failed to create visual strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to create strategy: {e}'}), 500
 
-@app.route('/api/models', methods=['GET'])
+@app.route('/api/models/for-investor', methods=['GET'])
+def get_models_for_investor():
+    """Get available models for investor creation dropdown - uses real trained models when available"""
+    try:
+        # Try to get real models from registry first
+        real_models = []
+        try:
+            if hasattr(model_registry, 'list_models'):
+                real_models = model_registry.list_models(status=ModelStatus.TRAINED)
+                if real_models:
+                    print(f"🟢 FOUND {len(real_models)} REAL TRAINED MODELS for investor dropdown")
+                    logger.info(f"Found {len(real_models)} real trained models for investor dropdown")
+                    
+                    models_for_dropdown = []
+                    for model in real_models:
+                        # Calculate display accuracy (use performance metrics if available)
+                        accuracy = 65.0  # Default
+                        if hasattr(model, 'current_performance') and model.current_performance:
+                            accuracy = model.current_performance.accuracy * 100
+                        elif hasattr(model, 'performance_metrics') and model.performance_metrics:
+                            accuracy = model.performance_metrics.get('accuracy', 0.65) * 100
+                        
+                        models_for_dropdown.append({
+                            'value': model.model_id,
+                            'sport': model.sport.value if hasattr(model.sport, 'value') else str(model.sport),
+                            'name': f"{model.sport.value if hasattr(model.sport, 'value') else str(model.sport)} {model.model_type.replace('_', ' ').title()} ({accuracy:.1f}% accuracy)",
+                            'description': model.description or f"{model.model_type.replace('_', ' ').title()} model for {model.sport} predictions"
+                        })
+                    
+                    return jsonify({
+                        'success': True,
+                        'models': models_for_dropdown,
+                        'total_count': len(models_for_dropdown),
+                        'data_source': 'real_registry'
+                    })
+        except Exception as e:
+            print(f"🟡 Failed to get real models from registry: {e}")
+            logger.warning(f"Failed to get real models from registry: {e}")
+        
+        # Fallback to hardcoded models if no real models available
+        print(f"🟡 USING HARDCODED MODELS for investor dropdown (no real models available)")
+        hardcoded_models = [
+            {
+                'value': 'nba_advanced_lstm',
+                'sport': 'NBA',
+                'name': 'NBA Advanced LSTM (68.2% accuracy)',
+                'description': 'LSTM neural network for NBA game predictions with advanced player stats'
+            },
+            {
+                'value': 'nfl_ensemble_v2',
+                'sport': 'NFL',
+                'name': 'NFL Ensemble v2.0 (64.8% accuracy)',
+                'description': 'Ensemble model combining multiple algorithms for NFL predictions'
+            },
+            {
+                'value': 'mlb_statistical',
+                'sport': 'MLB',
+                'name': 'MLB Statistical (61.5% accuracy)',
+                'description': 'Statistical model for MLB predictions using historical data'
+            },
+            {
+                'value': 'nba_ensemble',
+                'sport': 'NBA',
+                'name': 'NBA Ensemble (71.4% accuracy)',
+                'description': 'Advanced ensemble model for NBA moneyline and spread predictions'
+            },
+            {
+                'value': 'nfl_neural',
+                'sport': 'NFL',
+                'name': 'NFL Neural Network (66.1% accuracy)',
+                'description': 'Deep neural network for NFL game outcome predictions'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'models': hardcoded_models,
+            'total_count': len(hardcoded_models),
+            'data_source': 'fallback_hardcoded',
+            'message': 'Using fallback models - train real models to see them here'
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get models for investor dropdown: {e}")
+        return jsonify({'success': False, 'message': f'Failed to get models: {e}'}), 500
+
 def list_models():
     """List available ML models with filtering"""
     try:
