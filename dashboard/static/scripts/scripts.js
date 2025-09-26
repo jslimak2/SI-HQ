@@ -2038,6 +2038,30 @@ window.addStrategy = async function(strategyData) {
 window.editStrategy = async function(strategyId, strategyData) {
     showLoading();
     try {
+        // Handle demo mode or when Firebase is not available
+        if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+            console.log("Editing strategy in demo mode");
+            
+            // Update the strategy in the global strategies array
+            const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+            if (strategyIndex !== -1) {
+                strategies[strategyIndex] = { ...strategies[strategyIndex], ...strategyData };
+                window.strategies = strategies;
+                
+                // Refresh display and dropdowns
+                displayStrategies();
+                updateStrategySelects();
+                
+                showMessage("Strategy updated successfully (Demo Mode)!");
+                return;
+            } else {
+                showMessage("Strategy not found in demo data", true);
+                return;
+            }
+        }
+        
+        // Production mode - use Firebase
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
         await updateDoc(strategyRef, strategyData);
         showMessage("Strategy updated successfully!");

@@ -498,7 +498,19 @@
         </header>
         <div id="dashboard-page">
             <section id="overall-stats-section" class="mb-12">
-                <h2 class="text-2xl font-bold mb-6 text-white">Overall Stats</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Overall Stats</h2>
+                    <div class="flex items-center gap-4">
+                        <label for="stats-timeframe" class="text-sm text-gray-400">Timeframe:</label>
+                        <select id="stats-timeframe" class="bg-gray-700 text-white border border-gray-600 rounded-md px-3 py-1 text-sm" onchange="updateStatsTimeframe()">
+                            <option value="ytd">Year to Date</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="monthly" selected>This Month</option>
+                            <option value="weekly">This Week</option>
+                            <option value="all-time">All Time</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="stats-container" class="stats-grid">
                     <div class="stats-card">
                         <span class="stats-icon">💰</span>
@@ -4387,6 +4399,65 @@
                 showMessage('Error updating strategy. Please try again.', 'error');
                 return false;
             }
+        }
+        
+        function updateStatsTimeframe() {
+            const timeframe = document.getElementById('stats-timeframe').value;
+            console.log('Updating stats timeframe to:', timeframe);
+            
+            // In a real implementation, this would fetch data for the selected timeframe
+            // For demo purposes, we'll just show different mock values based on timeframe
+            const mockStatsData = {
+                'weekly': {
+                    profit: '$127.50',
+                    wagers: '8',
+                    winRate: '62.5%',
+                    profitTrend: '▲ +15.2%'
+                },
+                'monthly': {
+                    profit: '$691.75',
+                    wagers: '57',
+                    winRate: '59.65%',
+                    profitTrend: '▲ +12.8%'
+                },
+                'quarterly': {
+                    profit: '$1,847.25',
+                    wagers: '184',
+                    winRate: '61.4%',
+                    profitTrend: '▲ +18.3%'
+                },
+                'ytd': {
+                    profit: '$4,923.80', 
+                    wagers: '467',
+                    winRate: '58.9%',
+                    profitTrend: '▲ +24.7%'
+                },
+                'all-time': {
+                    profit: '$12,847.65',
+                    wagers: '1,247',
+                    winRate: '60.2%',
+                    profitTrend: '▲ +31.5%'
+                }
+            };
+            
+            const data = mockStatsData[timeframe] || mockStatsData['monthly'];
+            
+            // Update the displayed values
+            document.getElementById('total-profit').textContent = data.profit;
+            document.getElementById('total-wagers').textContent = data.wagers;
+            document.getElementById('win-rate').textContent = data.winRate;
+            document.getElementById('profit-trend').textContent = data.profitTrend;
+            
+            // Show a message indicating the timeframe change
+            const timeframeLabels = {
+                'weekly': 'This Week',
+                'monthly': 'This Month', 
+                'quarterly': 'This Quarter',
+                'ytd': 'Year to Date',
+                'all-time': 'All Time'
+            };
+            
+            showMessage(`Stats updated for: ${timeframeLabels[timeframe]}`, 'success');
         }
         
         function toggleStrategySizingOptions() {
