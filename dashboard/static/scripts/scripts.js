@@ -622,27 +622,7 @@ function showInvestorDetails(investorId) {
 }
 
 // Toggle investor status (start/pause)
-function toggleInvestorStatus(investorId) {
-    const investor = investors.find(inv => inv.id === investorId);
-    if (!investor) {
-        console.error('Investor not found:', investorId);
-        return;
-    }
-    
-    const newStatus = (investor.active_status === 'RUNNING' || investor.status === 'running') ? 'STOPPED' : 'RUNNING';
-    
-    // Update locally
-    investor.active_status = newStatus;
-    investor.status = newStatus.toLowerCase();
-    
-    // Refresh display
-    displayUnifiedInvestors();
-    
-    showMessage(`Investor "${investor.name}" ${newStatus === 'RUNNING' ? 'started' : 'paused'}`, false);
-    
-    console.log(`Toggled investor ${investor.name} to ${newStatus}`);
-    // TODO: Update on server
-}
+
 
 // Edit investor
 function editInvestor(investorId) {
@@ -652,33 +632,63 @@ function editInvestor(investorId) {
         return;
     }
     console.log('Edit investor:', investor.name);
-    // TODO: Implement edit investor modal
-}
-
-// Delete investor
-function deleteInvestor(investorId) {
-    const investor = investors.find(inv => inv.id === investorId);
-    if (!investor) {
-        console.error('Investor not found:', investorId);
-        return;
+    
+    // Populate modal with current investor data
+    document.getElementById('modal-investor-id').value = investor.id;
+    document.getElementById('modal-investor-name').textContent = investor.name;
+    document.getElementById('modal-name').value = investor.name;
+    
+    // Set strategy (preload known value) - use both strategy_id and assigned_strategy_id
+    const strategySelect = document.getElementById('modal-strategy');
+    if (strategySelect && (investor.strategy_id || investor.assigned_strategy_id)) {
+        const strategyId = investor.strategy_id || investor.assigned_strategy_id;
+        strategySelect.value = strategyId;
     }
     
-    if (confirm(`Are you sure you want to delete investor "${investor.name}"? This action cannot be undone.`)) {
-        // Remove from local array
-        const index = investors.findIndex(inv => inv.id === investorId);
-        if (index > -1) {
-            investors.splice(index, 1);
+    // Set model (preload known value - fix for the ticket issue)
+    const modelSelect = document.getElementById('modal-model');
+    if (modelSelect && investor.assigned_model_id) {
+        modelSelect.value = investor.assigned_model_id;
+    } else if (modelSelect && investor.sport_filter) {
+        // If no specific model assigned, select a default model based on sport
+        const sportBasedModels = {
+            'NBA': 'nba_advanced_lstm',
+            'NFL': 'nfl_ensemble_v2', 
+            'MLB': 'mlb_statistical'
+        };
+        if (sportBasedModels[investor.sport_filter]) {
+            modelSelect.value = sportBasedModels[investor.sport_filter];
         }
-        
-        // Refresh display
-        displayUnifiedInvestors();
-        
-        showMessage(`Investor "${investor.name}" deleted successfully`, false);
-        
-        console.log('Deleted investor:', investor.name);
-        // TODO: Delete on server
     }
+    
+    // Set sport (already preloaded according to ticket) - use sport_filter or target_sport
+    const sportSelect = document.getElementById('modal-sport');
+    if (sportSelect && (investor.target_sport || investor.sport_filter)) {
+        const sport = investor.target_sport || investor.sport_filter;
+        sportSelect.value = sport;
+    }
+    
+    // Set target markets checkboxes
+    if (investor.target_markets && Array.isArray(investor.target_markets)) {
+        // Clear all checkboxes first
+        const marketCheckboxes = document.querySelectorAll('[name="target_markets"]');
+        marketCheckboxes.forEach(cb => cb.checked = false);
+        
+        // Check the ones that match
+        investor.target_markets.forEach(market => {
+            const checkbox = document.getElementById(`modal-market-${market}`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+    
+    // Show the modal
+    window.showModal('investor-details-modal');
 }
+
+// Make editInvestor globally available
+window.editInvestor = editInvestor;
+
+
 
 // Update the main displayInvestors function to use the new unified display
 function displayInvestors() {
@@ -2353,6 +2363,36 @@ window.editBot = async function(investorData) {
 
 window.deleteInvestor = async function(investorId) {
     if (!confirm("Are you sure you want to delete this investor? This action is permanent.")) return;
+    
+    // Handle demo mode or when Firebase is not available
+    if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+        console.log("Deleting investor in demo mode");
+        
+        const investor = investors.find(inv => inv.id === investorId);
+        if (!investor) {
+            console.error('Investor not found:', investorId);
+            showMessage("Investor not found.", true);
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to delete investor "${investor.name}"? This action cannot be undone.`)) {
+            // Remove from local array
+            const index = investors.findIndex(inv => inv.id === investorId);
+            if (index > -1) {
+                investors.splice(index, 1);
+            }
+            
+            // Refresh display
+            displayUnifiedInvestors();
+            
+            showMessage(`Investor "${investor.name}" deleted successfully`, false);
+            
+            console.log('Deleted investor:', investor.name);
+        }
+        return;
+    }
+    
+    // Firebase mode
     showLoading();
     try {
         const investorRef = doc(db, `users/${userId}/investors`, investorId);
@@ -2395,6 +2435,33 @@ window.toggleBotWagers = function(investorId) {
 };
 
 window.toggleInvestorStatus = async function(investorId, currentStatus) {
+    // Handle demo mode or when Firebase is not available
+    if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+        console.log("Toggling investor status in demo mode");
+        
+        const investor = investors.find(inv => inv.id === investorId);
+        if (!investor) {
+            console.error('Investor not found:', investorId);
+            showMessage("Investor not found.", true);
+            return;
+        }
+        
+        const newStatus = (investor.active_status === 'RUNNING' || investor.status === 'running') ? 'STOPPED' : 'RUNNING';
+        
+        // Update locally
+        investor.active_status = newStatus;
+        investor.status = newStatus.toLowerCase();
+        
+        // Refresh display
+        displayUnifiedInvestors();
+        
+        showMessage(`Investor "${investor.name}" ${newStatus === 'RUNNING' ? 'started' : 'paused'}`, false);
+        
+        console.log(`Toggled investor ${investor.name} to ${newStatus}`);
+        return;
+    }
+    
+    // Firebase mode
     showLoading();
     const newStatus = currentStatus === 'running' ? 'stopped' : 'running';
     try {
@@ -7184,7 +7251,17 @@ function updateMLStatsDisplay(stats) {
     const accuracyTrendEl = document.getElementById('ml-accuracy-trend');
     
     if (activeModelsEl) {
-        activeModelsEl.textContent = stats.active_models || stats.models?.filter(m => m.status === 'active')?.length || '3';
+        // Calculate actual number of active models instead of hardcoded fallback
+        let activeModelCount = 0;
+        if (stats?.active_models) {
+            activeModelCount = stats.active_models;
+        } else if (stats?.models?.length) {
+            activeModelCount = stats.models.filter(m => m.status === 'active').length;
+        } else {
+            // In demo mode, we can count the available models from the API
+            activeModelCount = 0; // Start with 0 instead of hardcoded 3
+        }
+        activeModelsEl.textContent = activeModelCount;
     }
     
     if (accuracyEl) {
