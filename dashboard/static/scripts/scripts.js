@@ -7325,6 +7325,8 @@ window.toggleStrategySizingOptions = toggleStrategySizingOptions;
 window.displayStrategies = displayStrategies;
 window.updateStrategySelects = updateStrategySelects;
 window.showOnboardingGuide = showOnboardingGuide;
+window.showSigninFromGate = showSigninFromGate;
+window.showSignupFromGate = showSignupFromGate;
 
 // Add form handler for train model modal
 document.addEventListener('DOMContentLoaded', function() {
