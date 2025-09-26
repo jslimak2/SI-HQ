@@ -3906,6 +3906,13 @@ async function startListeners() {
         await fetchStrategies();
         await fetchInvestors();
         
+        // Initialize UI components for demo mode
+        // Load real models for investor creation dropdown
+        loadModelsForInvestor();
+        
+        // Update ML model statistics
+        updateMLModelStats();
+        
         // Check auto-refresh for demo mode too
         setTimeout(() => {
             if (userSettings) {
@@ -3935,6 +3942,13 @@ async function startListeners() {
             
             // Initialize demo data for new users if needed
             await initializeDemoDataIfNeeded();
+            
+            // Initialize UI components after authentication is confirmed
+            // Load real models for investor creation dropdown
+            loadModelsForInvestor();
+            
+            // Update ML model statistics
+            updateMLModelStats();
             
             // Check auto-refresh after everything is loaded AND settings are available
             setTimeout(() => {
@@ -6204,11 +6218,8 @@ window.exportAnalytics = function() {
 
 // Initialize new functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Load real models for investor creation dropdown
-    loadModelsForInvestor();
-    
-    // Update ML model statistics
-    updateMLModelStats();
+    // Only set up authentication gate form listeners on page load
+    // Model loading and stats will be initialized after authentication
     
     // Set up authentication gate form listeners
     const gateSigninForm = document.getElementById('gate-signin-form');
