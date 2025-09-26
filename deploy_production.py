@@ -20,6 +20,19 @@ def check_requirements():
     # Check if .env file exists
     if not os.path.exists('.env'):
         issues.append("❌ Missing .env file (copy from .env.production template)")
+        print("\n🚨 Production readiness issues found:")
+        for issue in issues:
+            print(f"  {issue}")
+        print("\n📖 Please review .env.production template and update your .env file")
+        return False
+    
+    # Load environment variables from .env file
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        print("❌ python-dotenv not installed. Install with: pip install python-dotenv")
+        return False
     
     # Check Firebase credentials
     google_creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')

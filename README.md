@@ -6,7 +6,34 @@
 
 At ***Post*9**, we merge the passion of sports with the precision of data science. Our platform is built for the sports investor, offering advanced analytics, predictive modeling, and sophisticated simulation tools to give you an edge. We go beyond simple stats, uncovering hidden opportunities and developing investment strategies that are as dynamic as the games themselves. Whether you're a seasoned investor or new to the field, ***Post*9** equips you with the insights to turn your sports knowledge into strategic success.
 
+## 🚀 Getting Started
+
+### Ready for Production? (Recommended)
+```bash
+# 1. Copy configuration template
+cp .env.production .env
+
+# 2. Update .env with your API keys (see PRODUCTION_SETUP_GUIDE.md)
+# 3. Test your setup
+python deploy_production.py --check-only
+
+# 4. Start production server
+cd dashboard && python app.py
+```
+
+### Just Exploring? (Demo Mode)
+```bash
+# Use demo configuration (fake data)
+cp .env.demo .env
+cd dashboard && python app.py
+```
+
 ## 📖 Documentation
+
+### 🚀 Production Setup
+- **[Production Setup Guide](PRODUCTION_SETUP_GUIDE.md)** - **NEW** Complete step-by-step production configuration  
+- **[Quick Production Deployment](QUICK_PRODUCTION_DEPLOYMENT.md)** - 30 minutes to production
+- **[Deployment Guide](DEPLOYMENT.md)** - Advanced deployment options
 
 ### Quick Start
 - **[Quick Reference Guide](QUICK_REFERENCE_GUIDE.md)** - Get started in 5 minutes
