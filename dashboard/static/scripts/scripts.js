@@ -2647,6 +2647,21 @@ window.clearFilters = function(sport) {
 let currentUser = null;
 let isAuthenticated = false;
 
+// Initialize auth state immediately
+function initializeAuthState() {
+    if (typeof window.currentUser === 'undefined') {
+        window.currentUser = null;
+    }
+    if (typeof window.isAuthenticated === 'undefined') {
+        window.isAuthenticated = false;
+    }
+    currentUser = window.currentUser;
+    isAuthenticated = window.isAuthenticated;
+}
+
+// Call initialization
+initializeAuthState();
+
 window.showAuthForm = function(formType) {
     const signinForm = document.getElementById('signin-form');
     const signupForm = document.getElementById('signup-form');
@@ -2886,6 +2901,70 @@ async function deleteUserAccount() {
     } finally {
         hideLoading();
     }
+}
+
+// Authentication Gate Functions
+function checkAuthAndShowContent() {
+    // Initialize auth state if undefined
+    if (typeof isAuthenticated === 'undefined') {
+        isAuthenticated = false;
+    }
+    if (typeof currentUser === 'undefined') {
+        currentUser = null;
+    }
+    
+    if (isAuthenticated && currentUser) {
+        // Show main app content
+        document.getElementById('auth-gate').classList.add('hidden');
+        document.getElementById('main-app-content').classList.remove('hidden');
+    } else {
+        // Show authentication gate
+        document.getElementById('auth-gate').classList.remove('hidden');
+        document.getElementById('main-app-content').classList.add('hidden');
+    }
+}
+
+function showSigninFromGate() {
+    // Hide signup form, show signin form
+    document.getElementById('gate-signup-form').classList.add('hidden');
+    document.getElementById('gate-signin-form').classList.remove('hidden');
+    
+    // Update button styles
+    document.getElementById('gate-signin-btn').className = 'post9-btn p-3 text-sm bg-blue-600';
+    document.getElementById('gate-signup-btn').className = 'post9-btn p-3 text-sm bg-gray-600';
+}
+
+function showSignupFromGate() {
+    // Hide signin form, show signup form  
+    document.getElementById('gate-signin-form').classList.add('hidden');
+    document.getElementById('gate-signup-form').classList.remove('hidden');
+    
+    // Update button styles
+    document.getElementById('gate-signin-btn').className = 'post9-btn p-3 text-sm bg-gray-600';
+    document.getElementById('gate-signup-btn').className = 'post9-btn p-3 text-sm bg-blue-600';
+}
+
+// Override existing auth functions to trigger content check
+const originalSignInUser = signInUser;
+const originalSignUpUser = signUpUser;
+const originalSignOutUser = signOutUser;
+
+// Update sign in to check auth after success
+signInUser = async function(email, password) {
+    await originalSignInUser(email, password);
+    checkAuthAndShowContent();
+}
+
+// Update sign up to check auth after success  
+signUpUser = async function(email, password, confirmPassword) {
+    await originalSignUpUser(email, password, confirmPassword);
+    checkAuthAndShowContent();
+}
+
+// Update sign out to check auth after success
+signOutUser = async function() {
+    await originalSignOutUser();
+    checkAuthAndShowContent();
 }
 
 function createInvestmentCard(investment) {
@@ -5597,6 +5676,40 @@ window.exportAnalytics = function() {
 
 // Initialize new functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Set up authentication gate form listeners
+    const gateSigninForm = document.getElementById('gate-signin-form');
+    const gateSignupForm = document.getElementById('gate-signup-form');
+    const gateDemoBtn = document.getElementById('gate-demo-btn');
+    
+    if (gateSigninForm) {
+        gateSigninForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            await signInUser(formData.get('email'), formData.get('password'));
+        });
+    }
+    
+    if (gateSignupForm) {
+        gateSignupForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            await signUpUser(formData.get('email'), formData.get('password'), formData.get('confirmPassword'));
+        });
+    }
+    
+    if (gateDemoBtn) {
+        gateDemoBtn.addEventListener('click', function() {
+            // Demo sign in - set authenticated state
+            currentUser = { email: 'demo@example.com', displayName: 'Demo User' };
+            isAuthenticated = true;
+            checkAuthAndShowContent();
+            showMessage('Signed in with demo mode', false);
+        });
+    }
+    
+    // Check authentication state on page load
+    checkAuthAndShowContent();
+    
     setTimeout(() => {
         initializeStrategyBuilder();
         
