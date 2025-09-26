@@ -35,12 +35,12 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 // Firestore data collections
 let db, auth;
 let userId = 'anonymous';
-let bots = [];
+let investors = [];
 let strategies = [];
 let userSettings = {};
 
 // Firebase listener unsubscribe functions
-let unsubscribeBots = null;
+let unsubscribeInvestors = null;
 let unsubscribeStrategies = null;
 
 // Make strategies globally accessible for inline scripts
@@ -50,12 +50,12 @@ window.strategies = strategies;
 let betCart = [];
 let cartVisible = false;
 
-// Bot recommendations cache
-let botRecommendations = {};
+// Investor recommendations cache
+let investorRecommendations = {};
 
 // UI elements
-const activeBotsContainer = document.getElementById('active-bots-container');
-const inactiveBotsContainer = document.getElementById('inactive-bots-container');
+const activeBotsContainer = document.getElementById('active-investors-container');
+const inactiveBotsContainer = document.getElementById('inactive-investors-container');
 const strategiesContainer = document.getElementById('strategies-container');
 const messageBox = document.getElementById('message-box');
 const loadingSpinner = document.getElementById('loading-spinner');
@@ -215,10 +215,10 @@ document.addEventListener('keydown', function(event) {
 
 // Clean up Firebase listeners when the page is about to unload
 function cleanupFirebaseListeners() {
-    if (unsubscribeBots) {
-        console.log("Cleaning up bots listener");
-        unsubscribeBots();
-        unsubscribeBots = null;
+    if (unsubscribeInvestors) {
+        console.log("Cleaning up investors listener");
+        unsubscribeInvestors();
+        unsubscribeInvestors = null;
     }
     if (unsubscribeStrategies) {
         console.log("Cleaning up strategies listener");
@@ -275,38 +275,38 @@ async function fetchStrategies() {
     }
 }
 
-// Function to fetch and display bots
-async function fetchBots() {
+// Function to fetch and display investors
+async function fetchInvestors() {
     if (!firebaseAvailable) {
         console.log("Firebase not available, loading demo investors");
-        await loadDemoBots();
+        await loadDemoInvestors();
         return;
     }
     
     // Clean up existing listener
-    if (unsubscribeBots) {
-        unsubscribeBots();
-        unsubscribeBots = null;
+    if (unsubscribeInvestors) {
+        unsubscribeInvestors();
+        unsubscribeInvestors = null;
     }
     
     showLoading();
     try {
-        const q = collection(db, `users/${userId}/bots`);
-        unsubscribeBots = onSnapshot(q, (querySnapshot) => {
-            bots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            displayBots();
+        const q = collection(db, `users/${userId}/investors`);
+        unsubscribeInvestors = onSnapshot(q, (querySnapshot) => {
+            investors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            displayInvestors();
             updateOverallStats();
             setupStatsCardClicks();
             hideLoading();
         }, (error) => {
-            console.error("Error fetching bots:", error);
+            console.error("Error fetching investors:", error);
             showMessage("Failed to load investors.", true);
             hideLoading();
         });
     } catch (e) {
-        console.error("Error fetching bots:", e);
+        console.error("Error fetching investors:", e);
         console.log("Firebase not available, loading demo investors");
-        await loadDemoBots();
+        await loadDemoInvestors();
     }
 }
 
@@ -331,12 +331,12 @@ function updateStrategySelects() {
     });
 }
 
-function displayBots() {
-    const activeBots = bots.filter(bot => bot.active_status === 'RUNNING' || bot.status === 'running');
-    const inactiveBots = bots.filter(bot => bot.active_status !== 'RUNNING' && bot.status !== 'running');
+function displayInvestors() {
+    const activeBots = investors.filter(investor => investor.active_status === 'RUNNING' || investor.status === 'running');
+    const inactiveBots = investors.filter(investor => investor.active_status !== 'RUNNING' && investor.status !== 'running');
 
-    function createBotTable(container, botsList, title, showControls = true) {
-        if (botsList.length === 0) {
+    function createInvestorTable(container, investorsList, title, showControls = true) {
+        if (investorsList.length === 0) {
             container.innerHTML = `<p class="text-center text-gray-500 py-4">No ${title.toLowerCase()} found.</p>`;
             return;
         }
@@ -356,39 +356,39 @@ function displayBots() {
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 post9-card">
-                ${botsList.map(bot => {
-                    const strategy = strategies.find(s => s.id == bot.assigned_strategy_id || s.id == bot.strategy_id);
+                ${investorsList.map(investor => {
+                    const strategy = strategies.find(s => s.id == investor.assigned_strategy_id || s.id == investor.strategy_id);
                     const strategyName = strategy ? strategy.name : 'Unknown';
-                    const profitLoss = (bot.current_balance - bot.starting_balance).toFixed(2);
+                    const profitLoss = (investor.current_balance - investor.starting_balance).toFixed(2);
                     const profitLossClass = profitLoss >= 0 ? 'text-green-600' : 'text-red-600';
-                    const botStatus = bot.active_status || bot.status;
-                    const isRunning = botStatus === 'RUNNING' || botStatus === 'running';
+                    const investorStatus = investor.active_status || investor.status;
+                    const isRunning = investorStatus === 'RUNNING' || investorStatus === 'running';
                     const statusColor = isRunning ? 'bg-blue-500' : 'bg-gray-500';
                     const statusText = isRunning ? 'Running' : 'Stopped';
                     return `
-                        <tr class="cursor-pointer post9-card" onclick="window.toggleBotWagers('${bot.id}')">
-                            <td class="px-6 py-4 whitespace-nowrap font-semibold">${bot.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${bot.sport_filter || bot.sport || 'N/A'}</td>
+                        <tr class="cursor-pointer post9-card" onclick="window.toggleBotWagers('${investor.id}')">
+                            <td class="px-6 py-4 whitespace-nowrap font-semibold">${investor.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${investor.sport_filter || investor.sport || 'N/A'}</td>
                             <td class="px-6 py-4 whitespace-nowrap">${strategyName}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">$${bot.current_balance.toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${bot.bet_percentage}%</td>
+                            <td class="px-6 py-4 whitespace-nowrap">$${investor.current_balance.toFixed(2)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${investor.bet_percentage}%</td>
                             <td class="px-6 py-4 whitespace-nowrap ${profitLossClass}">$${profitLoss}</td>
                             <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor} text-white">${statusText}</span></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="event.stopPropagation(); window.showBotDetails('${bot.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
-                                <button onclick="event.stopPropagation(); window.showBotHistory('${bot.id}')" class="text-blue-400 hover:text-blue-200 mx-1">History</button>
-                                <button onclick="event.stopPropagation(); window.showBotLog('${bot.id}')" class="text-gray-300 hover:text-gray-100 mx-1">Log</button>
-                                <button onclick="event.stopPropagation(); window.toggleBotStatus('${bot.id}', '${botStatus}')" class="text-green-400 hover:text-green-200 mx-1">${isRunning ? 'Stop' : 'Start'}</button>
-                                <button onclick="event.stopPropagation(); window.deleteBot('${bot.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
+                                <button onclick="event.stopPropagation(); window.showInvestorDetails('${investor.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
+                                <button onclick="event.stopPropagation(); window.showInvestorHistory('${investor.id}')" class="text-blue-400 hover:text-blue-200 mx-1">History</button>
+                                <button onclick="event.stopPropagation(); window.showInvestorLog('${investor.id}')" class="text-gray-300 hover:text-gray-100 mx-1">Log</button>
+                                <button onclick="event.stopPropagation(); window.toggleInvestorStatus('${investor.id}', '${investorStatus}')" class="text-green-400 hover:text-green-200 mx-1">${isRunning ? 'Stop' : 'Start'}</button>
+                                <button onclick="event.stopPropagation(); window.deleteInvestor('${investor.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
                             </td>
                         </tr>
-                        <tr id="wagers-${bot.id}" class="hidden post9-card">
+                        <tr id="wagers-${investor.id}" class="hidden post9-card">
                             <td colspan="8" class="px-6 py-4">
                                 <div class="border-t border-gray-200 pt-4">
                                     <h4 class="font-semibold text-gray-200 mb-2">Open Wagers:</h4>
-                                    <div id="wagers-content-${bot.id}" class="text-sm text-gray-200">
-                                        ${bot.open_wagers && bot.open_wagers.length > 0 ? 
-                                            bot.open_wagers.map(wager => `
+                                    <div id="wagers-content-${investor.id}" class="text-sm text-gray-200">
+                                        ${investor.open_wagers && investor.open_wagers.length > 0 ? 
+                                            investor.open_wagers.map(wager => `
                                                 <div class="mb-2 p-2 post9-card">
                                                     <strong>${wager.teams || 'N/A'}</strong> - ${wager.bet_type || 'N/A'}<br>
                                                     Wager: $${wager.amount ? wager.amount.toFixed(2) : '0.00'} | 
@@ -401,7 +401,7 @@ function displayBots() {
                                     </div>
                                     <div class="mt-4 pt-4 border-t border-gray-200">
                                         <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
-                                        <div id="picks-content-${bot.id}" class="mt-2"></div>
+                                        <div id="picks-content-${investor.id}" class="mt-2"></div>
                                     </div>
                                 </div>
                             </td>
@@ -414,8 +414,8 @@ function displayBots() {
         container.appendChild(table);
     }
 
-    createBotTable(activeBotsContainer, activeBots, 'Active Investors');
-    createBotTable(inactiveBotsContainer, inactiveBots, 'Inactive Investors');
+    createInvestorTable(activeBotsContainer, activeBots, 'Active Investors');
+    createInvestorTable(inactiveBotsContainer, inactiveBots, 'Inactive Investors');
 }
 
 // Load strategies from demo data initially
@@ -481,12 +481,12 @@ async function loadDemoStrategies() {
     }
 }
 
-async function loadDemoBots() {
+async function loadDemoInvestors() {
     try {
-        // Demo bots with assigned strategies
-        bots = [
+        // Demo investors with assigned strategies
+        investors = [
             {
-                "id": "demo_bot_1",
+                "id": "demo_investor_1",
                 "name": "Value Hunter",
                 "current_balance": 1250.75,
                 "starting_balance": 1000.0,
@@ -505,7 +505,7 @@ async function loadDemoBots() {
                 "last_run": new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
             },
             {
-                "id": "demo_bot_2", 
+                "id": "demo_investor_2", 
                 "name": "Safe Play",
                 "current_balance": 1085.20,
                 "starting_balance": 1000.0,
@@ -524,7 +524,7 @@ async function loadDemoBots() {
                 "last_run": new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() // 6 hours ago
             },
             {
-                "id": "demo_bot_3",
+                "id": "demo_investor_3",
                 "name": "High Roller",
                 "current_balance": 1380.50,
                 "starting_balance": 1000.0,
@@ -543,7 +543,7 @@ async function loadDemoBots() {
                 "last_run": new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30 minutes ago
             },
             {
-                "id": "demo_bot_4",
+                "id": "demo_investor_4",
                 "name": "Recovery Master",
                 "current_balance": 975.30,
                 "starting_balance": 1000.0,
@@ -563,7 +563,7 @@ async function loadDemoBots() {
             }
         ];
         
-        displayBots();
+        displayInvestors();
         updateOverallStats();
         setupStatsCardClicks();
         hideLoading();
@@ -578,13 +578,13 @@ async function loadDemoBots() {
 // Initialize demo data for new users
 async function initializeDemoDataIfNeeded() {
     try {
-        // Only initialize if we have very few strategies or bots (new user)
+        // Only initialize if we have very few strategies or investors (new user)
         if (firebaseAvailable && db && userId !== 'demo-user' && userId !== 'anonymous') {
             const strategiesQuery = collection(db, `users/${userId}/strategies`);
             const strategiesSnapshot = await getDocs(strategiesQuery);
             
-            const botsQuery = collection(db, `users/${userId}/bots`);
-            const botsSnapshot = await getDocs(botsQuery);
+            const investorsQuery = collection(db, `users/${userId}/investors`);
+            const investorsSnapshot = await getDocs(investorsQuery);
             
             // If user has no strategies, create starter strategies
             if (strategiesSnapshot.empty) {
@@ -627,8 +627,8 @@ async function initializeDemoDataIfNeeded() {
                 await fetchStrategies();
             }
             
-            // If user has no bots, create a starter bot
-            if (botsSnapshot.empty && strategies.length > 0) {
+            // If user has no investors, create a starter investor
+            if (investorsSnapshot.empty && strategies.length > 0) {
                 console.log("Creating starter investor for new user");
                 
                 const starterBot = {
@@ -643,8 +643,8 @@ async function initializeDemoDataIfNeeded() {
                 };
                 
                 try {
-                    const botRef = collection(db, `users/${userId}/bots`);
-                    await addDoc(botRef, {
+                    const investorRef = collection(db, `users/${userId}/investors`);
+                    await addDoc(investorRef, {
                         ...starterBot,
                         status: 'stopped',
                         current_balance: starterBot.starting_balance,
@@ -654,10 +654,10 @@ async function initializeDemoDataIfNeeded() {
                         created_at: new Date().toISOString()
                     });
                     
-                    // Refresh bots after adding
-                    await fetchBots();
+                    // Refresh investors after adding
+                    await fetchInvestors();
                 } catch (e) {
-                    console.error("Error creating starter bot:", e);
+                    console.error("Error creating starter investor:", e);
                 }
             }
         }
@@ -677,7 +677,7 @@ function showOnboardingGuide() {
                     <h4 class="font-bold text-blue-800">Getting Started (5 minutes)</h4>
                     <ol class="list-decimal list-inside text-sm mt-2 space-y-1">
                         <li>Create your first <strong>Strategy</strong> (defines how to pick investments)</li>
-                        <li>Add an <strong>Investor</strong> (automated bot that follows your strategy)</li>
+                        <li>Add an <strong>Investor</strong> (automated investor that follows your strategy)</li>
                         <li>Review <strong>Investment Recommendations</strong> on the dashboard</li>
                         <li>Monitor performance and adjust as needed</li>
                     </ol>
@@ -1582,12 +1582,12 @@ function displayStrategies() {
 
 // Update overall stats dashboard
 function updateOverallStats() {
-    const totalProfit = bots.reduce((sum, bot) => sum + (bot.current_balance - bot.starting_balance), 0);
-    const totalWagers = bots.reduce((sum, bot) => sum + bot.total_wagers, 0);
-    const totalWins = bots.reduce((sum, bot) => sum + bot.total_wins, 0);
+    const totalProfit = investors.reduce((sum, investor) => sum + (investor.current_balance - investor.starting_balance), 0);
+    const totalWagers = investors.reduce((sum, investor) => sum + investor.total_wagers, 0);
+    const totalWins = investors.reduce((sum, investor) => sum + investor.total_wins, 0);
     const winRate = totalWagers > 0 ? ((totalWins / totalWagers) * 100).toFixed(2) : '0.00';
     const profitClass = totalProfit >= 0 ? 'text-green-600' : 'text-red-600';
-    const sortedBots = [...bots].sort((a, b) => (b.current_balance - b.starting_balance) - (a.current_balance - a.starting_balance));
+    const sortedBots = [...investors].sort((a, b) => (b.current_balance - b.starting_balance) - (a.current_balance - a.starting_balance));
     const bestBot = sortedBots[0];
     const worstBot = sortedBots[sortedBots.length - 1];
 
@@ -1604,14 +1604,14 @@ function updateOverallStats() {
     if (winRateEl) {
         winRateEl.textContent = `${winRate}%`;
     }
-    const bestBotNameEl = document.getElementById('best-bot-name');
-    const bestBotProfitEl = document.getElementById('best-bot-profit');
+    const bestBotNameEl = document.getElementById('best-investor-name');
+    const bestBotProfitEl = document.getElementById('best-investor-profit');
     if (bestBot && bestBotNameEl && bestBotProfitEl) {
         bestBotNameEl.textContent = bestBot.name;
         bestBotProfitEl.textContent = `$${(bestBot.current_balance - bestBot.starting_balance).toFixed(2)}`;
     }
-    const worstBotNameEl = document.getElementById('worst-bot-name');
-    const worstBotProfitEl = document.getElementById('worst-bot-profit');
+    const worstBotNameEl = document.getElementById('worst-investor-name');
+    const worstBotProfitEl = document.getElementById('worst-investor-profit');
     if (worstBot && worstBotNameEl && worstBotProfitEl) {
         worstBotNameEl.textContent = worstBot.name;
         worstBotProfitEl.textContent = `$${(worstBot.current_balance - worstBot.starting_balance).toFixed(2)}`;
@@ -1620,25 +1620,25 @@ function updateOverallStats() {
 
 // --- MODAL FUNCTIONS ---
 
-window.showBotDetails = function(botId) {
-    const bot = bots.find(b => b.id === botId);
-    if (!bot) {
-        console.error('Bot not found:', botId);
+window.showInvestorDetails = function(investorId) {
+    const investor = investors.find(b => b.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
         return;
     }
     
     // Populate the modal fields
-    document.getElementById('modal-investor-id').value = bot.id;
-    document.getElementById('modal-investor-name').textContent = bot.name;
-    document.getElementById('modal-name').value = bot.name;
-    document.getElementById('modal-balance').value = bot.current_balance;
-    document.getElementById('modal-bet-percent').value = bot.bet_percentage;
-    document.getElementById('modal-max-bets').value = bot.max_bets_per_week;
+    document.getElementById('modal-investor-id').value = investor.id;
+    document.getElementById('modal-investor-name').textContent = investor.name;
+    document.getElementById('modal-name').value = investor.name;
+    document.getElementById('modal-balance').value = investor.current_balance;
+    document.getElementById('modal-bet-percent').value = investor.bet_percentage;
+    document.getElementById('modal-max-bets').value = investor.max_bets_per_week;
     
     // Populate additional fields with defaults if not present
-    document.getElementById('modal-min-confidence').value = bot.minimum_confidence || 60.0;
-    document.getElementById('modal-kelly-fraction').value = bot.kelly_fraction || 0.25;
-    document.getElementById('modal-schema-version').value = bot.schema_version || '1.0.0';
+    document.getElementById('modal-min-confidence').value = investor.minimum_confidence || 60.0;
+    document.getElementById('modal-kelly-fraction').value = investor.kelly_fraction || 0.25;
+    document.getElementById('modal-schema-version').value = investor.schema_version || '1.0.0';
 
     // Populate the strategy dropdown
     const strategySelect = document.getElementById('modal-strategy');
@@ -1647,14 +1647,14 @@ window.showBotDetails = function(botId) {
         const option = document.createElement('option');
         option.value = strategy.id;
         option.textContent = strategy.name;
-        if (strategy.id === bot.strategy_id) {
+        if (strategy.id === investor.strategy_id) {
             option.selected = true;
         }
         strategySelect.appendChild(option);
     });
 
     // Populate allowable platforms checkboxes
-    const allowablePlatforms = bot.allowable_platforms || ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']; // Default to all if not set
+    const allowablePlatforms = investor.allowable_platforms || ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']; // Default to all if not set
     const platformCheckboxes = [
         'modal-platform-draftkings',
         'modal-platform-fanduel', 
@@ -1730,24 +1730,24 @@ window.showStrategyEditModal = function(strategyId) {
     window.showModal('strategy-edit-modal');
 };
 
-window.showBotHistory = async function(botId) {
-    const bot = bots.find(b => b.id === botId);
-    if (!bot) {
-        console.error('Bot not found:', botId);
+window.showInvestorHistory = async function(investorId) {
+    const investor = investors.find(b => b.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
         return;
     }
 
-    document.getElementById('history-bot-name').textContent = bot.name;
+    document.getElementById('history-investor-name').textContent = investor.name;
     const tableBody = document.getElementById('history-table-body');
     tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">Loading history...</td></tr>';
 
     try {
-        const q = query(collection(db, `users/${userId}/bets`), where("bot_id", "==", botId), orderBy("timestamp", "desc"), limit(50));
+        const q = query(collection(db, `users/${userId}/bets`), where("investor_id", "==", investorId), orderBy("timestamp", "desc"), limit(50));
         const querySnapshot = await getDocs(q);
 
         tableBody.innerHTML = ''; // Clear loading message
         if (querySnapshot.empty) {
-            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No bet history found for this bot.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No bet history found for this investor.</td></tr>';
         } else {
             querySnapshot.forEach(doc => {
                 const bet = doc.data();
@@ -1769,7 +1769,7 @@ window.showBotHistory = async function(botId) {
             });
         }
     } catch (error) {
-        console.error("Error fetching bot history:", error);
+        console.error("Error fetching investor history:", error);
         tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Error loading history.</td></tr>';
     }
     
@@ -1777,27 +1777,27 @@ window.showBotHistory = async function(botId) {
     window.showModal('history-modal');
 };
 
-window.showBotLog = async function(botId) {
-    const bot = bots.find(b => b.id === botId);
-    if (!bot) {
-        console.error('Bot not found:', botId);
+window.showInvestorLog = async function(investorId) {
+    const investor = investors.find(b => b.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
         return;
     }
-    document.getElementById('log-investor-name').textContent = bot.name;
+    document.getElementById('log-investor-name').textContent = investor.name;
     const logContent = document.getElementById('investor-log-content');
     logContent.textContent = 'Loading log...';
 
     try {
-        const logDocRef = doc(db, `users/${userId}/bot_logs`, botId);
+        const logDocRef = doc(db, `users/${userId}/investor_logs`, investorId);
         const docSnap = await getDoc(logDocRef);
 
         if (docSnap.exists() && docSnap.data().log) {
             logContent.textContent = docSnap.data().log;
         } else {
-            logContent.textContent = 'No log available for this bot.';
+            logContent.textContent = 'No log available for this investor.';
         }
     } catch (error) {
-        console.error("Error fetching bot log:", error);
+        console.error("Error fetching investor log:", error);
         logContent.textContent = 'Failed to load log. Please check the console for details.';
     }
 
@@ -1807,26 +1807,26 @@ window.showBotLog = async function(botId) {
 
 // --- DATA MODIFICATION FUNCTIONS ---
 
-window.addBot = async function(botData) {
+window.addInvestor = async function(investorData) {
     showLoading();
     try {
         // Handle demo mode or when Firebase is not available
         if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
-            console.log("Adding bot in demo mode");
+            console.log("Adding investor in demo mode");
             
-            // Create demo bot with proper structure
+            // Create demo investor with proper structure
             const demoBot = {
-                id: `demo_bot_${Date.now()}`,
-                name: botData.name,
-                starting_balance: parseFloat(botData.starting_balance),
-                current_balance: parseFloat(botData.starting_balance),
-                initial_balance: parseFloat(botData.starting_balance),
-                bet_percentage: parseFloat(botData.bet_percentage),
-                max_bets_per_week: parseInt(botData.max_bets_per_week, 10),
-                strategy_id: botData.strategy_id,
-                assigned_strategy_id: botData.strategy_id, // For API compatibility
-                sport: botData.sport,
-                bet_type: botData.bet_type,
+                id: `demo_investor_${Date.now()}`,
+                name: investorData.name,
+                starting_balance: parseFloat(investorData.starting_balance),
+                current_balance: parseFloat(investorData.starting_balance),
+                initial_balance: parseFloat(investorData.starting_balance),
+                bet_percentage: parseFloat(investorData.bet_percentage),
+                max_bets_per_week: parseInt(investorData.max_bets_per_week, 10),
+                strategy_id: investorData.strategy_id,
+                assigned_strategy_id: investorData.strategy_id, // For API compatibility
+                sport: investorData.sport,
+                bet_type: investorData.bet_type,
                 status: 'stopped',
                 total_wagers: 0,
                 total_wins: 0,
@@ -1834,15 +1834,15 @@ window.addBot = async function(botData) {
                 win_rate: 0,
                 last_run: null,
                 created_at: new Date().toISOString(),
-                description: `Demo investor for ${botData.sport || 'multiple sports'}`,
+                description: `Demo investor for ${investorData.sport || 'multiple sports'}`,
                 demo_mode: true
             };
             
-            // Add to local bots array
-            bots.push(demoBot);
+            // Add to local investors array
+            investors.push(demoBot);
             
             // Refresh display
-            displayBots();
+            displayInvestors();
             updateOverallStats();
             
             showMessage("Demo investor added successfully!");
@@ -1850,60 +1850,60 @@ window.addBot = async function(botData) {
         }
         
         // Production mode - use Firebase
-        const botRef = collection(db, `users/${userId}/bots`);
-        await addDoc(botRef, {
-            ...botData,
-            assigned_strategy_id: botData.strategy_id, // Ensure strategy assignment
+        const investorRef = collection(db, `users/${userId}/investors`);
+        await addDoc(investorRef, {
+            ...investorData,
+            assigned_strategy_id: investorData.strategy_id, // Ensure strategy assignment
             status: 'stopped',
-            current_balance: parseFloat(botData.starting_balance),
+            current_balance: parseFloat(investorData.starting_balance),
             total_wagers: 0,
             total_wins: 0,
             profit_loss: 0,
             last_run: null,
             created_at: new Date().toISOString()
         });
-        showMessage("Bot added successfully!");
+        showMessage("Investor added successfully!");
     } catch (e) {
-        console.error("Error adding bot: ", e);
-        showMessage("Failed to add bot. Check the console for details.", true);
+        console.error("Error adding investor: ", e);
+        showMessage("Failed to add investor. Check the console for details.", true);
     } finally {
         hideLoading();
     }
 };
 
-window.editBot = async function(botData) {
+window.editBot = async function(investorData) {
     showLoading();
     try {
         if (firebaseAvailable && db) {
             // Firebase update
-            const botRef = doc(db, `users/${userId}/bots`, botData.id);
-            await updateDoc(botRef, {
-                name: botData.name,
-                strategy_id: botData.strategy_id,
-                bet_percentage: botData.bet_percentage,
-                max_bets_per_week: botData.max_bets_per_week,
-                minimum_confidence: botData.minimum_confidence,
-                kelly_fraction: botData.kelly_fraction,
-                allowable_platforms: botData.allowable_platforms,
+            const investorRef = doc(db, `users/${userId}/investors`, investorData.id);
+            await updateDoc(investorRef, {
+                name: investorData.name,
+                strategy_id: investorData.strategy_id,
+                bet_percentage: investorData.bet_percentage,
+                max_bets_per_week: investorData.max_bets_per_week,
+                minimum_confidence: investorData.minimum_confidence,
+                kelly_fraction: investorData.kelly_fraction,
+                allowable_platforms: investorData.allowable_platforms,
                 last_updated: new Date().toISOString()
             });
             showMessage("Investor updated successfully!");
         } else {
             // Fallback to REST API
-            const response = await fetch(`/api/bots/${botData.id}`, {
+            const response = await fetch(`/api/investors/${investorData.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     user_id: userId,
-                    name: botData.name,
-                    strategy_id: botData.strategy_id,
-                    bet_percentage: botData.bet_percentage,
-                    max_bets_per_week: botData.max_bets_per_week,
-                    minimum_confidence: botData.minimum_confidence,
-                    kelly_fraction: botData.kelly_fraction,
-                    allowable_platforms: botData.allowable_platforms
+                    name: investorData.name,
+                    strategy_id: investorData.strategy_id,
+                    bet_percentage: investorData.bet_percentage,
+                    max_bets_per_week: investorData.max_bets_per_week,
+                    minimum_confidence: investorData.minimum_confidence,
+                    kelly_fraction: investorData.kelly_fraction,
+                    allowable_platforms: investorData.allowable_platforms
                 })
             });
             
@@ -1920,43 +1920,43 @@ window.editBot = async function(botData) {
             }
         }
     } catch (e) {
-        console.error("Error updating bot: ", e);
+        console.error("Error updating investor: ", e);
         showMessage("Failed to update investor.", true);
     } finally {
         hideLoading();
     }
 };
 
-window.deleteBot = async function(botId) {
+window.deleteInvestor = async function(investorId) {
     if (!confirm("Are you sure you want to delete this investor? This action is permanent.")) return;
     showLoading();
     try {
-        const botRef = doc(db, `users/${userId}/bots`, botId);
-        await deleteDoc(botRef);
-        showMessage("Bot deleted successfully!");
+        const investorRef = doc(db, `users/${userId}/investors`, investorId);
+        await deleteDoc(investorRef);
+        showMessage("Investor deleted successfully!");
     } catch (e) {
-        console.error("Error deleting bot: ", e);
-        showMessage("Failed to delete bot.", true);
+        console.error("Error deleting investor: ", e);
+        showMessage("Failed to delete investor.", true);
     } finally {
         hideLoading();
     }
 };
 
-window.toggleBotWagers = function(botId) {
-    const wagersRow = document.getElementById(`wagers-${botId}`);
+window.toggleBotWagers = function(investorId) {
+    const wagersRow = document.getElementById(`wagers-${investorId}`);
     if (wagersRow) {
         wagersRow.classList.toggle('hidden');
         
         // Auto-populate recommended investments when expanding investor details
         if (!wagersRow.classList.contains('hidden')) {
-            // Find the bot data to get assigned_strategy_id
-            const bot = bots.find(b => b.id === botId);
-            if (bot && bot.assigned_strategy_id) {
+            // Find the investor data to get assigned_strategy_id
+            const investor = investors.find(b => b.id === investorId);
+            if (investor && investor.assigned_strategy_id) {
                 // Automatically trigger strategy picks
-                window.getStrategyPicks(botId, bot.assigned_strategy_id);
+                window.getStrategyPicks(investorId, investor.assigned_strategy_id);
             } else {
                 // If no strategy assigned, show appropriate message
-                const picksContent = document.getElementById(`picks-content-${botId}`);
+                const picksContent = document.getElementById(`picks-content-${investorId}`);
                 if (picksContent) {
                     picksContent.innerHTML = `
                         <div class="text-center py-4 text-yellow-600">
@@ -1970,18 +1970,18 @@ window.toggleBotWagers = function(botId) {
     }
 };
 
-window.toggleBotStatus = async function(botId, currentStatus) {
+window.toggleInvestorStatus = async function(investorId, currentStatus) {
     showLoading();
     const newStatus = currentStatus === 'running' ? 'stopped' : 'running';
     try {
-        const botRef = doc(db, `users/${userId}/bots`, botId);
-        await updateDoc(botRef, {
+        const investorRef = doc(db, `users/${userId}/investors`, investorId);
+        await updateDoc(investorRef, {
             status: newStatus
         });
-        showMessage(`Bot status changed to ${newStatus}.`);
+        showMessage(`Investor status changed to ${newStatus}.`);
     } catch (e) {
-        console.error("Error toggling bot status:", e);
-        showMessage("Failed to change bot status.", true);
+        console.error("Error toggling investor status:", e);
+        showMessage("Failed to change investor status.", true);
     } finally {
         hideLoading();
     }
@@ -2064,14 +2064,14 @@ window.deleteStrategy = async function(strategyId) {
     }
 };
 
-window.getStrategyPicks = async function(botId, strategyId) {
+window.getStrategyPicks = async function(investorId, strategyId) {
     try {
         showLoading();
         // Pass userId in the API call
-        const response = await fetch(`/api/strategy/${strategyId}/picks?user_id=${userId}&bot_id=${botId}`);
+        const response = await fetch(`/api/strategy/${strategyId}/picks?user_id=${userId}&investor_id=${investorId}`);
         const data = await response.json();
         
-        const picksContent = document.getElementById(`picks-content-${botId}`);
+        const picksContent = document.getElementById(`picks-content-${investorId}`);
         
         // Check if the response was successful
         if (!response.ok) {
@@ -2118,7 +2118,7 @@ window.getStrategyPicks = async function(botId, strategyId) {
         }
     } catch (error) {
         console.error("Error getting strategy picks:", error);
-        const picksContent = document.getElementById(`picks-content-${botId}`);
+        const picksContent = document.getElementById(`picks-content-${investorId}`);
         if (picksContent) {
             picksContent.innerHTML = `
                 <div class="text-center py-4 text-red-600">
@@ -2180,10 +2180,10 @@ window.loadCachedInvestments = async function() {
     showLoading();
 
     try {
-        // Load investments and bot recommendations in parallel
+        // Load investments and investor recommendations in parallel
         const [investmentsResponse, recommendationsResponse] = await Promise.all([
             fetch(`/api/investments?user_id=${userId}&refresh=false`),
-            fetch(`/api/bot-recommendations?user_id=${userId}`).catch(e => {
+            fetch(`/api/investor-recommendations?user_id=${userId}`).catch(e => {
                 console.warn('Failed to load investor recommendations:', e);
                 return { ok: false };
             })
@@ -2191,20 +2191,20 @@ window.loadCachedInvestments = async function() {
         
         const investmentsData = await investmentsResponse.json();
         
-        // Load bot recommendations if available
+        // Load investor recommendations if available
         if (recommendationsResponse.ok) {
             try {
                 const recommendationsData = await recommendationsResponse.json();
                 if (recommendationsData.success) {
-                    botRecommendations = recommendationsData.recommendations || {};
-                    console.log('Loaded investor recommendations:', Object.keys(botRecommendations).length, 'games');
+                    investorRecommendations = recommendationsData.recommendations || {};
+                    console.log('Loaded investor recommendations:', Object.keys(investorRecommendations).length, 'games');
                 }
             } catch (e) {
                 console.warn('Failed to parse investor recommendations:', e);
-                botRecommendations = {};
+                investorRecommendations = {};
             }
         } else {
-            botRecommendations = {};
+            investorRecommendations = {};
         }
 
         if (investmentsData.success && investmentsData.investments.length > 0) {
@@ -2841,8 +2841,8 @@ function createInvestmentCard(investment) {
     const commenceTime = new Date(investment.commence_time);
     const formattedTime = commenceTime.toLocaleString();
 
-    // Get bot recommendations for this game
-    const gameRecommendations = botRecommendations[investment.id] || {};
+    // Get investor recommendations for this game
+    const gameRecommendations = investorRecommendations[investment.id] || {};
     const hasRecommendations = Object.keys(gameRecommendations).length > 0;
     
     // Check for placed bets on this game
@@ -2965,37 +2965,37 @@ function createInvestmentCard(investment) {
         `;
     }).join('');
 
-    // Generate bot recommendation summary
-    let botSummaryHtml = '';
+    // Generate investor recommendation summary
+    let investorSummaryHtml = '';
     if (hasRecommendations) {
-        const botNames = Object.keys(gameRecommendations);
-        const botSummaries = botNames.map(botName => {
-            const botRecs = gameRecommendations[botName];
-            if (!botRecs || (!Array.isArray(botRecs) && typeof botRecs !== 'object')) return '';
+        const investorNames = Object.keys(gameRecommendations);
+        const investorSummaries = investorNames.map(investorName => {
+            const investorRecs = gameRecommendations[investorName];
+            if (!investorRecs || (!Array.isArray(investorRecs) && typeof investorRecs !== 'object')) return '';
             
             // Handle both array and object formats
-            const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
+            const recsArray = Array.isArray(investorRecs) ? investorRecs : [investorRecs];
             if (recsArray.length === 0) return '';
             
             const avgConfidence = Math.round(recsArray.reduce((sum, rec) => sum + (rec.confidence || 0), 0) / recsArray.length);
             const totalAmount = recsArray.reduce((sum, rec) => sum + (rec.recommended_amount || 0), 0);
-            const botColor = recsArray[0].bot_color || '#3B82F6';
+            const investorColor = recsArray[0].investor_color || '#3B82F6';
             
             return `
                 <div class="text-xs px-3 py-2 rounded-full cursor-pointer hover:opacity-80 transition-opacity" 
-                     style="background-color: ${botColor}20; border: 1px solid ${botColor}; color: ${botColor};"
-                     onclick="event.stopPropagation(); showBotRecommendationDetails('${investment.id}', '${botName}')">
-                    <span class="font-medium">${botName}</span>: ${recsArray.length} bet${recsArray.length > 1 ? 's' : ''}, ${avgConfidence}% avg confidence, $${totalAmount.toFixed(0)} total
+                     style="background-color: ${investorColor}20; border: 1px solid ${investorColor}; color: ${investorColor};"
+                     onclick="event.stopPropagation(); showInvestorRecommendationDetails('${investment.id}', '${investorName}')">
+                    <span class="font-medium">${investorName}</span>: ${recsArray.length} bet${recsArray.length > 1 ? 's' : ''}, ${avgConfidence}% avg confidence, $${totalAmount.toFixed(0)} total
                 </div>
             `;
         }).filter(html => html).join('');
         
-        if (botSummaries) {
-            botSummaryHtml = `
+        if (investorSummaries) {
+            investorSummaryHtml = `
                 <div class="mb-4 p-3 bg-orange-100 border border-orange-200 rounded-lg">
                     <div class="text-sm font-medium text-orange-800 mb-2">🎯 Automated Investor Recommendations:</div>
                     <div class="space-y-2">
-                        ${botSummaries}
+                        ${investorSummaries}
                     </div>
                 </div>
             `;
@@ -3079,7 +3079,7 @@ function createInvestmentCard(investment) {
             <p class="text-xs text-gray-500">${investment.sport_title || investment.sport || 'Sport'}</p>
             ${headerBadges}
         </div>
-        ${botSummaryHtml}
+        ${investorSummaryHtml}
         ${placedWagersSummaryHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             ${bookmakersHtml}
@@ -3243,9 +3243,9 @@ async function startListeners() {
         
         // Load demo settings
         await loadUserSettings();
-        // Fetch strategies first, then bots
+        // Fetch strategies first, then investors
         await fetchStrategies();
-        await fetchBots();
+        await fetchInvestors();
         
         // Check auto-refresh for demo mode too
         setTimeout(() => {
@@ -3270,9 +3270,9 @@ async function startListeners() {
             }
             // Load user settings first, then fetch data, then check auto-refresh
             await loadUserSettings();
-            // Fetch strategies first, then bots
+            // Fetch strategies first, then investors
             await fetchStrategies();
-            await fetchBots();
+            await fetchInvestors();
             
             // Initialize demo data for new users if needed
             await initializeDemoDataIfNeeded();
@@ -3299,12 +3299,12 @@ async function startListeners() {
 // --- EVENT LISTENERS ---
 
 // Check if the form exists before adding event listener to prevent null errors
-const addBotForm = document.getElementById('add-investor-form');
-if (addBotForm) {
-    addBotForm.addEventListener('submit', async function(event) {
+const addInvestorForm = document.getElementById('add-investor-form');
+if (addInvestorForm) {
+    addInvestorForm.addEventListener('submit', async function(event) {
         event.preventDefault();
         const form = event.target;
-        const botData = {
+        const investorData = {
             name: form.name.value,
             starting_balance: parseFloat(form.starting_balance.value),
             bet_percentage: parseFloat(form.bet_percentage.value),
@@ -3313,7 +3313,7 @@ if (addBotForm) {
             sport: form.sport.value,
             bet_type: form.bet_type.value
         };
-        await window.addBot(botData);
+        await window.addInvestor(investorData);
         form.reset();
         closeModal('add-investor-modal');
     });
@@ -3332,7 +3332,7 @@ if (editInvestorForm) {
         allowablePlatforms.push(checkbox.value);
     });
     
-    const botData = {
+    const investorData = {
         id: form['modal-investor-id'].value,
         name: form['modal-name'].value,
         strategy_id: form['modal-strategy'].value,
@@ -3342,7 +3342,7 @@ if (editInvestorForm) {
         kelly_fraction: parseFloat(form['modal-kelly-fraction'].value),
         allowable_platforms: allowablePlatforms
     };
-    await window.editBot(botData);
+    await window.editBot(investorData);
     window.closeModal('investor-details-modal');
     });
 }
@@ -3552,8 +3552,8 @@ function setupStatsCardClicks() {
                 case 0: statType = 'profit'; break;
                 case 1: statType = 'wagers'; break;
                 case 2: statType = 'winrate'; break;
-                case 3: statType = 'bestbot'; break;
-                case 4: statType = 'worstbot'; break;
+                case 3: statType = 'bestinvestor'; break;
+                case 4: statType = 'worstinvestor'; break;
                 default: statType = '';
             }
             showStatsBreakdownInline(statType, card);
@@ -3565,28 +3565,28 @@ function showStatsBreakdownInline(statType, card) {
     let title = '';
     let html = '';
     if (statType === 'profit') {
-        title = 'Total Profit Breakdown by Bot';
-        html = `<table class='min-w-full post9-card'><thead><tr><th>Bot</th><th>Profit</th></tr></thead><tbody>` +
-            bots.map(bot => `<tr><td>${bot.name}</td><td>$${(bot.current_balance - bot.starting_balance).toFixed(2)}</td></tr>`).join('') + '</tbody></table>';
+        title = 'Total Profit Breakdown by Investor';
+        html = `<table class='min-w-full post9-card'><thead><tr><th>Investor</th><th>Profit</th></tr></thead><tbody>` +
+            investors.map(investor => `<tr><td>${investor.name}</td><td>$${(investor.current_balance - investor.starting_balance).toFixed(2)}</td></tr>`).join('') + '</tbody></table>';
     } else if (statType === 'wagers') {
-        title = 'Total Wagers Breakdown by Bot';
-        html = `<table class='min-w-full post9-card'><thead><tr><th>Bot</th><th>Wagers</th></tr></thead><tbody>` +
-            bots.map(bot => `<tr><td>${bot.name}</td><td>${bot.total_wagers}</td></tr>`).join('') + '</tbody></table>';
+        title = 'Total Wagers Breakdown by Investor';
+        html = `<table class='min-w-full post9-card'><thead><tr><th>Investor</th><th>Wagers</th></tr></thead><tbody>` +
+            investors.map(investor => `<tr><td>${investor.name}</td><td>${investor.total_wagers}</td></tr>`).join('') + '</tbody></table>';
     } else if (statType === 'winrate') {
-        title = 'Win Rate Breakdown by Bot';
-        html = `<table class='min-w-full post9-card'><thead><tr><th>Bot</th><th>Win Rate</th></tr></thead><tbody>` +
-            bots.map(bot => {
-                const winRate = bot.total_wagers > 0 ? ((bot.total_wins / bot.total_wagers) * 100).toFixed(2) : '0.00';
-                return `<tr><td>${bot.name}</td><td>${winRate}%</td></tr>`;
+        title = 'Win Rate Breakdown by Investor';
+        html = `<table class='min-w-full post9-card'><thead><tr><th>Investor</th><th>Win Rate</th></tr></thead><tbody>` +
+            investors.map(investor => {
+                const winRate = investor.total_wagers > 0 ? ((investor.total_wins / investor.total_wagers) * 100).toFixed(2) : '0.00';
+                return `<tr><td>${investor.name}</td><td>${winRate}%</td></tr>`;
             }).join('') + '</tbody></table>';
-    } else if (statType === 'bestbot') {
-        title = 'Best Bot Details';
-        const bestBot = [...bots].sort((a, b) => (b.current_balance - b.starting_balance) - (a.current_balance - a.starting_balance))[0];
-        html = bestBot ? `<div class='post9-card p-4'><strong>${bestBot.name}</strong><br>Profit: $${(bestBot.current_balance - bestBot.starting_balance).toFixed(2)}</div>` : '<div>No bots found.</div>';
-    } else if (statType === 'worstbot') {
-        title = 'Worst Bot Details';
-        const worstBot = [...bots].sort((a, b) => (a.current_balance - a.starting_balance) - (b.current_balance - b.starting_balance))[0];
-        html = worstBot ? `<div class='post9-card p-4'><strong>${worstBot.name}</strong><br>Profit: $${(worstBot.current_balance - worstBot.starting_balance).toFixed(2)}</div>` : '<div>No bots found.</div>';
+    } else if (statType === 'bestinvestor') {
+        title = 'Best Investor Details';
+        const bestBot = [...investors].sort((a, b) => (b.current_balance - b.starting_balance) - (a.current_balance - a.starting_balance))[0];
+        html = bestBot ? `<div class='post9-card p-4'><strong>${bestBot.name}</strong><br>Profit: $${(bestBot.current_balance - bestBot.starting_balance).toFixed(2)}</div>` : '<div>No investors found.</div>';
+    } else if (statType === 'worstinvestor') {
+        title = 'Worst Investor Details';
+        const worstBot = [...investors].sort((a, b) => (a.current_balance - a.starting_balance) - (b.current_balance - b.starting_balance))[0];
+        html = worstBot ? `<div class='post9-card p-4'><strong>${worstBot.name}</strong><br>Profit: $${(worstBot.current_balance - worstBot.starting_balance).toFixed(2)}</div>` : '<div>No investors found.</div>';
     }
     const breakdownContainer = document.getElementById('stats-breakdown-inline');
     breakdownContainer.innerHTML = `
@@ -3796,7 +3796,7 @@ window.processVerifiedInvestments = function() {
     
     if (verifiedInvestments.length > 0) {
         // In a real implementation, these would be moved to the investor's active wagers
-        // and amounts would be deducted from bot balance
+        // and amounts would be deducted from investor balance
         showMessage(`${verifiedInvestments.length} investment(s) verified and moved to active wagers. ${rejectedInvestments.length} rejected.`, false);
         
         // Remove processed investments from holdings
@@ -4078,9 +4078,9 @@ function populateConfirmationModal() {
         sportsbookContainer.appendChild(div);
     });
     
-    // Render by bot (simplified for now)
-    const botContainer = document.getElementById('bets-by-bot');
-    botContainer.innerHTML = `
+    // Render by investor (simplified for now)
+    const investorContainer = document.getElementById('bets-by-investor');
+    investorContainer.innerHTML = `
         <div class="bg-gray-50 border rounded-lg p-4">
             <div class="flex justify-between items-center mb-3">
                 <h4 class="font-semibold text-lg">Manual Selection</h4>
@@ -4909,23 +4909,23 @@ function generateAdvancedModelPredictions(teams, sport) {
 
 // Get investor recommendations for specific game
 function getInvestorRecommendationsForGame(gameId) {
-    // Check if we have bot recommendations for this game
-    const gameRecommendations = botRecommendations[gameId] || {};
+    // Check if we have investor recommendations for this game
+    const gameRecommendations = investorRecommendations[gameId] || {};
     
     const recommendations = [];
     
-    Object.keys(gameRecommendations).forEach(botName => {
-        const botRecs = gameRecommendations[botName];
-        if (!botRecs) return;
+    Object.keys(gameRecommendations).forEach(investorName => {
+        const investorRecs = gameRecommendations[investorName];
+        if (!investorRecs) return;
         
         // Handle both array and object formats
-        const recsArray = Array.isArray(botRecs) ? botRecs : [botRecs];
+        const recsArray = Array.isArray(investorRecs) ? investorRecs : [investorRecs];
         
         recsArray.forEach(rec => {
             if (rec && typeof rec === 'object') {
                 recommendations.push({
-                    investorName: botName,
-                    investorColor: rec.bot_color || '#3B82F6',
+                    investorName: investorName,
+                    investorColor: rec.investor_color || '#3B82F6',
                     betType: rec.market_type || 'Moneyline',
                     selection: rec.outcome || 'Unknown',
                     recommendedAmount: rec.recommended_amount || 0,
@@ -6073,14 +6073,14 @@ function displayModelDetails(modelDetails) {
     `;
 }
 
-// Bot Recommendation Details Modal
-function showBotRecommendationDetails(gameId, botName) {
-    // Find the game recommendations for this bot
-    const gameRecommendations = botRecommendations[gameId] || [];
-    const botRecs = gameRecommendations.filter(rec => rec.bot_name === botName);
+// Investor Recommendation Details Modal
+function showInvestorRecommendationDetails(gameId, investorName) {
+    // Find the game recommendations for this investor
+    const gameRecommendations = investorRecommendations[gameId] || [];
+    const investorRecs = gameRecommendations.filter(rec => rec.investor_name === investorName);
     
-    if (botRecs.length === 0) {
-        showMessage('No recommendations found for this bot', true);
+    if (investorRecs.length === 0) {
+        showMessage('No recommendations found for this investor', true);
         return;
     }
     
@@ -6090,20 +6090,20 @@ function showBotRecommendationDetails(gameId, botName) {
         gameInfo = investments.find(inv => inv.id === gameId);
     }
     
-    displayBotRecommendationDetails(botRecs, botName, gameInfo);
-    showModal('bot-recommendation-modal');
+    displayBotRecommendationDetails(investorRecs, investorName, gameInfo);
+    showModal('investor-recommendation-modal');
 }
 
-function displayBotRecommendationDetails(botRecs, botName, gameInfo) {
-    const content = document.getElementById('bot-recommendation-content');
+function displayBotRecommendationDetails(investorRecs, investorName, gameInfo) {
+    const content = document.getElementById('investor-recommendation-content');
     
     // Calculate summary statistics
-    const totalAmount = botRecs.reduce((sum, rec) => sum + rec.recommended_amount, 0);
-    const avgConfidence = Math.round(botRecs.reduce((sum, rec) => sum + rec.confidence, 0) / botRecs.length);
-    const botColor = botRecs[0].bot_color;
+    const totalAmount = investorRecs.reduce((sum, rec) => sum + rec.recommended_amount, 0);
+    const avgConfidence = Math.round(investorRecs.reduce((sum, rec) => sum + rec.confidence, 0) / investorRecs.length);
+    const investorColor = investorRecs[0].investor_color;
     
     // Generate sportsbook consensus data for each recommendation
-    const recommendationsHtml = botRecs.map((rec, index) => {
+    const recommendationsHtml = investorRecs.map((rec, index) => {
         // Generate realistic sportsbook consensus
         const consensus = generateRealisticConsensus(rec);
         
@@ -6154,7 +6154,7 @@ function displayBotRecommendationDetails(botRecs, botName, gameInfo) {
                     <div class="grid grid-cols-3 gap-3">
                         <div class="bg-gray-900 p-3 rounded">
                             <div class="text-xs text-gray-400">Predicted Odds</div>
-                            <div class="text-lg font-semibold" style="color: ${botColor};">${wagerCalculation.predictedOdds > 0 ? '+' : ''}${wagerCalculation.predictedOdds}</div>
+                            <div class="text-lg font-semibold" style="color: ${investorColor};">${wagerCalculation.predictedOdds > 0 ? '+' : ''}${wagerCalculation.predictedOdds}</div>
                         </div>
                         <div class="bg-gray-900 p-3 rounded">
                             <div class="text-xs text-gray-400">Win Probability</div>
@@ -6220,14 +6220,14 @@ function displayBotRecommendationDetails(botRecs, botName, gameInfo) {
         <div class="mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h4 class="text-xl font-bold text-white">${botName} Recommendations</h4>
+                    <h4 class="text-xl font-bold text-white">${investorName} Recommendations</h4>
                     ${gameInfo ? `<p class="text-gray-300">${gameInfo.teams}</p>` : ''}
                     ${gameInfo ? `<p class="text-sm text-gray-400">${gameInfo.sport_title || gameInfo.sport || 'Sport'}</p>` : ''}
                 </div>
                 <div class="text-right">
                     <div class="text-2xl font-bold text-green-400">$${totalAmount.toFixed(0)}</div>
                     <div class="text-sm text-gray-400">${avgConfidence}% avg confidence</div>
-                    <div class="text-xs text-gray-500">${botRecs.length} recommendation${botRecs.length > 1 ? 's' : ''}</div>
+                    <div class="text-xs text-gray-500">${investorRecs.length} recommendation${investorRecs.length > 1 ? 's' : ''}</div>
                 </div>
             </div>
         </div>
@@ -6240,7 +6240,7 @@ function displayBotRecommendationDetails(botRecs, botName, gameInfo) {
             <div class="flex items-start">
                 <div class="text-blue-400 mr-2">ℹ️</div>
                 <div class="text-sm text-blue-200">
-                    <strong>Note:</strong> These recommendations are generated by the ${botName} investor based on its trained model and current market conditions. 
+                    <strong>Note:</strong> These recommendations are generated by the ${investorName} investor based on its trained model and current market conditions. 
                     Always verify odds and consider your own risk tolerance before placing any bets.
                 </div>
             </div>
@@ -6282,13 +6282,13 @@ function calculateWagerDetails(recommendation, consensus) {
     const edge = Math.round((recommendation.confidence - winProbability) * 0.8); // Model confidence vs implied probability
     const expectedValue = Math.round(edge * 0.5); // Simplified EV calculation
     
-    // Generate predicted odds that show the bot's edge
-    const predictedOdds = oddsUsed + (edge * 3); // Bot sees better value
+    // Generate predicted odds that show the investor's edge
+    const predictedOdds = oddsUsed + (edge * 3); // Investor sees better value
     
     // Calculate Kelly fraction
     const kellyFraction = Math.max(1, Math.round(Math.abs(edge) * 0.3));
     
-    // Risk factor (how conservative the bot is)
+    // Risk factor (how conservative the investor is)
     const riskFactor = Math.round((100 - recommendation.confidence) / 50 * 10) / 10 + 0.5;
     
     // Potential win calculation
@@ -6312,7 +6312,7 @@ function calculateWagerDetails(recommendation, consensus) {
 }
 
 // Make function globally available
-window.showBotRecommendationDetails = showBotRecommendationDetails;
+window.showInvestorRecommendationDetails = showInvestorRecommendationDetails;
 
 function generateModelDetailsData(modelId) {
     // Generate realistic model details
@@ -7214,30 +7214,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize bot configuration event listeners
-    const addBotForm = document.getElementById('add-bot-form');
-    if (addBotForm) {
+    // Initialize investor configuration event listeners
+    const addInvestorForm = document.getElementById('add-investor-form');
+    if (addInvestorForm) {
         // Add event listeners to all form inputs for real-time validation
-        const inputs = addBotForm.querySelectorAll('input, select');
+        const inputs = addInvestorForm.querySelectorAll('input, select');
         inputs.forEach(input => {
             input.addEventListener('input', checkFormCompletion);
             input.addEventListener('change', checkFormCompletion);
         });
         
         // Handle form submission
-        addBotForm.addEventListener('submit', function(e) {
+        addInvestorForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
-            const botData = Object.fromEntries(formData.entries());
+            const investorData = Object.fromEntries(formData.entries());
             
             // Add enhanced validation
-            if (parseFloat(botData.bet_percentage) > 10) {
+            if (parseFloat(investorData.bet_percentage) > 10) {
                 showMessage('Bet percentage cannot exceed 10% for risk management', true);
                 return;
             }
             
-            if (parseFloat(botData.starting_balance) < 100) {
+            if (parseFloat(investorData.starting_balance) < 100) {
                 showMessage('Starting balance must be at least $100', true);
                 return;
             }
@@ -7246,14 +7246,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const modelSelect = document.getElementById('model-select');
             const selectedModel = modelSelect.options[modelSelect.selectedIndex].text;
             
-            showMessage(`Bot "${botData.name}" created successfully with ${selectedModel}!`, false);
-            closeModal('add-bot-modal');
+            showMessage(`Investor "${investorData.name}" created successfully with ${selectedModel}!`, false);
+            closeModal('add-investor-modal');
             
             // Reset form
-            addBotForm.reset();
+            addInvestorForm.reset();
             onModelSelected(''); // Reset form state
             
-            // Refresh bots display
+            // Refresh investors display
             if (typeof loadBots === 'function') {
                 setTimeout(loadBots, 500);
             }
@@ -7294,18 +7294,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Bot Configuration Functions
+// Investor Configuration Functions
 
-// Handle model selection in Add Bot/Investor modal
+// Handle model selection in Add Investor/Investor modal
 function onModelSelected(modelId) {
     const modelSelect = document.getElementById('model-select');
     const sportDisplay = document.getElementById('sport-display');
     const marketSelect = document.getElementById('market-select');
     
-    // Try to find the submit button - check investor form first, then bot form
+    // Try to find the submit button - check investor form first, then investor form
     let submitBtn = document.getElementById('add-investor-submit');
     if (!submitBtn) {
-        submitBtn = document.getElementById('add-bot-submit');
+        submitBtn = document.getElementById('add-investor-submit');
     }
     
     if (modelId) {
@@ -7337,15 +7337,15 @@ function onModelSelected(modelId) {
 
 // Check if form is complete to enable submit button
 function checkFormCompletion() {
-    // Try to find investor form first, then bot form
+    // Try to find investor form first, then investor form
     let form = document.getElementById('add-investor-form');
     let submitBtn = document.getElementById('add-investor-submit');
     let buttonText = 'Add Investor';
     
     if (!form) {
-        form = document.getElementById('add-bot-form');
-        submitBtn = document.getElementById('add-bot-submit');
-        buttonText = 'Add Bot';
+        form = document.getElementById('add-investor-form');
+        submitBtn = document.getElementById('add-investor-submit');
+        buttonText = 'Add Investor';
     }
     
     // If neither form is found, exit early

@@ -19,7 +19,7 @@
             <span class="text-yellow-200">🚨</span>
         </div>
         <div class="text-sm mt-1 text-red-200">
-            No real bots, money, or investments - This is sample data only
+            No real investors, money, or investments - This is sample data only
         </div>
     </div>
     
@@ -41,7 +41,7 @@
         <h1 class="text-3xl font-bold mb-6">Investor Functionality Demo <span class="text-red-600 text-lg">(MOCK DATA)</span></h1>
         
         <div class="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 class="text-xl font-semibold mb-4">Active Bots (Click to expand)</h2>
+            <h2 class="text-xl font-semibold mb-4">Active Investors (Click to expand)</h2>
             <table class="w-full">
                 <thead>
                     <tr class="border-b">
@@ -53,14 +53,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="investor-row border-b hover:bg-gray-50" onclick="toggleWagers('bot1')">
+                    <tr class="investor-row border-b hover:bg-gray-50" onclick="toggleWagers('investor1')">
                         <td class="p-2 font-semibold">NBA Strategy Investor</td>
                         <td class="p-2">NBA</td>
                         <td class="p-2">$1,250.00</td>
                         <td class="p-2">5</td>
                         <td class="p-2"><span class="bg-green-500 text-white px-2 py-1 rounded text-sm">Running</span></td>
                     </tr>
-                    <tr id="wagers-bot1" class="hidden bg-gray-50">
+                    <tr id="wagers-investor1" class="hidden bg-gray-50">
                         <td colspan="5" class="p-4">
                             <div class="border-t border-gray-200 pt-4">
                                 <h4 class="font-semibold text-gray-800 mb-2">Open Wagers:</h4>
@@ -75,20 +75,20 @@
                                 
                                 <div class="mt-4 pt-4 border-t border-gray-200">
                                     <h4 class="font-semibold text-gray-800 mb-2">Strategy Picks:</h4>
-                                    <div id="picks-bot1" class="mt-2"></div>
+                                    <div id="picks-investor1" class="mt-2"></div>
                                 </div>
                             </div>
                         </td>
                     </tr>
                     
-                    <tr class="investor-row border-b hover:bg-gray-50" onclick="toggleWagers('bot2')">
+                    <tr class="investor-row border-b hover:bg-gray-50" onclick="toggleWagers('investor2')">
                         <td class="p-2 font-semibold">NFL Recovery Investor</td>
                         <td class="p-2">NFL</td>
                         <td class="p-2">$875.00</td>
                         <td class="p-2">3</td>
                         <td class="p-2"><span class="bg-blue-500 text-white px-2 py-1 rounded text-sm">Running</span></td>
                     </tr>
-                    <tr id="wagers-bot2" class="hidden bg-gray-50">
+                    <tr id="wagers-investor2" class="hidden bg-gray-50">
                         <td colspan="5" class="p-4">
                             <div class="border-t border-gray-200 pt-4">
                                 <h4 class="font-semibold text-gray-800 mb-2">Open Wagers:</h4>
@@ -96,7 +96,7 @@
                                 
                                 <div class="mt-4 pt-4 border-t border-gray-200">
                                     <h4 class="font-semibold text-gray-800 mb-2">Strategy Picks:</h4>
-                                    <div id="picks-bot2" class="mt-2"></div>
+                                    <div id="picks-investor2" class="mt-2"></div>
                                 </div>
                             </div>
                         </td>
@@ -124,20 +124,20 @@
     </div>
 
     <script>
-        function toggleWagers(botId) {
-            const wagersRow = document.getElementById(`wagers-${botId}`);
+        function toggleWagers(investorId) {
+            const wagersRow = document.getElementById(`wagers-${investorId}`);
             if (wagersRow) {
                 wagersRow.classList.toggle('hidden');
                 
                 // Auto-populate recommended investments when expanding investor details
                 if (!wagersRow.classList.contains('hidden')) {
-                    getStrategyPicks(botId);
+                    getInvestorPicks(investorId);
                 }
             }
         }
 
-        function getStrategyPicks(botId) {
-            const picksDiv = document.getElementById(`picks-${botId}`);
+        function getInvestorPicks(investorId) {
+            const picksDiv = document.getElementById(`picks-${investorId}`);
             
             // Simulate loading
             picksDiv.innerHTML = '<p class="text-gray-500">Loading picks...</p>';
@@ -191,7 +191,7 @@
         
         // Fix JavaScript ReferenceErrors: Expose functions to global window object
         window.toggleWagers = toggleWagers;
-        window.getStrategyPicks = getStrategyPicks;
+        window.getInvestorPicks = getInvestorPicks;
         window.refreshApiStatus = refreshApiStatus;
     </script>
 </body>

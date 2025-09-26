@@ -1,6 +1,6 @@
 """
-Data service for managing bot and strategy schemas in the SI-HQ platform.
-Provides standardized data access and manipulation for bots and strategies.
+Data service for managing investor and strategy schemas in the SI-HQ platform.
+Provides standardized data access and manipulation for investors and strategies.
 """
 
 import json
@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 import logging
 
 from schemas import (
-    BotSchema, StrategySchema, InvestorStatus, StrategyType, 
+    InvestorSchema, StrategySchema, InvestorStatus, StrategyType, 
     TransactionLog, OpenWager, PerformanceMetrics, RiskManagement,
     SchemaValidator, migrate_legacy_bot, migrate_legacy_strategy
 )
@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class DataService:
-    """Centralized data service for bot and strategy management"""
+    """Centralized data service for investor and strategy management"""
     
     def __init__(self, storage_path: str = "./data"):
         self.storage_path = storage_path
-        self.bots_file = os.path.join(storage_path, "bots.json")
+        self.bots_file = os.path.join(storage_path, "investors.json")
         self.strategies_file = os.path.join(storage_path, "strategies.json")
         self._ensure_storage_directory()
         self._load_data()
@@ -33,13 +33,13 @@ class DataService:
         os.makedirs(self.storage_path, exist_ok=True)
     
     def _load_data(self):
-        """Load bots and strategies from storage"""
+        """Load investors and strategies from storage"""
         self._load_bots()
         self._load_strategies()
     
     def _load_bots(self):
-        """Load bots with schema migration support"""
-        self.bots = {}
+        """Load investors with schema migration support"""
+        self.investors = {}
         
         if os.path.exists(self.bots_file):
             try:
@@ -51,23 +51,23 @@ class DataService:
                         # Check if it's new schema format
                         if 'risk_management' in bot_data or 'profit_loss' in bot_data:
                             # New schema format
-                            self.bots[bot_id] = BotSchema.from_dict(bot_data)
+                            self.investors[bot_id] = InvestorSchema.from_dict(bot_data)
                         else:
                             # Legacy format - migrate
-                            logger.info(f"Migrating legacy bot {bot_id} to new schema")
-                            self.bots[bot_id] = migrate_legacy_bot(bot_data)
+                            logger.info(f"Migrating legacy investor {bot_id} to new schema")
+                            self.investors[bot_id] = migrate_legacy_bot(bot_data)
                     except Exception as e:
-                        logger.error(f"Failed to load bot {bot_id}: {e}")
-                        # Create minimal bot for recovery
-                        self.bots[bot_id] = BotSchema(
+                        logger.error(f"Failed to load investor {bot_id}: {e}")
+                        # Create minimal investor for recovery
+                        self.investors[bot_id] = InvestorSchema(
                             bot_id=bot_id,
-                            name=bot_data.get('name', 'Unknown Bot'),
+                            name=bot_data.get('name', 'Unknown Investor'),
                             current_balance=bot_data.get('current_balance', 1000.0),
                             created_by=bot_data.get('created_by', '')
                         )
             except Exception as e:
-                logger.error(f"Failed to load bots file: {e}")
-                self.bots = {}
+                logger.error(f"Failed to load investors file: {e}")
+                self.investors = {}
     
     def _load_strategies(self):
         """Load strategies with schema migration support"""
@@ -102,18 +102,18 @@ class DataService:
                 self.strategies = {}
     
     def _save_bots(self):
-        """Save bots to storage"""
+        """Save investors to storage"""
         try:
             bots_data = {
-                bot_id: bot.to_dict() 
-                for bot_id, bot in self.bots.items()
+                bot_id: investor.to_dict() 
+                for bot_id, investor in self.investors.items()
             }
             
             with open(self.bots_file, 'w') as f:
                 json.dump(bots_data, f, indent=2)
                 
         except Exception as e:
-            logger.error(f"Failed to save bots: {e}")
+            logger.error(f"Failed to save investors: {e}")
     
     def _save_strategies(self):
         """Save strategies to storage"""
@@ -129,151 +129,151 @@ class DataService:
         except Exception as e:
             logger.error(f"Failed to save strategies: {e}")
     
-    # Bot management methods
+    # Investor management methods
     
-    def create_bot(self, bot_data: Dict[str, Any]) -> str:
-        """Create a new bot using standardized schema"""
-        # Generate bot ID if not provided
+    def create_investor(self, bot_data: Dict[str, Any]) -> str:
+        """Create a new investor using standardized schema"""
+        # Generate investor ID if not provided
         if 'bot_id' not in bot_data:
             timestamp = str(int(datetime.now().timestamp()))
             bot_data['bot_id'] = f"bot_{timestamp}"
         
-        # Create bot instance
-        bot = BotSchema.from_dict(bot_data)
+        # Create investor instance
+        investor = InvestorSchema.from_dict(bot_data)
         
-        # Validate bot
-        validation_issues = SchemaValidator.validate_bot(bot)
+        # Validate investor
+        validation_issues = SchemaValidator.validate_bot(investor)
         if validation_issues:
-            raise ValueError(f"Bot validation failed: {', '.join(validation_issues)}")
+            raise ValueError(f"Investor validation failed: {', '.join(validation_issues)}")
         
-        # Store bot
-        self.bots[bot.bot_id] = bot
+        # Store investor
+        self.investors[investor.bot_id] = investor
         self._save_bots()
         
-        logger.info(f"Created bot: {bot.bot_id}")
-        return bot.bot_id
+        logger.info(f"Created investor: {investor.bot_id}")
+        return investor.bot_id
     
-    def get_bot(self, bot_id: str) -> Optional[BotSchema]:
-        """Get bot by ID"""
-        return self.bots.get(bot_id)
+    def get_investor(self, bot_id: str) -> Optional[InvestorSchema]:
+        """Get investor by ID"""
+        return self.investors.get(bot_id)
     
-    def update_bot(self, bot_id: str, updates: Dict[str, Any]) -> BotSchema:
-        """Update bot with new data"""
-        if bot_id not in self.bots:
-            raise ValueError(f"Bot {bot_id} not found")
+    def update_investor(self, bot_id: str, updates: Dict[str, Any]) -> InvestorSchema:
+        """Update investor with new data"""
+        if bot_id not in self.investors:
+            raise ValueError(f"Investor {bot_id} not found")
         
-        bot = self.bots[bot_id]
+        investor = self.investors[bot_id]
         
         # Update timestamp
         updates['last_updated'] = datetime.now().isoformat()
         
-        # Apply updates by recreating the bot
-        bot_data = bot.to_dict()
+        # Apply updates by recreating the investor
+        bot_data = investor.to_dict()
         bot_data.update(updates)
         
-        updated_bot = BotSchema.from_dict(bot_data)
+        updated_bot = InvestorSchema.from_dict(bot_data)
         
-        # Validate updated bot
+        # Validate updated investor
         validation_issues = SchemaValidator.validate_bot(updated_bot)
         if validation_issues:
-            raise ValueError(f"Bot validation failed: {', '.join(validation_issues)}")
+            raise ValueError(f"Investor validation failed: {', '.join(validation_issues)}")
         
-        self.bots[bot_id] = updated_bot
+        self.investors[bot_id] = updated_bot
         self._save_bots()
         
         return updated_bot
     
-    def list_bots(self, filters: Dict[str, Any] = None) -> List[BotSchema]:
-        """List bots with optional filtering"""
-        bots = list(self.bots.values())
+    def list_investors(self, filters: Dict[str, Any] = None) -> List[InvestorSchema]:
+        """List investors with optional filtering"""
+        investors = list(self.investors.values())
         
         if filters:
             if 'created_by' in filters:
-                bots = [b for b in bots if b.created_by == filters['created_by']]
+                investors = [b for b in investors if b.created_by == filters['created_by']]
             
             if 'active_status' in filters:
                 status = InvestorStatus(filters['active_status'])
-                bots = [b for b in bots if b.active_status == status]
+                investors = [b for b in investors if b.active_status == status]
             
             if 'sport_filter' in filters and filters['sport_filter']:
                 from schemas import Sport
                 sport = Sport(filters['sport_filter'])
-                bots = [b for b in bots if b.sport_filter == sport]
+                investors = [b for b in investors if b.sport_filter == sport]
         
         # Sort by creation date (newest first)
-        bots.sort(key=lambda b: b.created_at, reverse=True)
+        investors.sort(key=lambda b: b.created_at, reverse=True)
         
-        return bots
+        return investors
     
-    def delete_bot(self, bot_id: str) -> bool:
-        """Delete a bot"""
-        if bot_id in self.bots:
-            del self.bots[bot_id]
+    def delete_investor(self, bot_id: str) -> bool:
+        """Delete a investor"""
+        if bot_id in self.investors:
+            del self.investors[bot_id]
             self._save_bots()
-            logger.info(f"Deleted bot: {bot_id}")
+            logger.info(f"Deleted investor: {bot_id}")
             return True
         return False
     
     def add_bot_transaction(self, bot_id: str, transaction: TransactionLog):
-        """Add a transaction to a bot's log"""
-        if bot_id not in self.bots:
-            raise ValueError(f"Bot {bot_id} not found")
+        """Add a transaction to a investor's log"""
+        if bot_id not in self.investors:
+            raise ValueError(f"Investor {bot_id} not found")
         
-        bot = self.bots[bot_id]
-        bot.transaction_log.append(transaction)
-        bot.last_updated = datetime.now().isoformat()
+        investor = self.investors[bot_id]
+        investor.transaction_log.append(transaction)
+        investor.last_updated = datetime.now().isoformat()
         
         # Update performance metrics
         if transaction.result != "PENDING":
-            bot.profit_loss.total_bets += 1
-            bot.profit_loss.total_wagered += transaction.amount
+            investor.profit_loss.total_bets += 1
+            investor.profit_loss.total_wagered += transaction.amount
             
             if transaction.result == "W":
-                bot.profit_loss.winning_bets += 1
-                bot.profit_loss.total_profit += transaction.profit_loss
+                investor.profit_loss.winning_bets += 1
+                investor.profit_loss.total_profit += transaction.profit_loss
             elif transaction.result == "L":
-                bot.profit_loss.losing_bets += 1
-                bot.profit_loss.total_profit += transaction.profit_loss  # Should be negative
+                investor.profit_loss.losing_bets += 1
+                investor.profit_loss.total_profit += transaction.profit_loss  # Should be negative
             
             # Recalculate win rate and ROI
-            if bot.profit_loss.total_bets > 0:
-                bot.profit_loss.win_rate = bot.profit_loss.winning_bets / bot.profit_loss.total_bets
+            if investor.profit_loss.total_bets > 0:
+                investor.profit_loss.win_rate = investor.profit_loss.winning_bets / investor.profit_loss.total_bets
             
-            if bot.profit_loss.total_wagered > 0:
-                bot.profit_loss.roi_percentage = (bot.profit_loss.total_profit / bot.profit_loss.total_wagered) * 100
+            if investor.profit_loss.total_wagered > 0:
+                investor.profit_loss.roi_percentage = (investor.profit_loss.total_profit / investor.profit_loss.total_wagered) * 100
         
         # Update current balance
-        bot.current_balance += transaction.profit_loss
+        investor.current_balance += transaction.profit_loss
         
         self._save_bots()
     
     def add_bot_open_wager(self, bot_id: str, wager: OpenWager):
-        """Add an open wager to a bot"""
-        if bot_id not in self.bots:
-            raise ValueError(f"Bot {bot_id} not found")
+        """Add an open wager to a investor"""
+        if bot_id not in self.investors:
+            raise ValueError(f"Investor {bot_id} not found")
         
-        bot = self.bots[bot_id]
-        bot.open_wagers.append(wager)
-        bot.last_updated = datetime.now().isoformat()
+        investor = self.investors[bot_id]
+        investor.open_wagers.append(wager)
+        investor.last_updated = datetime.now().isoformat()
         
         self._save_bots()
     
     def close_bot_wager(self, bot_id: str, wager_id: str, result: str, profit_loss: float):
         """Close an open wager and move to transaction log"""
-        if bot_id not in self.bots:
-            raise ValueError(f"Bot {bot_id} not found")
+        if bot_id not in self.investors:
+            raise ValueError(f"Investor {bot_id} not found")
         
-        bot = self.bots[bot_id]
+        investor = self.investors[bot_id]
         
         # Find and remove the open wager
         wager_to_close = None
-        for i, wager in enumerate(bot.open_wagers):
+        for i, wager in enumerate(investor.open_wagers):
             if wager.wager_id == wager_id:
-                wager_to_close = bot.open_wagers.pop(i)
+                wager_to_close = investor.open_wagers.pop(i)
                 break
         
         if not wager_to_close:
-            raise ValueError(f"Open wager {wager_id} not found for bot {bot_id}")
+            raise ValueError(f"Open wager {wager_id} not found for investor {bot_id}")
         
         # Create transaction log entry
         from schemas import BetOutcome
@@ -411,23 +411,23 @@ class DataService:
     
     # Utility methods
     
-    def get_bot_performance_summary(self, bot_id: str) -> Dict[str, Any]:
-        """Get comprehensive performance summary for a bot"""
-        bot = self.get_bot(bot_id)
-        if not bot:
-            raise ValueError(f"Bot {bot_id} not found")
+    def get_investor_performance_summary(self, bot_id: str) -> Dict[str, Any]:
+        """Get comprehensive performance summary for a investor"""
+        investor = self.get_investor(bot_id)
+        if not investor:
+            raise ValueError(f"Investor {bot_id} not found")
         
         return {
             'bot_id': bot_id,
-            'name': bot.name,
-            'current_balance': bot.current_balance,
-            'profit_loss': bot.current_balance - bot.starting_balance,
-            'roi_percentage': ((bot.current_balance - bot.starting_balance) / bot.starting_balance * 100) if bot.starting_balance > 0 else 0,
-            'performance_metrics': bot.profit_loss.to_dict(),
-            'open_wagers_count': len(bot.open_wagers),
-            'total_transactions': len(bot.transaction_log),
-            'last_activity': bot.last_activity or bot.last_updated,
-            'status': bot.active_status.value
+            'name': investor.name,
+            'current_balance': investor.current_balance,
+            'profit_loss': investor.current_balance - investor.starting_balance,
+            'roi_percentage': ((investor.current_balance - investor.starting_balance) / investor.starting_balance * 100) if investor.starting_balance > 0 else 0,
+            'performance_metrics': investor.profit_loss.to_dict(),
+            'open_wagers_count': len(investor.open_wagers),
+            'total_transactions': len(investor.transaction_log),
+            'last_activity': investor.last_activity or investor.last_updated,
+            'status': investor.active_status.value
         }
     
     def get_strategy_performance_summary(self, strategy_id: str) -> Dict[str, Any]:
@@ -436,8 +436,8 @@ class DataService:
         if not strategy:
             raise ValueError(f"Strategy {strategy_id} not found")
         
-        # Count bots using this strategy
-        bots_using_strategy = len([bot for bot in self.bots.values() if bot.assigned_strategy_id == strategy_id])
+        # Count investors using this strategy
+        bots_using_strategy = len([investor for investor in self.investors.values() if investor.assigned_strategy_id == strategy_id])
         
         return {
             'strategy_id': strategy_id,

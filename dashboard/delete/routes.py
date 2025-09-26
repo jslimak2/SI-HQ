@@ -12,7 +12,7 @@ def get_data_filepath(filename):
     return os.path.join(os.path.dirname(__file__), '..', 'data', filename)
 
 # File paths for the data
-bots_filepath = get_data_filepath('bots.json')
+bots_filepath = get_data_filepath('investors.json')
 strategies_filepath = get_data_filepath('strategies.json')
 
 def load_json(filepath, default_value=None):
@@ -78,25 +78,25 @@ def index():
     """Renders the main dashboard page."""
     return render_template('index.html')
 
-@app.route('/api/bots', methods=['GET'])
+@app.route('/api/investors', methods=['GET'])
 def get_bots():
-    """Returns a list of all bots."""
-    bots = load_json(bots_filepath, [])
+    """Returns a list of all investors."""
+    investors = load_json(bots_filepath, [])
     strategies = load_json(strategies_filepath, [])
     
-    # Ensure all bots have the required fields for data consistency
-    for bot in bots:
-        if 'bet_history' not in bot:
-            bot['bet_history'] = []
-        if 'fund_history' not in bot:
-            bot['fund_history'] = []
+    # Ensure all investors have the required fields for data consistency
+    for investor in investors:
+        if 'bet_history' not in investor:
+            investor['bet_history'] = []
+        if 'fund_history' not in investor:
+            investor['fund_history'] = []
             
-    # Enrich bots with strategy names
-    for bot in bots:
-        strategy = next((s for s in strategies if s['id'] == bot['linked_strategy_id']), None)
-        bot['strategy_name'] = strategy['name'] if strategy else 'Unknown'
+    # Enrich investors with strategy names
+    for investor in investors:
+        strategy = next((s for s in strategies if s['id'] == investor['linked_strategy_id']), None)
+        investor['strategy_name'] = strategy['name'] if strategy else 'Unknown'
     
-    return jsonify(bots)
+    return jsonify(investors)
 
 @app.route('/api/strategies', methods=['GET'])
 def get_strategies():
@@ -104,16 +104,16 @@ def get_strategies():
     strategies = load_json(strategies_filepath, [])
     return jsonify(strategies)
 
-@app.route('/api/manage-bots', methods=['POST'])
+@app.route('/api/manage-investors', methods=['POST'])
 def manage_bots():
-    """Handles adding or deleting a bot."""
+    """Handles adding or deleting a investor."""
     action = request.form.get('action')
     bots_list = load_json(bots_filepath)
     
     if action == 'create':
         new_bot_id = max([b['id'] for b in bots_list], default=0) + 1
         
-        # New bot data structure with transaction arrays
+        # New investor data structure with transaction arrays
         new_bot = {
             'id': new_bot_id,
             'name': request.form['name'],
@@ -128,17 +128,17 @@ def manage_bots():
         }
         bots_list.append(new_bot)
         if save_json(bots_filepath, bots_list):
-            return jsonify({'success': True, 'message': 'Bot added successfully!'})
+            return jsonify({'success': True, 'message': 'Investor added successfully!'})
         else:
-            return jsonify({'success': False, 'message': 'Failed to save bot.'}), 500
+            return jsonify({'success': False, 'message': 'Failed to save investor.'}), 500
 
     elif action == 'delete':
         bot_id = int(request.form['id'])
         bots_list = [b for b in bots_list if b['id'] != bot_id]
         if save_json(bots_filepath, bots_list):
-            return jsonify({'success': True, 'message': 'Bot deleted successfully!'})
+            return jsonify({'success': True, 'message': 'Investor deleted successfully!'})
         else:
-            return jsonify({'success': False, 'message': 'Failed to delete bot.'}), 500
+            return jsonify({'success': False, 'message': 'Failed to delete investor.'}), 500
     
     return jsonify({'success': False, 'message': 'Invalid action.'}), 400
 
@@ -177,28 +177,28 @@ def manage_strategies():
 
 @app.route('/api/run-backtest', methods=['POST'])
 def run_backtest():
-    """Simulates a series of bets for a selected bot."""
+    """Simulates a series of bets for a selected investor."""
     data = request.json
     bot_id = data.get('botId')
     num_bets = data.get('numBets')
     
     bots_list = load_json(bots_filepath)
-    bot = next((b for b in bots_list if b['id'] == bot_id), None)
+    investor = next((b for b in bots_list if b['id'] == bot_id), None)
     
-    if not bot:
-        return jsonify({'success': False, 'message': 'Bot not found.'}), 404
+    if not investor:
+        return jsonify({'success': False, 'message': 'Investor not found.'}), 404
 
-    initial_balance = bot['current_balance']
+    initial_balance = investor['current_balance']
     bankroll_history = [{'bet_number': 0, 'balance': initial_balance}]
     
     for i in range(1, num_bets + 1):
-        bot = simulate_real_world_bet(bot)
-        bankroll_history.append({'bet_number': i, 'balance': bot['current_balance']})
+        investor = simulate_real_world_bet(investor)
+        bankroll_history.append({'bet_number': i, 'balance': investor['current_balance']})
     
-    final_balance = bot['current_balance']
+    final_balance = investor['current_balance']
     total_profit = final_balance - initial_balance
-    total_bets = bot['career_wins'] + bot['career_losses']
-    win_rate = (bot['career_wins'] / total_bets) * 100 if total_bets > 0 else 0
+    total_bets = investor['career_wins'] + investor['career_losses']
+    win_rate = (investor['career_wins'] / total_bets) * 100 if total_bets > 0 else 0
     roi = (total_profit / initial_balance) * 100 if initial_balance > 0 else 0
 
     if save_json(bots_filepath, bots_list):
@@ -212,7 +212,7 @@ def run_backtest():
         }
         return jsonify({'success': True, 'message': 'Backtest simulation complete.', 'report': report, 'bankroll_history': bankroll_history})
     else:
-        return jsonify({'success': False, 'message': 'Failed to save bot data after backtest.'}), 500
+        return jsonify({'success': False, 'message': 'Failed to save investor data after backtest.'}), 500
 
 @app.route('/api/import-bets', methods=['POST'])
 def import_bets():
@@ -242,17 +242,17 @@ def import_bets():
     bots_list = load_json(bots_filepath)
     
     for bet in bets:
-        bot = next((b for b in bots_list if b['id'] == bet['bot_id']), None)
-        if bot:
+        investor = next((b for b in bots_list if b['id'] == bet['bot_id']), None)
+        if investor:
             winnings = 0.0
             if bet['outcome'].lower() == 'win':
                 winnings = bet['amount']
-                bot['current_balance'] += winnings
-                bot['career_wins'] += 1
+                investor['current_balance'] += winnings
+                investor['career_wins'] += 1
             elif bet['outcome'].lower() == 'loss':
                 winnings = -bet['amount']
-                bot['current_balance'] += winnings
-                bot['career_losses'] += 1
+                investor['current_balance'] += winnings
+                investor['career_losses'] += 1
 
             bet_receipt = {
                 'timestamp': datetime.datetime.now().isoformat(),
@@ -262,39 +262,39 @@ def import_bets():
                 'payout': winnings,
                 'outcome': bet['outcome'].upper(),
             }
-            bot['bet_history'].append(bet_receipt)
+            investor['bet_history'].append(bet_receipt)
         else:
-            print(f"Warning: Bot with ID {bet['bot_id']} not found.")
+            print(f"Warning: Investor with ID {bet['bot_id']} not found.")
 
     if save_json(bots_filepath, bots_list):
         return jsonify({'success': True, 'message': 'Bets imported successfully!'})
     else:
-        return jsonify({'success': False, 'message': 'Failed to save bot data after import.'}), 500
+        return jsonify({'success': False, 'message': 'Failed to save investor data after import.'}), 500
 
 @app.route('/api/manage-funds', methods=['POST'])
 def manage_funds():
-    """Handles deposits and withdrawals for a specific bot."""
+    """Handles deposits and withdrawals for a specific investor."""
     data = request.json
     bot_id = data.get('botId')
     amount = data.get('amount')
     fund_type = data.get('type')
 
     bots_list = load_json(bots_filepath)
-    bot = next((b for b in bots_list if b['id'] == bot_id), None)
+    investor = next((b for b in bots_list if b['id'] == bot_id), None)
 
-    if not bot:
-        return jsonify({'success': False, 'message': 'Bot not found.'}), 404
+    if not investor:
+        return jsonify({'success': False, 'message': 'Investor not found.'}), 404
     
     if fund_type == 'deposit':
-        bot['current_balance'] += amount
+        investor['current_balance'] += amount
         transaction_amount = amount
-        message = f"Successfully deposited ${amount:.2f} to {bot['name']}'s bankroll."
+        message = f"Successfully deposited ${amount:.2f} to {investor['name']}'s bankroll."
     elif fund_type == 'withdraw':
-        if bot['current_balance'] < amount:
+        if investor['current_balance'] < amount:
             return jsonify({'success': False, 'message': 'Insufficient funds for withdrawal.'}), 400
-        bot['current_balance'] -= amount
+        investor['current_balance'] -= amount
         transaction_amount = -amount
-        message = f"Successfully withdrew ${amount:.2f} from {bot['name']}'s bankroll."
+        message = f"Successfully withdrew ${amount:.2f} from {investor['name']}'s bankroll."
     else:
         return jsonify({'success': False, 'message': 'Invalid fund type.'}), 400
 
@@ -303,7 +303,7 @@ def manage_funds():
         'type': fund_type,
         'amount': transaction_amount,
     }
-    bot['fund_history'].append(fund_receipt)
+    investor['fund_history'].append(fund_receipt)
 
     if save_json(bots_filepath, bots_list):
         return jsonify({'success': True, 'message': message})

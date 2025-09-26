@@ -1,16 +1,16 @@
 # manage_bots.py
 """
-This module contains the business logic for managing betting bots.
-It handles creating, deleting, and updating bot data.
+This module contains the business logic for managing betting investors.
+It handles creating, deleting, and updating investor data.
 """
 from app import load_json, save_json, bots_filepath
 
 def get_bots():
-    """Retrieves all betting bots."""
+    """Retrieves all betting investors."""
     return load_json(bots_filepath, [])
 
 def create_bot(form_data):
-    """Creates a new betting bot and saves it."""
+    """Creates a new betting investor and saves it."""
     bots_list = get_bots()
     new_bot_id = max([b['id'] for b in bots_list], default=0) + 1
     new_bot = {
@@ -30,7 +30,7 @@ def create_bot(form_data):
     return save_json(bots_filepath, bots_list)
 
 def delete_bot(bot_id):
-    """Deletes a bot by its ID."""
+    """Deletes a investor by its ID."""
     bots_list = get_bots()
     updated_list = [b for b in bots_list if b['id'] != bot_id]
     return save_json(bots_filepath, updated_list)
