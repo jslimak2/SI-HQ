@@ -357,10 +357,36 @@
             color: #92400e;
             border-left: 4px solid #f59e0b;
         }
+
+        /* ML Hub Tab Styles */
+        .ml-hub-tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .ml-hub-tab-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .ml-hub-tab-btn.active {
+            background: #fff;
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .ml-hub-tab-content {
+            margin-top: 1rem;
+        }
     </style>
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'model-gallery-page', 'training-queue-page', 'predictive-analytics-page', 'analytics-page', 'account-page', 'admin-page'];
+            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'ml-hub-page', 'analytics-page', 'account-page', 'admin-page'];
             pages.forEach(id => {
                 const pageElement = document.getElementById(id);
                 if (pageElement) {
@@ -382,12 +408,11 @@
             } else if (pageId === 'admin-page') {
                 // Load system status when admin page is shown
                 loadSystemStatus();
-            } else if (pageId === 'model-gallery-page') {
-                // Load models when model gallery page is shown
+            } else if (pageId === 'ml-hub-page') {
+                // Load ML Hub content when ML Hub page is shown
                 loadModels();
-            } else if (pageId === 'predictive-analytics-page') {
-                // Load predictive analytics statistics when page is shown
                 loadPredictiveAnalyticsStats();
+                refreshTrainingQueue();
             }
         }
         
@@ -493,7 +518,8 @@
         <nav class="flex justify-center space-x-6 mb-6">
             <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
             <button onclick="showPage('investments-page')" class="nav-btn">Investments</button>
-            <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button>
+            <!-- Strategy Builder temporarily hidden -->
+            <!-- <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button> -->
             
             <!-- Analytics Dropdown -->
             <div class="relative nav-dropdown">
@@ -501,9 +527,7 @@
                     Analytics <span class="dropdown-arrow">▼</span>
                 </button>
                 <div id="analytics-dropdown" class="dropdown-menu hidden">
-                    <button onclick="showPage('model-gallery-page')" class="dropdown-item">Model Gallery</button>
-                    <button onclick="showPage('training-queue-page')" class="dropdown-item">Training Queue</button>
-                    <button onclick="showPage('predictive-analytics-page')" class="dropdown-item">Predictive Analytics</button>
+                    <button onclick="showPage('ml-hub-page')" class="dropdown-item">🤖 ML Hub</button>
                     <button onclick="showPage('analytics-page')" class="dropdown-item">Advanced Analytics</button>
                 </div>
             </div>
@@ -1347,128 +1371,314 @@
             </div>
         </div>
 
-        <!-- Model Gallery Page -->
-        <div id="model-gallery-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+        <!-- ML Hub - Unified Machine Learning Center -->
+        <div id="ml-hub-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">Model Gallery</h2>
+                <h2 class="text-2xl font-bold text-white">🤖 ML Hub - Machine Learning Center</h2>
                 <div class="flex gap-3">
+                    <button onclick="refreshMLHub()" class="post9-btn px-4 py-2">🔄 Refresh All</button>
                     <button onclick="showModal('unified-training-modal')" class="post9-btn px-4 py-2">🚀 Train Model</button>
-                    <button onclick="showModal('model-comparison-modal')" class="post9-btn px-4 py-2">Compare Models</button>
-                </div>
-            </div>
-            
-            <!-- Model Filters -->
-            <div class="bg-gray-100 p-4 rounded-lg mb-6">
-                <div class="flex flex-wrap gap-4 items-center">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
-                        <select id="model-filter-sport" class="p-2 border border-gray-300 rounded">
-                            <option value="all">All Sports</option>
-                            <option value="nfl">NFL</option>
-                            <option value="nba">NBA</option>
-                            <option value="mlb">MLB</option>
-                            <option value="ncaaf">NCAAF</option>
-                            <option value="ncaab">NCAAB</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Model Type</label>
-                        <select id="model-filter-type" class="p-2 border border-gray-300 rounded">
-                            <option value="all">All Types</option>
-                            <option value="lstm">LSTM</option>
-                            <option value="transformer">Transformer</option>
-                            <option value="random_forest">Random Forest</option>
-                            <option value="xgboost">XGBoost</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Performance</label>
-                        <select id="model-filter-performance" class="p-2 border border-gray-300 rounded">
-                            <option value="all">All Performance</option>
-                            <option value="high">High (>70%)</option>
-                            <option value="medium">Medium (60-70%)</option>
-                            <option value="low">Low (<60%)</option>
-                        </select>
-                    </div>
-                    <button onclick="filterModels()" class="post9-btn px-4 py-2 mt-6">Apply Filters</button>
-                </div>
-            </div>
-            
-            <!-- Model Grid -->
-            <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Models will be populated here -->
-            </div>
-        </div>
-
-        <!-- Training Queue Page -->
-        <div id="training-queue-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">🔥 Training Queue & GPU Resources</h2>
-                <div class="flex gap-3">
-                    <button onclick="refreshTrainingQueue()" class="post9-btn px-4 py-2">🔄 Refresh</button>
-                    <button onclick="showModal('unified-training-modal')" class="post9-btn px-4 py-2">🚀 Submit Training Job</button>
                 </div>
             </div>
 
-            <!-- GPU Resource Status -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="bg-gradient-to-br from-green-500 to-green-700 p-4 rounded-lg text-white">
-                    <div class="text-2xl font-bold" id="available-gpus">2</div>
-                    <div class="text-sm opacity-90">Available GPUs</div>
-                    <div class="text-xs opacity-75">Ready for training</div>
-                </div>
-                <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg text-white">
-                    <div class="text-2xl font-bold" id="gpu-utilization">99%</div>
-                    <div class="text-sm opacity-90">GPU Utilization</div>
-                    <div class="text-xs opacity-75">Average across all GPUs</div>
-                </div>
-                <div class="bg-gradient-to-br from-orange-500 to-orange-700 p-4 rounded-lg text-white">
-                    <div class="text-2xl font-bold" id="active-training-jobs">3</div>
-                    <div class="text-sm opacity-90">Active Jobs</div>
-                    <div class="text-xs opacity-75">Currently training</div>
-                </div>
-                <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-4 rounded-lg text-white">
-                    <div class="text-2xl font-bold" id="queued-jobs">5</div>
-                    <div class="text-sm opacity-90">Queued Jobs</div>
-                    <div class="text-xs opacity-75">Waiting to start</div>
-                </div>
-            </div>
-
-            <!-- Training Queue Tabs -->
+            <!-- ML Hub Navigation Tabs -->
             <div class="mb-6">
                 <nav class="flex space-x-1 bg-gray-800 rounded-lg p-1">
-                    <button onclick="showTrainingTab('active')" id="active-tab" class="training-tab-btn active">Active Jobs</button>
-                    <button onclick="showTrainingTab('queued')" id="queued-tab" class="training-tab-btn">Queue</button>
-                    <button onclick="showTrainingTab('completed')" id="completed-tab" class="training-tab-btn">Completed</button>
-                    <button onclick="showTrainingTab('gpu-stats')" id="gpu-stats-tab" class="training-tab-btn">GPU Stats</button>
+                    <button onclick="showMLHubTab('models')" id="ml-models-tab" class="ml-hub-tab-btn active">🎯 Models</button>
+                    <button onclick="showMLHubTab('training')" id="ml-training-tab" class="ml-hub-tab-btn">🔥 Training Queue</button>
+                    <button onclick="showMLHubTab('analytics')" id="ml-analytics-tab" class="ml-hub-tab-btn">📊 Analytics</button>
+                    <button onclick="showMLHubTab('predictions')" id="ml-predictions-tab" class="ml-hub-tab-btn">🔮 Predictions</button>
+                    <button onclick="showMLHubTab('optimizer')" id="ml-optimizer-tab" class="ml-hub-tab-btn">⚖️ Kelly Optimizer</button>
                 </nav>
             </div>
 
-            <!-- Active Training Jobs -->
-            <div id="active-training-tab" class="training-tab-content">
-                <div class="space-y-4" id="active-jobs-container">
-                    <!-- Active jobs will be populated here -->
+            <!-- Models Tab Content (formerly Model Gallery) -->
+            <div id="ml-models-tab-content" class="ml-hub-tab-content">
+                <!-- Model Filters -->
+                <div class="bg-gray-100 p-4 rounded-lg mb-6">
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sport</label>
+                            <select id="model-filter-sport" class="p-2 border border-gray-300 rounded">
+                                <option value="all">All Sports</option>
+                                <option value="nfl">NFL</option>
+                                <option value="nba">NBA</option>
+                                <option value="mlb">MLB</option>
+                                <option value="ncaaf">NCAAF</option>
+                                <option value="ncaab">NCAAB</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Model Type</label>
+                            <select id="model-filter-type" class="p-2 border border-gray-300 rounded">
+                                <option value="all">All Types</option>
+                                <option value="lstm">LSTM</option>
+                                <option value="transformer">Transformer</option>
+                                <option value="random_forest">Random Forest</option>
+                                <option value="xgboost">XGBoost</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Performance</label>
+                            <select id="model-filter-performance" class="p-2 border border-gray-300 rounded">
+                                <option value="all">All Performance</option>
+                                <option value="high">High (>70%)</option>
+                                <option value="medium">Medium (60-70%)</option>
+                                <option value="low">Low (<60%)</option>
+                            </select>
+                        </div>
+                        <button onclick="filterModels()" class="post9-btn px-4 py-2 mt-6">Apply Filters</button>
+                    </div>
+                </div>
+                
+                <!-- Model Grid -->
+                <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Models will be populated here -->
                 </div>
             </div>
 
-            <!-- Queued Jobs -->
-            <div id="queued-training-tab" class="training-tab-content" style="display: none;">
-                <div class="space-y-4" id="queued-jobs-container">
-                    <!-- Queued jobs will be populated here -->
+            <!-- Training Queue Tab Content -->
+            <div id="ml-training-tab-content" class="ml-hub-tab-content hidden">
+                <!-- GPU Resource Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-br from-green-500 to-green-700 p-4 rounded-lg text-white">
+                        <div class="text-2xl font-bold" id="available-gpus">1</div>
+                        <div class="text-sm opacity-90">Available GPUs</div>
+                        <div class="text-xs opacity-75">Ready for training</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-4 rounded-lg text-white">
+                        <div class="text-2xl font-bold" id="gpu-utilization">0%</div>
+                        <div class="text-sm opacity-90">GPU Utilization</div>
+                        <div class="text-xs opacity-75">Average across all GPUs</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-700 p-4 rounded-lg text-white">
+                        <div class="text-2xl font-bold" id="active-training-jobs">0</div>
+                        <div class="text-sm opacity-90">Active Jobs</div>
+                        <div class="text-xs opacity-75">Currently training</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-500 to-purple-700 p-4 rounded-lg text-white">
+                        <div class="text-2xl font-bold" id="queued-jobs">0</div>
+                        <div class="text-sm opacity-90">Queued Jobs</div>
+                        <div class="text-xs opacity-75">Waiting to start</div>
+                    </div>
+                </div>
+
+                <!-- Training Queue Tabs -->
+                <div class="mb-6">
+                    <nav class="flex space-x-1 bg-gray-800 rounded-lg p-1">
+                        <button onclick="showTrainingTab('active')" id="active-tab" class="training-tab-btn active">Active Jobs</button>
+                        <button onclick="showTrainingTab('queued')" id="queued-tab" class="training-tab-btn">Queue</button>
+                        <button onclick="showTrainingTab('completed')" id="completed-tab" class="training-tab-btn">Completed</button>
+                        <button onclick="showTrainingTab('gpu-stats')" id="gpu-stats-tab" class="training-tab-btn">GPU Stats</button>
+                    </nav>
+                </div>
+
+                <!-- Training Jobs Content -->
+                <div id="active-training-tab" class="training-tab-content">
+                    <div class="space-y-4" id="active-jobs-container">
+                        <div class="text-center text-gray-500 py-8">No active training jobs</div>
+                    </div>
+                </div>
+                <div id="queued-training-tab" class="training-tab-content" style="display: none;">
+                    <div class="space-y-4" id="queued-jobs-container">
+                        <div class="text-center text-gray-500 py-8">No queued training jobs</div>
+                    </div>
+                </div>
+                <div id="completed-training-tab" class="training-tab-content" style="display: none;">
+                    <div class="space-y-4" id="completed-jobs-container">
+                        <div class="text-center text-gray-500 py-8">No completed training jobs</div>
+                    </div>
+                </div>
+                <div id="gpu-stats-training-tab" class="training-tab-content" style="display: none;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="gpu-stats-container">
+                        <div class="text-center text-gray-500 py-8">GPU statistics will appear here</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Completed Jobs -->
-            <div id="completed-training-tab" class="training-tab-content" style="display: none;">
-                <div class="space-y-4" id="completed-jobs-container">
-                    <!-- Completed jobs will be populated here -->
+            <!-- Analytics Tab Content -->
+            <div id="ml-analytics-tab-content" class="ml-hub-tab-content hidden">
+                <!-- Performance Domain Explanation -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <div class="text-blue-600 text-xl">ℹ️</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-blue-800 mb-2">Understanding Performance Metrics</h4>
+                            <p class="text-blue-700 text-sm mb-2">This dashboard shows <strong>two distinct domains of performance</strong>:</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div class="bg-white p-3 rounded border-l-4 border-purple-500">
+                                    <div class="font-semibold text-purple-800 mb-1">🤖 Model Prediction Performance</div>
+                                    <div class="text-gray-700">Technical accuracy, backtest results, and prediction quality of the AI models themselves</div>
+                                </div>
+                                <div class="bg-white p-3 rounded border-l-4 border-green-500">
+                                    <div class="font-semibold text-green-800 mb-1">💼 Investor Strategy Performance</div>
+                                    <div class="text-gray-700">Real-world profitability, ROI, and financial results from executing strategies with those models</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Performance Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-purple-800">Active Models</h4>
+                            <div class="text-purple-600 text-2xl">🤖</div>
+                        </div>
+                        <div class="text-3xl font-bold text-purple-900" id="active-models-count">4</div>
+                        <div class="text-sm text-purple-600">Running & Trained</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-blue-800">
+                                <span class="tooltip">Prediction Accuracy
+                                    <span class="tooltiptext">
+                                        <strong>Prediction Accuracy:</strong> The accuracy of model predictions on historical data through backtesting
+                                    </span>
+                                </span>
+                            </h4>
+                            <div class="text-blue-600 text-2xl">🎯</div>
+                        </div>
+                        <div class="text-3xl font-bold text-blue-900" id="prediction-accuracy">70.7%</div>
+                        <div class="text-sm text-blue-600">Backtest Results (30d)</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-orange-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-orange-800">Predictions Made</h4>
+                            <div class="text-orange-600 text-2xl">📊</div>
+                        </div>
+                        <div class="text-3xl font-bold text-orange-900" id="predictions-made">984</div>
+                        <div class="text-sm text-orange-600">Model outputs this month</div>
+                    </div>
+                </div>
+
+                <!-- Strategy Performance Statistics -->
+                <div class="bg-white p-6 rounded-lg shadow mb-6 border-l-4 border-green-500">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <h3 class="text-xl font-bold text-green-600">💼 Investor Strategy Performance</h3>
+                        <div class="tooltip">
+                            <span class="text-green-400 cursor-help">ⓘ</span>
+                            <span class="tooltiptext">
+                                <strong>Investor Performance:</strong> These metrics show your actual financial results from executing strategies, including profit/loss, win rates, and ROI from real investments.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-green-800" id="strategy-profits">+$10,243</div>
+                            <div class="text-lg text-green-600">From strategy execution</div>
+                            <div class="text-sm text-gray-500 mt-1">⚠️ Different from model accuracy - includes bet sizing, timing & risk management</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Gallery -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Model Gallery</h3>
+                    <div id="predictive-models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Models will be populated here -->
+                    </div>
                 </div>
             </div>
 
-            <!-- GPU Statistics -->
-            <div id="gpu-stats-training-tab" class="training-tab-content" style="display: none;">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="gpu-stats-container">
-                    <!-- GPU stats will be populated here -->
+            <!-- Predictions Tab Content -->
+            <div id="ml-predictions-tab-content" class="ml-hub-tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🔮 Game Prediction Tool</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Sport</label>
+                            <select id="prediction-sport" class="w-full p-3 border border-gray-300 rounded-md">
+                                <option value="">Choose a sport...</option>
+                                <option value="NBA">NBA</option>
+                                <option value="NFL">NFL</option>
+                                <option value="MLB">MLB</option>
+                                <option value="NCAAF">NCAA Football</option>
+                                <option value="NCAAB">NCAA Basketball</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Game</label>
+                            <select id="prediction-game" class="w-full p-3 border border-gray-300 rounded-md" disabled>
+                                <option value="">Select sport first...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="generatePrediction()" class="post9-btn px-6 py-3" id="generate-prediction-btn" disabled>
+                            🤖 Generate Prediction
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Prediction Results -->
+                <div id="prediction-results" class="bg-white p-6 rounded-lg shadow" style="display: none;">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Prediction Results</h3>
+                    <div id="prediction-content">
+                        <!-- Prediction results will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kelly Optimizer Tab Content -->
+            <div id="ml-optimizer-tab-content" class="ml-hub-tab-content hidden">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">
+                        <span class="tooltip">⚖️ Kelly Criterion Optimizer
+                            <span class="tooltiptext">
+                                <strong>Kelly Criterion:</strong> A mathematical formula for determining optimal bet sizes to maximize long-term portfolio growth while minimizing risk of ruin.
+                            </span>
+                        </span>
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Bet Parameters</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Win Probability (%)</label>
+                                    <input type="number" id="kelly-win-prob" class="w-full p-3 border border-gray-300 rounded-md" min="1" max="99" step="0.1" placeholder="e.g., 55.5">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Odds (Decimal)</label>
+                                    <input type="number" id="kelly-odds" class="w-full p-3 border border-gray-300 rounded-md" min="1.01" step="0.01" placeholder="e.g., 2.50">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Bankroll ($)</label>
+                                    <input type="number" id="kelly-bankroll" class="w-full p-3 border border-gray-300 rounded-md" min="1" step="0.01" placeholder="e.g., 1000">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Strategy Type</label>
+                                    <select id="kelly-strategy-type" class="w-full p-3 border border-gray-300 rounded-md" onchange="toggleKellyOptions()">
+                                        <option value="kelly-fraction">Kelly Fraction</option>
+                                        <option value="flat-rate">Flat Rate</option>
+                                    </select>
+                                </div>
+                                <div id="kelly-fraction-options">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Kelly Fraction (0.1-1.0)</label>
+                                    <input type="number" id="kelly-fraction" class="w-full p-3 border border-gray-300 rounded-md" min="0.1" max="1.0" step="0.05" value="0.25" placeholder="0.25">
+                                    <div class="text-xs text-gray-500 mt-1">Recommended: 0.25 (25% of full Kelly)</div>
+                                </div>
+                                <div id="flat-rate-options" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Flat Bet Amount ($)</label>
+                                    <input type="number" id="flat-bet-amount" class="w-full p-3 border border-gray-300 rounded-md" min="1" step="0.01" placeholder="e.g., 50">
+                                </div>
+                            </div>
+                            <div class="mt-6">
+                                <button onclick="calculateKelly()" class="post9-btn px-6 py-3 w-full">Calculate Optimal Bet Size</button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Results & Analysis</h4>
+                            <div id="kelly-results" class="space-y-4">
+                                <div class="text-center text-gray-500 py-8">
+                                    Enter bet parameters and click "Calculate" to see optimal bet sizing recommendations.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1631,33 +1841,12 @@
             </div>
         </div>
 
-        <!-- Predictive Analytics Page (formerly ML Dashboard) -->
-        <div id="predictive-analytics-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">🔮 Predictive Analytics</h2>
-                <div class="flex gap-3">
-                    <button onclick="refreshPredictiveModels()" class="post9-btn px-4 py-2">🔄 Refresh Models</button>
-                    <button onclick="showModal('unified-training-modal')" class="post9-btn px-4 py-2">🚀 Train Model</button>
-                </div>
-            </div>
 
-            <!-- Predictive Analytics Tabs -->
-            <div class="mb-6">
-                <nav class="flex space-x-1 bg-gray-800 rounded-lg p-1">
-                    <button onclick="showPredictiveTab('models')" id="models-tab" class="predictive-tab-btn active">Models</button>
-                    <button onclick="showPredictiveTab('predictions')" id="predictions-tab" class="predictive-tab-btn">Predictions</button>
-                    <button onclick="showPredictiveTab('optimizer')" id="optimizer-tab" class="predictive-tab-btn">
-                        <span class="tooltip">Kelly Optimizer
-                            <span class="tooltiptext">
-                                <strong>Kelly Criterion:</strong> A mathematical formula for determining optimal bet sizes to maximize long-term portfolio growth while minimizing risk of ruin.
-                            </span>
-                        </span>
-                    </button>
-                </nav>
-            </div>
 
-            <!-- Models Tab -->
-            <div id="models-tab-content" class="predictive-tab-content">
+
+
+
+
                 <!-- Performance Domain Explanation -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <div class="flex items-start space-x-3">
@@ -1996,8 +2185,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
     </div>
     
     <div id="investor-details-modal" class="modal">
@@ -3137,9 +3324,7 @@
                     <h4 class="font-semibold mb-3 text-white">Platform</h4>
                     <ul class="space-y-2 text-sm">
                         <li><a href="#" onclick="showPage('dashboard-page')" class="hover:text-blue-400">Dashboard</a></li>
-                        <li><a href="#" onclick="showPage('model-gallery-page')" class="hover:text-blue-400">ML Models</a></li>
-                        <li><a href="#" onclick="showPage('analytics-page')" class="hover:text-blue-400">Analytics</a></li>
-                        <li><a href="#" onclick="showPage('predictive-analytics-page')" class="hover:text-blue-400">Predictive Analytics</a></li>
+                        <li><a href="#" onclick="showPage('ml-hub-page')" class="hover:text-blue-400">ML Hub</a></li>
                     </ul>
                 </div>
                 <div>
@@ -5099,6 +5284,43 @@
             document.getElementById('show-signin-btn').className = 'post9-btn p-2 text-sm bg-gray-600';
             document.getElementById('show-signup-btn').className = 'post9-btn p-2 text-sm bg-blue-600';
         };
+
+        // ML Hub Tab Functions
+        function showMLHubTab(tabName) {
+            // Hide all ML Hub tab contents
+            document.querySelectorAll('.ml-hub-tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all ML Hub tabs
+            document.querySelectorAll('.ml-hub-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const tabContent = document.getElementById('ml-' + tabName + '-tab-content');
+            if (tabContent) {
+                tabContent.classList.remove('hidden');
+            }
+            
+            // Add active class to selected tab
+            const tabBtn = document.getElementById('ml-' + tabName + '-tab');
+            if (tabBtn) {
+                tabBtn.classList.add('active');
+            }
+        }
+
+        // Refresh ML Hub data
+        function refreshMLHub() {
+            // Refresh all ML Hub components
+            if (typeof loadModels === 'function') loadModels();
+            if (typeof loadPredictiveAnalyticsStats === 'function') loadPredictiveAnalyticsStats();
+            if (typeof refreshTrainingQueue === 'function') refreshTrainingQueue();
+        }
+
+        // Make ML Hub functions globally available
+        window.showMLHubTab = showMLHubTab;
+        window.refreshMLHub = refreshMLHub;
     </script>
     
     <script type="module" src="../static/scripts/scripts.js"></script>
