@@ -3052,8 +3052,6 @@ def get_models_for_investor():
                         accuracy = 65.0  # Default
                         if hasattr(model, 'current_performance') and model.current_performance:
                             accuracy = model.current_performance.accuracy * 100
-                        elif hasattr(model, 'performance_metrics') and model.performance_metrics:
-                            accuracy = model.performance_metrics.get('accuracy', 0.65) * 100
                         
                         models_for_dropdown.append({
                             'value': model.model_id,
@@ -3535,8 +3533,6 @@ def get_models():
                             accuracy = 65.0  # Default
                             if hasattr(model, 'current_performance') and model.current_performance:
                                 accuracy = model.current_performance.accuracy * 100
-                            elif hasattr(model, 'performance_metrics') and model.performance_metrics:
-                                accuracy = model.performance_metrics.get('accuracy', 0.65) * 100
                             
                             models_data.append({
                                 'model_id': model.model_id,
@@ -3653,14 +3649,14 @@ def list_registered_models():
             model_dict = {
                 'model_id': model.model_id,
                 'name': model.name,
-                'sport': model.sport,
+                'sport': model.sport.value if hasattr(model.sport, 'value') else str(model.sport),
                 'model_type': model.model_type,
                 'version': model.version,
                 'status': model.status.value,
                 'created_at': model.created_at,
                 'created_by': model.created_by,
                 'description': model.description,
-                'performance_metrics': model.performance_metrics
+                'performance_metrics': model.current_performance.to_dict() if hasattr(model.current_performance, 'to_dict') else model.current_performance
             }
             models_data.append(model_dict)
         
