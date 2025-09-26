@@ -331,91 +331,246 @@ function updateStrategySelects() {
     });
 }
 
-function displayInvestors() {
-    const activeBots = investors.filter(investor => investor.active_status === 'RUNNING' || investor.status === 'running');
-    const inactiveBots = investors.filter(investor => investor.active_status !== 'RUNNING' && investor.status !== 'running');
+// Filter investors based on criteria
+function filterInvestors(filterType) {
+    displayUnifiedInvestors(filterType);
+}
 
-    function createInvestorTable(container, investorsList, title, showControls = true) {
-        if (investorsList.length === 0) {
-            container.innerHTML = `<p class="text-center text-gray-500 py-4">No ${title.toLowerCase()} found.</p>`;
-            return;
-        }
-        const table = document.createElement('table');
-        table.className = 'min-w-full divide-y divide-gray-200 post9-card';
-        table.innerHTML = `
-            <thead class="post9-card">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Name</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Sport</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Strategy</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Balance</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Bet %</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">P/L</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
-                    <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 post9-card">
-                ${investorsList.map(investor => {
-                    const strategy = strategies.find(s => s.id == investor.assigned_strategy_id || s.id == investor.strategy_id);
-                    const strategyName = strategy ? strategy.name : 'Unknown';
-                    const profitLoss = (investor.current_balance - investor.starting_balance).toFixed(2);
-                    const profitLossClass = profitLoss >= 0 ? 'text-green-600' : 'text-red-600';
-                    const investorStatus = investor.active_status || investor.status;
-                    const isRunning = investorStatus === 'RUNNING' || investorStatus === 'running';
-                    const statusColor = isRunning ? 'bg-blue-500' : 'bg-gray-500';
-                    const statusText = isRunning ? 'Running' : 'Stopped';
-                    return `
-                        <tr class="cursor-pointer post9-card" onclick="window.toggleBotWagers('${investor.id}')">
-                            <td class="px-6 py-4 whitespace-nowrap font-semibold">${investor.name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${investor.sport_filter || investor.sport || 'N/A'}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${strategyName}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">$${investor.current_balance.toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">${investor.bet_percentage}%</td>
-                            <td class="px-6 py-4 whitespace-nowrap ${profitLossClass}">$${profitLoss}</td>
-                            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor} text-white">${statusText}</span></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="event.stopPropagation(); window.showInvestorDetails('${investor.id}')" class="text-indigo-400 hover:text-indigo-200 mx-1">Edit</button>
-                                <button onclick="event.stopPropagation(); window.showInvestorHistory('${investor.id}')" class="text-blue-400 hover:text-blue-200 mx-1">History</button>
-                                <button onclick="event.stopPropagation(); window.showInvestorLog('${investor.id}')" class="text-gray-300 hover:text-gray-100 mx-1">Log</button>
-                                <button onclick="event.stopPropagation(); window.toggleInvestorStatus('${investor.id}', '${investorStatus}')" class="text-green-400 hover:text-green-200 mx-1">${isRunning ? 'Stop' : 'Start'}</button>
-                                <button onclick="event.stopPropagation(); window.deleteInvestor('${investor.id}')" class="text-red-400 hover:text-red-200 ml-1">Delete</button>
-                            </td>
-                        </tr>
-                        <tr id="wagers-${investor.id}" class="hidden post9-card">
-                            <td colspan="8" class="px-6 py-4">
-                                <div class="border-t border-gray-200 pt-4">
-                                    <h4 class="font-semibold text-gray-200 mb-2">Open Wagers:</h4>
-                                    <div id="wagers-content-${investor.id}" class="text-sm text-gray-200">
-                                        ${investor.open_wagers && investor.open_wagers.length > 0 ? 
-                                            investor.open_wagers.map(wager => `
-                                                <div class="mb-2 p-2 post9-card">
-                                                    <strong>${wager.teams || 'N/A'}</strong> - ${wager.bet_type || 'N/A'}<br>
-                                                    Wager: $${wager.amount ? wager.amount.toFixed(2) : '0.00'} | 
-                                                    Odds: ${wager.odds || 'N/A'} | 
-                                                    Potential Payout: $${wager.potential_payout ? wager.potential_payout.toFixed(2) : '0.00'}
-                                                </div>
-                                            `).join('') 
-                                            : '<p class="text-gray-400">No open wagers</p>'
-                                        }
-                                    </div>
-                                    <div class="mt-4 pt-4 border-t border-gray-200">
-                                        <h4 class="font-semibold text-gray-200 mb-2">Strategy Picks:</h4>
-                                        <div id="picks-content-${investor.id}" class="mt-2"></div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('')}
-            </tbody>
-        `;
-        container.innerHTML = '';
-        container.appendChild(table);
+// Unified investor display function
+function displayUnifiedInvestors(filter = 'all') {
+    const container = document.getElementById('unified-investors-container');
+    if (!container) {
+        console.error('Unified investors container not found');
+        return;
     }
+    
+    // Filter investors based on criteria
+    let filteredInvestors = investors;
+    switch(filter) {
+        case 'active':
+            filteredInvestors = investors.filter(investor => 
+                investor.active_status === 'RUNNING' || investor.status === 'running'
+            );
+            break;
+        case 'stopped':
+            filteredInvestors = investors.filter(investor => 
+                investor.active_status !== 'RUNNING' && investor.status !== 'running'
+            );
+            break;
+        case 'profitable':
+            filteredInvestors = investors.filter(investor => 
+                (investor.current_balance - investor.starting_balance) > 0
+            );
+            break;
+        default:
+            filteredInvestors = investors;
+    }
+    
+    // Update summary stats
+    updateInvestorSummaryStats(filteredInvestors);
+    
+    if (filteredInvestors.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <div class="text-gray-400 text-lg mb-4">No investors found</div>
+                <div class="text-gray-500 text-sm mb-6">
+                    ${filter === 'all' ? 'Create your first investor to get started' : `No ${filter} investors at the moment`}
+                </div>
+                ${filter === 'all' ? '<button class="post9-btn p-3" onclick="showModal(\'add-investor-modal\')">Add Your First Investor</button>' : ''}
+            </div>
+        `;
+        return;
+    }
+    
+    // Create unified investor table
+    const table = document.createElement('table');
+    table.className = 'min-w-full divide-y divide-gray-200';
+    
+    table.innerHTML = `
+        <thead class="bg-gray-700">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Investor</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Sport/Model</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Balance</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">P&L</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Win Rate</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-gray-800 divide-y divide-gray-700">
+            ${filteredInvestors.map(investor => {
+                const isRunning = investor.active_status === 'RUNNING' || investor.status === 'running';
+                const pnl = investor.current_balance - (investor.starting_balance || investor.initial_balance || 1000);
+                const pnlClass = pnl >= 0 ? 'text-green-400' : 'text-red-400';
+                const statusColor = isRunning ? 'bg-green-500' : 'bg-gray-500';
+                const statusText = isRunning ? 'Running' : 'Stopped';
+                const winRate = investor.win_rate || (investor.total_wins / (investor.total_wins + investor.total_losses) * 100) || 0;
+                
+                return `
+                    <tr class="hover:bg-gray-700 transition-colors cursor-pointer" onclick="showInvestorDetails('${investor.id}')">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full ${statusColor} mr-3"></div>
+                                <div>
+                                    <div class="text-sm font-medium text-white">${investor.name}</div>
+                                    <div class="text-xs text-gray-400">${investor.description || 'Sports investor'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isRunning ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            <div>${investor.sport_filter || investor.sport || 'Multi-sport'}</div>
+                            <div class="text-xs text-gray-500">${investor.assigned_model_id || 'Default model'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                            $${investor.current_balance.toFixed(2)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${pnlClass}">
+                            ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${((pnl / (investor.starting_balance || investor.initial_balance || 1000)) * 100).toFixed(1)}%)
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                            ${winRate.toFixed(1)}%
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                <button onclick="event.stopPropagation(); toggleInvestorStatus('${investor.id}')" 
+                                        class="text-indigo-400 hover:text-indigo-300">
+                                    ${isRunning ? 'Pause' : 'Start'}
+                                </button>
+                                <button onclick="event.stopPropagation(); editInvestor('${investor.id}')" 
+                                        class="text-yellow-400 hover:text-yellow-300">
+                                    Edit
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteInvestor('${investor.id}')" 
+                                        class="text-red-400 hover:text-red-300">
+                                    Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('')}
+        </tbody>
+    `;
+    
+    container.innerHTML = '';
+    container.appendChild(table);
+}
 
-    createInvestorTable(activeBotsContainer, activeBots, 'Active Investors');
-    createInvestorTable(inactiveBotsContainer, inactiveBots, 'Inactive Investors');
+// Update investor summary statistics
+function updateInvestorSummaryStats(investorsList = investors) {
+    const activeCount = investorsList.filter(inv => inv.active_status === 'RUNNING' || inv.status === 'running').length;
+    const totalBalance = investorsList.reduce((sum, inv) => sum + inv.current_balance, 0);
+    const totalPnL = investorsList.reduce((sum, inv) => sum + (inv.current_balance - (inv.starting_balance || inv.initial_balance || 1000)), 0);
+    const avgWinRate = investorsList.length > 0 
+        ? investorsList.reduce((sum, inv) => sum + (inv.win_rate || 0), 0) / investorsList.length 
+        : 0;
+    
+    // Update DOM elements
+    const activeCountEl = document.getElementById('active-investors-count');
+    const totalBalanceEl = document.getElementById('total-investors-balance');
+    const totalPnLEl = document.getElementById('total-investors-pnl');
+    const avgWinRateEl = document.getElementById('average-win-rate');
+    
+    if (activeCountEl) activeCountEl.textContent = activeCount;
+    if (totalBalanceEl) totalBalanceEl.textContent = `$${totalBalance.toFixed(2)}`;
+    if (totalPnLEl) {
+        totalPnLEl.textContent = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
+        totalPnLEl.className = `text-2xl font-bold ${totalPnL >= 0 ? 'text-green-300' : 'text-red-300'}`;
+    }
+    if (avgWinRateEl) avgWinRateEl.textContent = `${avgWinRate.toFixed(1)}%`;
+}
+
+// Show investor details modal
+function showInvestorDetails(investorId) {
+    const investor = investors.find(inv => inv.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
+        return;
+    }
+    console.log('Show details for investor:', investor.name);
+    // TODO: Implement investor details modal
+}
+
+// Toggle investor status (start/pause)
+function toggleInvestorStatus(investorId) {
+    const investor = investors.find(inv => inv.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
+        return;
+    }
+    
+    const newStatus = (investor.active_status === 'RUNNING' || investor.status === 'running') ? 'STOPPED' : 'RUNNING';
+    
+    // Update locally
+    investor.active_status = newStatus;
+    investor.status = newStatus.toLowerCase();
+    
+    // Refresh display
+    displayUnifiedInvestors();
+    
+    showMessage(`Investor "${investor.name}" ${newStatus === 'RUNNING' ? 'started' : 'paused'}`, false);
+    
+    console.log(`Toggled investor ${investor.name} to ${newStatus}`);
+    // TODO: Update on server
+}
+
+// Edit investor
+function editInvestor(investorId) {
+    const investor = investors.find(inv => inv.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
+        return;
+    }
+    console.log('Edit investor:', investor.name);
+    // TODO: Implement edit investor modal
+}
+
+// Delete investor
+function deleteInvestor(investorId) {
+    const investor = investors.find(inv => inv.id === investorId);
+    if (!investor) {
+        console.error('Investor not found:', investorId);
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete investor "${investor.name}"? This action cannot be undone.`)) {
+        // Remove from local array
+        const index = investors.findIndex(inv => inv.id === investorId);
+        if (index > -1) {
+            investors.splice(index, 1);
+        }
+        
+        // Refresh display
+        displayUnifiedInvestors();
+        
+        showMessage(`Investor "${investor.name}" deleted successfully`, false);
+        
+        console.log('Deleted investor:', investor.name);
+        // TODO: Delete on server
+    }
+}
+
+// Update the main displayInvestors function to use the new unified display
+function displayInvestors() {
+    // Use the new unified display
+    displayUnifiedInvestors();
+    
+    // Keep legacy containers for backward compatibility but hide them
+    const activeContainer = document.getElementById('active-investors-container');
+    const inactiveContainer = document.getElementById('inactive-investors-container');
+    
+    if (activeContainer) {
+        activeContainer.style.display = 'none';
+    }
+    if (inactiveContainer) {
+        inactiveContainer.style.display = 'none';
+    }
 }
 
 // Load strategies from demo data initially
@@ -5830,6 +5985,9 @@ window.exportAnalytics = function() {
 
 // Initialize new functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Load real models for investor creation dropdown
+    loadModelsForInvestor();
+    
     // Set up authentication gate form listeners
     const gateSigninForm = document.getElementById('gate-signin-form');
     const gateSignupForm = document.getElementById('gate-signup-form');
@@ -7560,6 +7718,48 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Investor Configuration Functions
+
+// Load available models for investor creation dropdown
+async function loadModelsForInvestor() {
+    try {
+        const response = await fetch('/api/models/for-investor');
+        const data = await response.json();
+        
+        if (data.success) {
+            const modelSelect = document.getElementById('model-select');
+            if (!modelSelect) {
+                console.warn('Model select dropdown not found');
+                return;
+            }
+            
+            // Clear existing options except the first placeholder
+            modelSelect.innerHTML = '<option value="">Choose a trained model...</option>';
+            
+            // Add models from API
+            data.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.value;
+                option.setAttribute('data-sport', model.sport);
+                option.textContent = model.name;
+                option.title = model.description;
+                modelSelect.appendChild(option);
+            });
+            
+            // Log data source for debugging
+            if (data.data_source === 'real_registry') {
+                console.log(`✅ Loaded ${data.total_count} real trained models for investor dropdown`);
+            } else {
+                console.log(`⚠️ Using ${data.total_count} fallback models (${data.data_source})`);
+            }
+        } else {
+            console.error('Failed to load models:', data.message);
+            // Keep the hardcoded models in the HTML as fallback
+        }
+    } catch (error) {
+        console.error('Error loading models for investor:', error);
+        // Keep the hardcoded models in the HTML as fallback
+    }
+}
 
 // Handle model selection in Add Investor/Investor modal
 function onModelSelected(modelId) {

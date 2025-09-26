@@ -660,19 +660,50 @@
                 </div>
             </section>
             
+            <!-- Unified Investor Management Section -->
             <section class="table-container mb-12 post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Active Investors</h2>
-                <div id="active-investors-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="active-investors-loading" class="text-center text-gray-500">Loading active investors...</p>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">My Investors</h2>
+                    <div class="flex gap-3">
+                        <button type="button" class="post9-btn p-3" onclick="showModal('add-investor-modal')">➕ Add Investor</button>
+                        <div class="flex items-center gap-2">
+                            <label for="investor-filter" class="text-sm text-gray-300">Filter:</label>
+                            <select id="investor-filter" class="bg-gray-700 text-white px-3 py-1 rounded" onchange="filterInvestors(this.value)">
+                                <option value="all">All Investors</option>
+                                <option value="active">Active Only</option>
+                                <option value="stopped">Stopped Only</option>
+                                <option value="profitable">Profitable Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Investor Stats Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 p-4 rounded-lg text-white">
+                        <div class="text-sm opacity-90">Active Investors</div>
+                        <div class="text-2xl font-bold" id="active-investors-count">0</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-lg text-white">
+                        <div class="text-sm opacity-90">Total Balance</div>
+                        <div class="text-2xl font-bold" id="total-investors-balance">$0</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-lg text-white">
+                        <div class="text-sm opacity-90">Total Profit/Loss</div>
+                        <div class="text-2xl font-bold" id="total-investors-pnl">$0</div>
+                    </div>
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-600 p-4 rounded-lg text-white">
+                        <div class="text-sm opacity-90">Average Win Rate</div>
+                        <div class="text-2xl font-bold" id="average-win-rate">0%</div>
+                    </div>
+                </div>
+                
+                <!-- Unified Investors Container -->
+                <div id="unified-investors-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
+                    <p id="investors-loading" class="text-center text-gray-500">Loading investors...</p>
                 </div>
             </section>
-            <section class="table-container mb-12 post9-card">
-                <h2 class="text-2xl font-bold mb-4 text-white">Investor Manager</h2>
-                <button type="button" class="post9-btn p-3 mb-4" onclick="showModal('add-investor-modal')">Add Investor</button>
-                <div id="inactive-investors-container" class="overflow-x-auto rounded-lg shadow-sm post9-card">
-                    <p id="inactive-investors-loading" class="text-center text-gray-500">Loading inactive investors...</p>
-                </div>
-            </section>
+            
             <section class="table-container post9-card">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-white">Strategy Manager</h2>
