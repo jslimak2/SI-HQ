@@ -688,33 +688,7 @@ function editInvestor(investorId) {
 // Make editInvestor globally available
 window.editInvestor = editInvestor;
 
-// Delete investor
-function deleteInvestor(investorId) {
-    const investor = investors.find(inv => inv.id === investorId);
-    if (!investor) {
-        console.error('Investor not found:', investorId);
-        return;
-    }
-    
-    if (confirm(`Are you sure you want to delete investor "${investor.name}"? This action cannot be undone.`)) {
-        // Remove from local array
-        const index = investors.findIndex(inv => inv.id === investorId);
-        if (index > -1) {
-            investors.splice(index, 1);
-        }
-        
-        // Refresh display
-        displayUnifiedInvestors();
-        
-        showMessage(`Investor "${investor.name}" deleted successfully`, false);
-        
-        console.log('Deleted investor:', investor.name);
-        // TODO: Delete on server
-    }
-}
 
-// Make function globally available
-window.deleteInvestor = deleteInvestor;
 
 // Update the main displayInvestors function to use the new unified display
 function displayInvestors() {
@@ -2389,6 +2363,36 @@ window.editBot = async function(investorData) {
 
 window.deleteInvestor = async function(investorId) {
     if (!confirm("Are you sure you want to delete this investor? This action is permanent.")) return;
+    
+    // Handle demo mode or when Firebase is not available
+    if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+        console.log("Deleting investor in demo mode");
+        
+        const investor = investors.find(inv => inv.id === investorId);
+        if (!investor) {
+            console.error('Investor not found:', investorId);
+            showMessage("Investor not found.", true);
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to delete investor "${investor.name}"? This action cannot be undone.`)) {
+            // Remove from local array
+            const index = investors.findIndex(inv => inv.id === investorId);
+            if (index > -1) {
+                investors.splice(index, 1);
+            }
+            
+            // Refresh display
+            displayUnifiedInvestors();
+            
+            showMessage(`Investor "${investor.name}" deleted successfully`, false);
+            
+            console.log('Deleted investor:', investor.name);
+        }
+        return;
+    }
+    
+    // Firebase mode
     showLoading();
     try {
         const investorRef = doc(db, `users/${userId}/investors`, investorId);
