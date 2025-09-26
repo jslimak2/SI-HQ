@@ -403,6 +403,7 @@ class StrategyParameters:
     """Strategy logic parameters - defines betting conditions and thresholds"""
     # Strategy-specific logic parameters (not betting configuration)
     min_expected_value: float = 5.0  # Minimum expected value percentage to consider a bet
+    min_confidence: float = 60.0  # Minimum model confidence required to place bet
     value_threshold: float = 0.05  # Minimum edge required (5%)
     correlation_limit: float = 0.7  # Maximum correlation between simultaneous bets
     market_timing_window: int = 24  # Hours before game to place bets
