@@ -1176,11 +1176,12 @@ let currentWeek = 4;
 
 // Generate demo portfolio data for the last 4 weeks
 function generatePortfolioData() {
+    // Portfolio should show actual investor balances, not strategy types
     const investors = [
-        { name: 'NBA Value Finder', color: '#3B82F6', baseBalance: 1000 },
-        { name: 'Conservative Sports', color: '#10B981', baseBalance: 500 },
-        { name: 'Aggressive NFL', color: '#F59E0B', baseBalance: 750 },
-        { name: 'Recovery Strategy', color: '#8B5CF6', baseBalance: 600 }
+        { name: 'NBA Value Investor', color: '#3B82F6', baseBalance: 1000 },
+        { name: 'Conservative Investor', color: '#10B981', baseBalance: 500 },
+        { name: 'Aggressive NFL Investor', color: '#F59E0B', baseBalance: 750 },
+        { name: 'Multi-Sport Investor', color: '#8B5CF6', baseBalance: 600 }
     ];
     
     const weeklyData = [];
