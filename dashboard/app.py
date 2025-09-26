@@ -390,16 +390,16 @@ def get_user_collections(user_id):
 
 # --- Sports Data Helper Functions ---
 
-def get_investor_sport(investor_data, default='NBA'):
+def get_investor_sport(investor_data, default=None):
     """
     Extract sport preference from investor data, handling multiple field names and data types.
     
     Args:
         investor_data: Investor configuration dictionary
-        default: Default sport if none found
+        default: Default sport if none found (None means no default)
     
     Returns:
-        str: Sport name (e.g., 'NFL', 'NBA')
+        str or None: Sport name (e.g., 'NFL', 'NBA') or None if no sport found
     """
     investor_sport = None
     
@@ -416,7 +416,10 @@ def get_investor_sport(investor_data, default='NBA'):
     # Return default if no sport found or if it's None/empty
     if not investor_sport:
         investor_sport = default
-        logger.warning(f"No sport preference found in investor data, defaulting to {investor_sport}")
+        if default:
+            logger.warning(f"No sport preference found in investor data, defaulting to {investor_sport}")
+        else:
+            logger.debug(f"No sport preference found in investor data and no default specified")
     
     return investor_sport
 
@@ -1499,6 +1502,11 @@ def generate_expected_value_picks(strategy_data, investor_data, max_picks):
     # Get investor's sport preference using helper function
     investor_sport = get_investor_sport(investor_data)
     
+    # Default to NBA if no sport specified
+    if not investor_sport:
+        investor_sport = 'NBA'
+        logger.info(f"No sport specified for expected value picks, defaulting to {investor_sport}")
+    
     all_games = get_sports_games_data(investor_sport, max_picks * 2)  # Get more than needed for filtering
     
     # Filter games based on +eV criteria
@@ -2341,43 +2349,24 @@ def generate_real_investor_recommendations(user_id):
         except Exception as e:
             logger.debug(f"Data service not available or failed: {e}")
         
-        # If no real investors found, create some sample active investors
+        # If no real investors found, don't create sample investors with multiple sports
+        # This prevents fetching data for sports the user doesn't actually have
         if not user_investors:
-            logger.info("No active investors found, creating sample active investors for demonstration")
-            user_investors = [
-                {
-                    'investor_id': f'real_investor_{user_id}_1',
-                    'name': 'NBA Value Finder',
-                    'strategy': 'Conservative',
-                    'assigned_strategy_id': '1',  # Conservative strategy ID
-                    'sport_filter': 'NBA',
-                    'current_balance': 1000.0,
-                    'bet_percentage': 2.5,
-                    'active_status': 'RUNNING',
-                    'risk_management': {'max_bet_percentage': 2.5, 'minimum_confidence': 55.0}
-                },
-                {
-                    'investor_id': f'real_investor_{user_id}_2',
-                    'name': 'Conservative Sports',
-                    'strategy': 'Conservative',
-                    'assigned_strategy_id': '1',  # Conservative strategy ID
-                    'sport_filter': 'NFL',
-                    'current_balance': 500.0,
-                    'bet_percentage': 1.5,
-                    'active_status': 'RUNNING',
-                    'risk_management': {'max_bet_percentage': 1.5, 'minimum_confidence': 55.0}
-                }
-            ]
+            logger.warning("No active investors found - recommendations will be limited")
+            # Don't create any sample investors to avoid fetching unwanted sport data
+            user_investors = []
         
         # 2. Get current sports games with real data
         sports_to_check = set()
         for investor in user_investors:
             sport = get_investor_sport(investor)
-            sports_to_check.add(sport)
+            if sport:  # Only add non-None sports
+                sports_to_check.add(sport)
         
-        # Default to NBA if no sports specified
+        # Only default to NBA if no sports were specified at all
         if not sports_to_check:
-            sports_to_check = {'NBA'}
+            logger.warning("No sport preferences found in any investors, no recommendations will be generated")
+            return {}
         
         all_games = []
         for sport in sports_to_check:
@@ -2585,6 +2574,11 @@ def generate_real_strategy_picks(strategy_data, investor_data, max_picks):
     try:
         # Get investor's sport preference using helper function
         investor_sport = get_investor_sport(investor_data)
+        
+        # Default to NBA if no sport specified
+        if not investor_sport:
+            investor_sport = 'NBA'
+            logger.info(f"No sport specified for real strategy picks, defaulting to {investor_sport}")
         
         # Get real games data for the investor's sport
         real_games = get_sports_games_data(investor_sport, max_picks * 2)  # Get more than needed for filtering
