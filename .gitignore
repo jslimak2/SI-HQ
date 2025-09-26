@@ -48,7 +48,7 @@ pycache/
 # Environment files
 .env
 .env.local
-.env.production
+# .env.production  # Keep as template in repo
 
 # Security and credentials
 serviceAccountKey.json
