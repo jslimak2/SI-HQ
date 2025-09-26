@@ -3308,27 +3308,6 @@ async function startListeners() {
 
 // --- EVENT LISTENERS ---
 
-// Check if the form exists before adding event listener to prevent null errors
-const addInvestorForm = document.getElementById('add-investor-form');
-if (addInvestorForm) {
-    addInvestorForm.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        const form = event.target;
-        const investorData = {
-            name: form.name.value,
-            starting_balance: parseFloat(form.starting_balance.value),
-            bet_percentage: parseFloat(form.bet_percentage.value),
-            max_bets_per_week: parseInt(form.max_bets_per_week.value, 10),
-            strategy_id: form.strategy_id.value,
-            sport: form.sport.value,
-            bet_type: form.bet_type.value
-        };
-        await window.addInvestor(investorData);
-        form.reset();
-        closeModal('add-investor-modal');
-    });
-}
-
 const editInvestorForm = document.getElementById('edit-investor-form');
 if (editInvestorForm) {
     editInvestorForm.addEventListener('submit', async function(event) {
@@ -7189,7 +7168,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Handle form submission
-        addInvestorForm.addEventListener('submit', function(e) {
+        addInvestorForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(this);
@@ -7206,49 +7185,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Show success message with model info
-            const modelSelect = document.getElementById('model-select');
-            const selectedModel = modelSelect.options[modelSelect.selectedIndex].text;
-            
-            showMessage(`Investor "${investorData.name}" created successfully with ${selectedModel}!`, false);
-            closeModal('add-investor-modal');
-            
-            // Reset form
-            addInvestorForm.reset();
-            onModelSelected(''); // Reset form state
-            
-            // Refresh investors display
-            if (typeof loadBots === 'function') {
-                setTimeout(loadBots, 500);
-            }
-        });
-    }
-
-    // Initialize investor configuration event listeners
-    const addInvestorForm = document.getElementById('add-investor-form');
-    if (addInvestorForm) {
-        // Add event listeners to all form inputs for real-time validation
-        const inputs = addInvestorForm.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            input.addEventListener('input', checkFormCompletion);
-            input.addEventListener('change', checkFormCompletion);
-        });
-        
-        // Handle form submission
-        addInvestorForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const investorData = Object.fromEntries(formData.entries());
-            
-            // Add enhanced validation
-            if (parseFloat(investorData.bet_percentage) > 10) {
-                showMessage('Bet percentage cannot exceed 10% for risk management', true);
-                return;
-            }
-            
-            if (parseFloat(investorData.starting_balance) < 100) {
-                showMessage('Starting balance must be at least $100', true);
+            // Call the actual addInvestor function
+            try {
+                await window.addInvestor(investorData);
+            } catch (error) {
+                console.error('Error adding investor:', error);
+                showMessage('Error adding investor. Please try again.', true);
                 return;
             }
             
