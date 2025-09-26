@@ -59,6 +59,24 @@ def check_requirements():
         print("\n🚨 Production readiness issues found:")
         for issue in issues:
             print(f"  {issue}")
+        
+        # Provide specific guidance for different placeholder types
+        if any('SECRET_KEY' in issue for issue in issues):
+            print("\n💡 To generate a secure SECRET_KEY, run:")
+            print("   python -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+            print("   Then update your .env file with: SECRET_KEY=<generated-key>")
+        
+        if any('FIREBASE_' in issue for issue in issues):
+            print("\n🔥 For Firebase credentials:")
+            print("   1. Create a project at https://console.firebase.google.com/")
+            print("   2. Go to Project Settings → General → Web apps")
+            print("   3. Copy the config values to your .env file")
+        
+        if any('SPORTS_API_KEY' in issue for issue in issues):
+            print("\n📊 For Sports API access:")
+            print("   • The Odds API: https://the-odds-api.com/")
+            print("   • SportRadar: https://developer.sportradar.com/")
+        
         print("\n📖 Please review .env.production template and update your .env file")
         return False
     
