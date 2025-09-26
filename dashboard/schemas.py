@@ -183,16 +183,32 @@ class ModelSchema:
 
 @dataclass
 class RiskManagement:
-    """Risk management configuration"""
-    max_bet_percentage: float = 2.0
+    """Risk management and betting execution configuration"""
+    # Betting size configuration
+    max_bet_percentage: float = 2.0  # Maximum percentage of balance to bet
+    min_bet_amount: float = 10.0  # Minimum bet amount in dollars
+    max_bet_amount: float = 1000.0  # Maximum bet amount in dollars
+    
+    # Frequency controls
     max_bets_per_week: int = 5
     max_bets_per_day: int = 2
-    stop_loss_percentage: float = 10.0
-    take_profit_percentage: float = 50.0
-    minimum_confidence: float = 60.0
-    maximum_odds: float = 3.0
-    kelly_fraction: float = 0.25
-    drawdown_limit_percentage: float = 20.0
+    max_simultaneous_bets: int = 3  # Maximum open bets at once
+    
+    # Risk thresholds
+    stop_loss_percentage: float = 10.0  # Stop betting if balance drops this much
+    take_profit_percentage: float = 50.0  # Consider reducing risk at this profit level
+    minimum_confidence: float = 60.0  # Minimum model confidence to place bet
+    maximum_odds: float = 3.0  # Maximum odds to consider
+    minimum_odds: float = 1.5  # Minimum odds to consider
+    
+    # Kelly Criterion configuration
+    kelly_fraction: float = 0.25  # Fraction of Kelly recommendation to use
+    kelly_max_bet: float = 0.05  # Never bet more than 5% even if Kelly says so
+    
+    # Advanced risk management
+    drawdown_limit_percentage: float = 20.0  # Pause if total drawdown exceeds this
+    correlation_limit: float = 0.8  # Don't bet on highly correlated events
+    variance_adjustment: bool = True  # Adjust bet sizes based on recent variance
     
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -295,13 +311,18 @@ class InvestorSchema:
     open_wagers: List[OpenWager] = field(default_factory=list)
     profit_loss: PerformanceMetrics = field(default_factory=PerformanceMetrics)
     
-    # Strategy and model assignments
-    assigned_model_id: Optional[str] = None
-    assigned_strategy_id: Optional[str] = None
+    # Strategy and model assignments - execution layer configuration
+    assigned_model_id: Optional[str] = None  # Which ML model to use
+    assigned_strategy_id: Optional[str] = None  # Which strategy logic to follow
+    
+    # Sport and market targeting - investor execution scope
+    target_sport: Optional[Sport] = None  # Primary sport this investor focuses on
+    target_markets: List[MarketType] = field(default_factory=list)  # Markets to bet on (moneyline, spread, etc.)
+    allowed_sportsbooks: List[str] = field(default_factory=lambda: ["DraftKings", "FanDuel", "BetMGM"])  # Which platforms to use
     
     # Configuration
-    sport_filter: Optional[Sport] = None
-    market_filters: List[MarketType] = field(default_factory=list)
+    sport_filter: Optional[Sport] = None  # Legacy field - use target_sport instead
+    market_filters: List[MarketType] = field(default_factory=list)  # Legacy field - use target_markets instead
     risk_management: RiskManagement = field(default_factory=RiskManagement)
     
     # Metadata
@@ -319,8 +340,12 @@ class InvestorSchema:
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
         data['active_status'] = self.active_status.value
+        # Handle legacy fields
         data['sport_filter'] = self.sport_filter.value if self.sport_filter else None
         data['market_filters'] = [market.value for market in self.market_filters]
+        # Handle new fields
+        data['target_sport'] = self.target_sport.value if self.target_sport else None
+        data['target_markets'] = [market.value for market in self.target_markets]
         data['risk_management'] = self.risk_management.to_dict()
         data['profit_loss'] = self.profit_loss.to_dict()
         data['transaction_log'] = [tx.to_dict() for tx in self.transaction_log]
@@ -332,10 +357,16 @@ class InvestorSchema:
         # Handle enums
         if 'active_status' in data and isinstance(data['active_status'], str):
             data['active_status'] = InvestorStatus(data['active_status'])
+        # Legacy fields
         if 'sport_filter' in data and data['sport_filter'] and isinstance(data['sport_filter'], str):
             data['sport_filter'] = Sport(data['sport_filter'])
         if 'market_filters' in data and isinstance(data['market_filters'], list):
             data['market_filters'] = [MarketType(market) for market in data['market_filters']]
+        # New fields
+        if 'target_sport' in data and data['target_sport'] and isinstance(data['target_sport'], str):
+            data['target_sport'] = Sport(data['target_sport'])
+        if 'target_markets' in data and isinstance(data['target_markets'], list):
+            data['target_markets'] = [MarketType(market) for market in data['target_markets']]
         
         # Handle complex objects
         if 'risk_management' in data and isinstance(data['risk_management'], dict):
@@ -369,27 +400,30 @@ class KellyCriterionConfig:
 
 @dataclass
 class StrategyParameters:
-    """Flexible strategy parameters"""
-    min_confidence: float = 65.0
-    max_bet_percentage: float = 3.0
-    kelly_criterion: KellyCriterionConfig = field(default_factory=KellyCriterionConfig)
-    min_odds: float = 1.5
-    max_odds: float = 3.0
-    min_expected_value: float = 5.0
+    """Strategy logic parameters - defines betting conditions and thresholds"""
+    # Strategy-specific logic parameters (not betting configuration)
+    min_expected_value: float = 5.0  # Minimum expected value percentage to consider a bet
+    value_threshold: float = 0.05  # Minimum edge required (5%)
+    correlation_limit: float = 0.7  # Maximum correlation between simultaneous bets
+    market_timing_window: int = 24  # Hours before game to place bets
+    
+    # Strategy condition parameters
+    min_sample_size: int = 10  # Minimum historical games for confidence
+    streak_consideration: bool = True  # Consider recent team streaks
+    weather_factor: bool = False  # Include weather in outdoor sports
+    injury_factor: bool = True  # Consider injury reports
+    
+    # Advanced strategy settings
     batch_betting_enabled: bool = False
     batch_volume: int = 3
+    recency_weight: float = 1.0  # Weight for recent performance vs historical
     additional_params: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> Dict[str, Any]:
-        data = asdict(self)
-        data['kelly_criterion'] = self.kelly_criterion.to_dict()
-        return data
+        return asdict(self)
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'StrategyParameters':
-        if 'kelly_criterion' in data and isinstance(data['kelly_criterion'], dict):
-            data['kelly_criterion'] = KellyCriterionConfig.from_dict(data['kelly_criterion'])
-        
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 

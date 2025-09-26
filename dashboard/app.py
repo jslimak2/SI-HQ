@@ -1475,15 +1475,17 @@ def generate_expected_value_picks(strategy_data, investor_data, max_picks):
     """Generate +eV (Expected Value) strategy picks."""
     picks = []
     
-    # Get strategy parameters with proper type conversion to handle dict/float issues
-    params = strategy_data.get('parameters', {})
+    # Get strategy parameters (logic-only parameters)
+    strategy_params = strategy_data.get('parameters', {})
     
-    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    # Get investor risk management (betting configuration)
+    risk_mgmt = investor_data.get('risk_management', {})
+    
+    # Safely extract numeric parameters
     def safe_float_extract(value, default):
         if isinstance(value, (int, float)):
             return float(value)
         elif isinstance(value, dict):
-            # If it's a dict, try to extract a 'value' field or use default
             return float(value.get('value', default))
         elif isinstance(value, str):
             try:
@@ -1493,11 +1495,16 @@ def generate_expected_value_picks(strategy_data, investor_data, max_picks):
         else:
             return default
     
-    min_ev = safe_float_extract(params.get('min_expected_value', 5.0), 5.0)
-    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 3.0), 3.0)
-    min_confidence = safe_float_extract(params.get('confidence_threshold', 65), 65)
-    max_odds = safe_float_extract(params.get('max_odds', 3.0), 3.0)
-    kelly_fraction = safe_float_extract(params.get('kelly_fraction', 0.25), 0.25)
+    # Strategy logic parameters
+    min_ev = safe_float_extract(strategy_params.get('min_expected_value', 5.0), 5.0)
+    value_threshold = safe_float_extract(strategy_params.get('value_threshold', 0.05), 0.05)
+    
+    # Betting configuration from investor risk management
+    max_bet_pct = safe_float_extract(risk_mgmt.get('max_bet_percentage', 3.0), 3.0)
+    min_confidence = safe_float_extract(risk_mgmt.get('minimum_confidence', 65), 65)
+    max_odds = safe_float_extract(risk_mgmt.get('maximum_odds', 3.0), 3.0)
+    min_odds = safe_float_extract(risk_mgmt.get('minimum_odds', 1.5), 1.5)
+    kelly_fraction = safe_float_extract(risk_mgmt.get('kelly_fraction', 0.25), 0.25)
     
     # Get sports games data (real or demo depending on configuration)
     # Get investor's sport preference using helper function
@@ -1548,14 +1555,17 @@ def generate_expected_value_picks(strategy_data, investor_data, max_picks):
 
 def generate_conservative_strategy_picks(strategy_data, investor_data, max_picks):
     """Generate conservative strategy picks with enhanced logic."""
-    params = strategy_data.get('parameters', {})
+    # Get strategy parameters (logic-only)
+    strategy_params = strategy_data.get('parameters', {})
     
-    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    # Get investor risk management (betting configuration)
+    risk_mgmt = investor_data.get('risk_management', {})
+    
+    # Safely extract numeric parameters
     def safe_float_extract(value, default):
         if isinstance(value, (int, float)):
             return float(value)
         elif isinstance(value, dict):
-            # If it's a dict, try to extract a 'value' field or use default
             return float(value.get('value', default))
         elif isinstance(value, str):
             try:
@@ -1565,9 +1575,11 @@ def generate_conservative_strategy_picks(strategy_data, investor_data, max_picks
         else:
             return default
     
-    min_confidence = safe_float_extract(params.get('min_confidence', 75), 75)
-    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 2.0), 2.0)
-    max_odds = safe_float_extract(params.get('max_odds', 2.0), 2.0)
+    # Conservative strategy uses stricter thresholds from risk management
+    min_confidence = safe_float_extract(risk_mgmt.get('minimum_confidence', 75), 75)
+    max_bet_pct = safe_float_extract(risk_mgmt.get('max_bet_percentage', 2.0), 2.0)
+    # Conservative strategy: use lower max odds than investor's general limit
+    max_odds = min(safe_float_extract(risk_mgmt.get('maximum_odds', 2.0), 2.0), 2.0)
     
     basic_picks = generate_basic_strategy_picks(investor_data, max_picks)
     
