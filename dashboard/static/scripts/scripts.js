@@ -2099,7 +2099,17 @@ window.getStrategyPicks = async function(investorId, strategyId) {
                 </div>
             `).join('');
             
+            // Show warning if this is demo/fallback data
+            const fallbackWarning = data.demo_mode || data.fallback_reason ? `
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-3">
+                    <div class="text-yellow-800 text-sm">
+                        <strong>⚠️ Demo Data:</strong> ${data.message || 'Showing demo recommendations'}
+                    </div>
+                </div>
+            ` : '';
+            
             picksContent.innerHTML = `
+                ${fallbackWarning}
                 <div class="text-sm text-gray-600 mb-2">
                     Strategy: ${data.strategy_name} | Remaining bets this week: ${data.remaining_bets}
                 </div>

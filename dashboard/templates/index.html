@@ -1932,6 +1932,49 @@
                         </select>
                 </div>
                 <div>
+                    <label for="modal-model" class="block text-sm font-medium text-gray-700">Assigned Model</label>
+                    <select id="modal-model" name="assigned_model_id" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Model...</option>
+                        <option value="nba_advanced_lstm">NBA Advanced LSTM (68.2% accuracy)</option>
+                        <option value="nfl_ensemble_v2">NFL Ensemble v2.0 (64.8% accuracy)</option>
+                        <option value="mlb_statistical">MLB Statistical (61.5% accuracy)</option>
+                        <option value="nba_ensemble">NBA Ensemble (71.4% accuracy)</option>
+                        <option value="nfl_neural">NFL Neural Network (66.1% accuracy)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-sport" class="block text-sm font-medium text-gray-700">Target Sport</label>
+                    <select id="modal-sport" name="target_sport" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select Sport...</option>
+                        <option value="NBA">NBA</option>
+                        <option value="NFL">NFL</option>
+                        <option value="MLB">MLB</option>
+                        <option value="NCAAF">NCAA Football</option>
+                        <option value="NCAAB">NCAA Basketball</option>
+                        <option value="NHL">NHL</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="modal-markets" class="block text-sm font-medium text-gray-700">Target Markets</label>
+                    <div class="mt-1 space-y-2">
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="modal-market-moneyline" name="target_markets" value="moneyline" 
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Moneyline (Win/Loss)</span>
+                        </label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="modal-market-spread" name="target_markets" value="spread" 
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Spread (Point Spread)</span>
+                        </label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="modal-market-totals" name="target_markets" value="totals" 
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Totals (Over/Under)</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
                     <label for="modal-balance" class="block text-sm font-medium text-gray-700">Current Balance</label>
                     <input type="number" step="0.01" id="modal-balance" name="current_balance" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" disabled>
                 </div>
