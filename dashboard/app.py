@@ -1975,43 +1975,79 @@ def get_available_investments():
 
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error fetching sports data: {e}")
-        # Fallback to demo data if real API fails
-        logger.warning(f"Sports API failed, falling back to demo data: {e}")
-        return jsonify({
-            'success': True,
-            'investments': generate_demo_investments(),
-            'cached': False,
-            'last_refresh': datetime.datetime.now().isoformat(),
-            'api_calls_made': api_calls_made,
-            'demo_mode': True,
-            'message': f'API temporarily unavailable, showing demo data. Error: {e.response.text if hasattr(e, "response") else str(e)}'
-        }), 200
+        
+        # Check if demo mode is disabled (production mode)
+        if config.disable_demo_mode:
+            logger.error(f"Production mode: Sports API failed, no fallback available: {e}")
+            return jsonify({
+                'success': False,
+                'message': f'Sports API unavailable in production mode: {e.response.text if hasattr(e, "response") else str(e)}',
+                'investments': [],
+                'api_calls_made': api_calls_made,
+                'production_mode': True
+            }), 503
+        else:
+            # Demo mode - fallback to demo data
+            logger.warning(f"Demo mode: Sports API failed, falling back to demo data: {e}")
+            return jsonify({
+                'success': True,
+                'investments': generate_demo_investments(),
+                'cached': False,
+                'last_refresh': datetime.datetime.now().isoformat(),
+                'api_calls_made': api_calls_made,
+                'demo_mode': True,
+                'message': f'Demo mode: API temporarily unavailable, showing demo data. Error: {e.response.text if hasattr(e, "response") else str(e)}'
+            }), 200
     except requests.exceptions.RequestException as e:
         print(f"Network Error fetching sports data: {e}")
-        # Fallback to demo data on network errors
-        logger.warning(f"Network error accessing sports API, falling back to demo data: {e}")
-        return jsonify({
-            'success': True,
-            'investments': generate_demo_investments(),
-            'cached': False,
-            'last_refresh': datetime.datetime.now().isoformat(),
-            'api_calls_made': 0,
-            'demo_mode': True,
-            'message': f'Network error, showing demo data. Error: {str(e)}'
-        }), 200
+        
+        # Check if demo mode is disabled (production mode)
+        if config.disable_demo_mode:
+            logger.error(f"Production mode: Network error accessing sports API, no fallback available: {e}")
+            return jsonify({
+                'success': False,
+                'message': f'Network error in production mode: {str(e)}',
+                'investments': [],
+                'api_calls_made': 0,
+                'production_mode': True
+            }), 503
+        else:
+            # Demo mode - fallback to demo data
+            logger.warning(f"Demo mode: Network error accessing sports API, falling back to demo data: {e}")
+            return jsonify({
+                'success': True,
+                'investments': generate_demo_investments(),
+                'cached': False,
+                'last_refresh': datetime.datetime.now().isoformat(),
+                'api_calls_made': 0,
+                'demo_mode': True,
+                'message': f'Demo mode: Network error, showing demo data. Error: {str(e)}'
+            }), 200
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         logger.error(f"Unexpected error in investments API: {e}")
-        # Fallback to demo data on any unexpected error
-        return jsonify({
-            'success': True,
-            'investments': generate_demo_investments(),
-            'cached': False,
-            'last_refresh': datetime.datetime.now().isoformat(),
-            'api_calls_made': 0,
-            'demo_mode': True,
-            'message': f'Service temporarily unavailable, showing demo data. Error: {str(e)}'
-        }), 200
+        
+        # Check if demo mode is disabled (production mode)
+        if config.disable_demo_mode:
+            logger.error(f"Production mode: Unexpected error, no fallback available: {e}")
+            return jsonify({
+                'success': False,
+                'message': f'Service error in production mode: {str(e)}',
+                'investments': [],
+                'api_calls_made': 0,
+                'production_mode': True
+            }), 500
+        else:
+            # Demo mode - fallback to demo data
+            return jsonify({
+                'success': True,
+                'investments': generate_demo_investments(),
+                'cached': False,
+                'last_refresh': datetime.datetime.now().isoformat(),
+                'api_calls_made': 0,
+                'demo_mode': True,
+                'message': f'Demo mode: Service temporarily unavailable, showing demo data. Error: {str(e)}'
+            }), 200
 
 # ████████████████████████████████████████████████████████████████████████████████
 # [MOCK]                           MOCK/DEMO DATA SECTION                         [MOCK]
@@ -3036,8 +3072,22 @@ def get_models_for_investor():
             print(f"🟡 Failed to get real models from registry: {e}")
             logger.warning(f"Failed to get real models from registry: {e}")
         
-        # Fallback to hardcoded models if no real models available
-        print(f"🟡 USING HARDCODED MODELS for investor dropdown (no real models available)")
+        # Check if demo mode is disabled (production mode)
+        if config.disable_demo_mode:
+            # In production mode, don't fallback to hardcoded models
+            print(f"🚫 PRODUCTION MODE: No real models available, cannot fallback to hardcoded models")
+            logger.error("Production mode: No trained models available and fallback disabled")
+            return jsonify({
+                'success': False,
+                'message': 'No trained models available in production mode',
+                'models': [],
+                'total_count': 0,
+                'data_source': 'production_no_fallback',
+                'production_mode': True
+            }), 404
+        
+        # Fallback to hardcoded models if no real models available (demo mode only)
+        print(f"🟡 DEMO MODE: Using hardcoded models for investor dropdown (no real models available)")
         hardcoded_models = [
             {
                 'value': 'nba_advanced_lstm',
@@ -3075,8 +3125,9 @@ def get_models_for_investor():
             'success': True,
             'models': hardcoded_models,
             'total_count': len(hardcoded_models),
-            'data_source': 'fallback_hardcoded',
-            'message': 'Using fallback models - train real models to see them here'
+            'data_source': 'demo_fallback',
+            'message': 'Demo mode: Using fallback models - train real models to see them here',
+            'production_mode': False
         })
         
     except Exception as e:
@@ -3467,9 +3518,112 @@ def train_basic_model():
 
 # --- PROFESSIONAL MODEL REGISTRY ENDPOINTS ---
 
+@app.route('/api/models', methods=['GET'])
+@handle_errors
+def get_models():
+    """Get available models - public endpoint without authentication requirement"""
+    try:
+        # Check if demo mode is disabled (production mode)
+        if config.disable_demo_mode:
+            # In production mode, only return real trained models from registry
+            try:
+                if hasattr(model_registry, 'list_models'):
+                    real_models = model_registry.list_models(status=ModelStatus.TRAINED)
+                    if real_models:
+                        models_data = []
+                        for model in real_models:
+                            accuracy = 65.0  # Default
+                            if hasattr(model, 'current_performance') and model.current_performance:
+                                accuracy = model.current_performance.accuracy * 100
+                            elif hasattr(model, 'performance_metrics') and model.performance_metrics:
+                                accuracy = model.performance_metrics.get('accuracy', 0.65) * 100
+                            
+                            models_data.append({
+                                'model_id': model.model_id,
+                                'name': f"{model.sport.value if hasattr(model.sport, 'value') else str(model.sport)} {model.model_type.replace('_', ' ').title()}",
+                                'sport': model.sport.value if hasattr(model.sport, 'value') else str(model.sport),
+                                'accuracy': accuracy,
+                                'status': 'active',
+                                'description': model.description or f"{model.model_type.replace('_', ' ').title()} model for {model.sport} predictions"
+                            })
+                        
+                        return jsonify({
+                            'success': True,
+                            'models': models_data,
+                            'total_count': len(models_data),
+                            'data_source': 'real_registry',
+                            'production_mode': True
+                        })
+                    else:
+                        # No real models available in production mode
+                        return jsonify({
+                            'success': False,
+                            'message': 'No trained models available in production mode',
+                            'models': [],
+                            'total_count': 0,
+                            'production_mode': True
+                        }), 404
+                else:
+                    return jsonify({
+                        'success': False,
+                        'message': 'Model registry not available in production mode',
+                        'models': [],
+                        'total_count': 0,
+                        'production_mode': True
+                    }), 503
+            except Exception as e:
+                logger.error(f"Failed to get models in production mode: {e}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Failed to get models: {e}',
+                    'models': [],
+                    'total_count': 0,
+                    'production_mode': True
+                }), 500
+        else:
+            # Demo mode - return fallback models for development
+            demo_models = [
+                {
+                    'model_id': 'demo_nba_lstm',
+                    'name': 'NBA Advanced LSTM',
+                    'sport': 'NBA',
+                    'accuracy': 68.2,
+                    'status': 'active',
+                    'description': 'LSTM neural network for NBA game predictions with advanced player stats'
+                },
+                {
+                    'model_id': 'demo_nfl_ensemble',
+                    'name': 'NFL Ensemble v2.0',
+                    'sport': 'NFL',
+                    'accuracy': 64.8,
+                    'status': 'active',
+                    'description': 'Ensemble model combining multiple algorithms for NFL predictions'
+                },
+                {
+                    'model_id': 'demo_mlb_statistical',
+                    'name': 'MLB Statistical',
+                    'sport': 'MLB',
+                    'accuracy': 61.5,
+                    'status': 'active',
+                    'description': 'Statistical model for MLB predictions using historical data'
+                }
+            ]
+            
+            return jsonify({
+                'success': True,
+                'models': demo_models,
+                'total_count': len(demo_models),
+                'data_source': 'demo',
+                'production_mode': False
+            })
+        
+    except Exception as e:
+        logger.error(f"Failed to get models: {e}")
+        return create_error_response(e)
+
 @app.route('/api/models/registry', methods=['GET'])
 @handle_errors
-@require_authentication
+@require_authentication  
 def list_registered_models():
     """List models from professional registry with filtering"""
     try:
