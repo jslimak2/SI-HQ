@@ -1611,7 +1611,9 @@ def generate_conservative_strategy_picks(strategy_data, investor_data, max_picks
     # Filter and adjust for conservative parameters
     conservative_picks = []
     for pick in basic_picks:
-        if (pick['confidence'] >= min_confidence and 
+        # Safely extract confidence value to handle both int and dict formats
+        pick_confidence = safe_float_extract(pick['confidence'], 60.0)
+        if (pick_confidence >= min_confidence and 
             pick['odds'] <= max_odds):
             
             # Reduce bet size for conservative approach
@@ -1620,7 +1622,9 @@ def generate_conservative_strategy_picks(strategy_data, investor_data, max_picks
                 investor_data['current_balance'] * (max_bet_pct / 100)
             )
             pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
-            pick['strategy_reason'] = f"Conservative: {pick['confidence']}% confidence, Low odds"
+            pick['strategy_reason'] = f"Conservative: {pick_confidence}% confidence, Low odds"
+            # Ensure confidence is stored as a simple float for consistency
+            pick['confidence'] = pick_confidence
             conservative_picks.append(pick)
     
     return conservative_picks
@@ -1655,11 +1659,15 @@ def generate_aggressive_strategy_picks(strategy_data, investor_data, max_picks):
     
     # Adjust for aggressive parameters
     for pick in basic_picks:
-        if pick['confidence'] >= min_confidence:
+        # Safely extract confidence value to handle both int and dict formats
+        pick_confidence = safe_float_extract(pick['confidence'], 60.0)
+        if pick_confidence >= min_confidence:
             # Increase bet size for aggressive approach
             pick['recommended_amount'] = investor_data['current_balance'] * (max_bet_pct / 100)
             pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
-            pick['strategy_reason'] = f"Aggressive: {pick['confidence']}% confidence, High stakes"
+            pick['strategy_reason'] = f"Aggressive: {pick_confidence}% confidence, High stakes"
+            # Ensure confidence is stored as a simple float for consistency
+            pick['confidence'] = pick_confidence
     
     return basic_picks
 
@@ -1799,6 +1807,20 @@ def generate_recovery_strategy_picks(investor_data, max_picks):
     """Generate recovery strategy picks - more aggressive to recover losses."""
     basic_picks = generate_basic_strategy_picks(investor_data, max_picks)
     
+    # Define safe_float_extract locally (same pattern as other functions)
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
+    
     # If investor is down, increase bet amounts and focus on higher odds
     current_balance = investor_data.get('current_balance', 0)
     starting_balance = investor_data.get('starting_balance', current_balance)
@@ -1808,7 +1830,9 @@ def generate_recovery_strategy_picks(investor_data, max_picks):
         for pick in basic_picks:
             pick['recommended_amount'] = pick['recommended_amount'] * 1.5  # 50% more aggressive
             pick['potential_payout'] = pick['recommended_amount'] * pick['odds']
-            pick['confidence'] = pick['confidence'] - 10  # Lower confidence due to higher risk
+            # Safely extract and modify confidence
+            current_confidence = safe_float_extract(pick['confidence'], 60.0)
+            pick['confidence'] = max(current_confidence - 10, 0)  # Lower confidence due to higher risk, but not negative
     
     return basic_picks
 

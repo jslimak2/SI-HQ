@@ -2038,6 +2038,30 @@ window.addStrategy = async function(strategyData) {
 window.editStrategy = async function(strategyId, strategyData) {
     showLoading();
     try {
+        // Handle demo mode or when Firebase is not available
+        if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+            console.log("Editing strategy in demo mode");
+            
+            // Update the strategy in the global strategies array
+            const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+            if (strategyIndex !== -1) {
+                strategies[strategyIndex] = { ...strategies[strategyIndex], ...strategyData };
+                window.strategies = strategies;
+                
+                // Refresh display and dropdowns
+                displayStrategies();
+                updateStrategySelects();
+                
+                showMessage("Strategy updated successfully (Demo Mode)!");
+                return;
+            } else {
+                showMessage("Strategy not found in demo data", true);
+                return;
+            }
+        }
+        
+        // Production mode - use Firebase
+        const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
         await updateDoc(strategyRef, strategyData);
         showMessage("Strategy updated successfully!");
@@ -2653,6 +2677,26 @@ function updateAccountUI() {
         document.getElementById('profile-email').value = currentUser.email || '';
         document.getElementById('profile-display-name').value = currentUser.displayName || '';
     }
+}
+
+function showSignInForm() {
+    // Show sign-in form, hide sign-up form
+    document.getElementById('signin-form-element').style.display = 'block';
+    document.getElementById('signup-form-element').style.display = 'none';
+    
+    // Update button styles
+    document.getElementById('show-signin-btn').className = 'post9-btn p-2 text-sm bg-blue-600';
+    document.getElementById('show-signup-btn').className = 'post9-btn p-2 text-sm bg-gray-600';
+}
+
+function showSignUpForm() {
+    // Show sign-up form, hide sign-in form
+    document.getElementById('signin-form-element').style.display = 'none';
+    document.getElementById('signup-form-element').style.display = 'block';
+    
+    // Update button styles
+    document.getElementById('show-signin-btn').className = 'post9-btn p-2 text-sm bg-gray-600';
+    document.getElementById('show-signup-btn').className = 'post9-btn p-2 text-sm bg-blue-600';
 }
 
 async function signInUser(email, password) {
