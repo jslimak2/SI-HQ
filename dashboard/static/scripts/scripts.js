@@ -1174,24 +1174,38 @@ window.showStrategyDetails = function(strategyKey) {
 let portfolioAnimationInterval = null;
 let currentWeek = 4;
 
-// Generate demo portfolio data for the last 4 weeks
+// Generate portfolio data based on actual investors or show empty state
 function generatePortfolioData() {
-    // Portfolio should show actual investor balances, not strategy types
-    const investors = [
-        { name: 'NBA Value Investor', color: '#3B82F6', baseBalance: 1000 },
-        { name: 'Conservative Investor', color: '#10B981', baseBalance: 500 },
-        { name: 'Aggressive NFL Investor', color: '#F59E0B', baseBalance: 750 },
-        { name: 'Multi-Sport Investor', color: '#8B5CF6', baseBalance: 600 }
-    ];
+    // Check if we have real investors with actual data
+    if (investors && investors.length > 0) {
+        // Check if any investors have meaningful activity (not demo data)
+        const hasRealData = investors.some(investor => 
+            investor.total_wagers > 0 || 
+            investor.current_balance !== investor.starting_balance ||
+            !investor.id?.includes('demo_')
+        );
+        
+        if (hasRealData) {
+            // Generate data based on actual investors
+            return generateRealPortfolioData();
+        }
+    }
     
+    // Return empty state data for new users
+    return generateEmptyPortfolioData();
+}
+
+// Generate portfolio data from real investor balances
+function generateRealPortfolioData() {
     const weeklyData = [];
     for (let week = 1; week <= 4; week++) {
         const weekData = {
             week: week,
-            investors: investors.map(investor => ({
-                ...investor,
-                balance: investor.baseBalance + (Math.random() - 0.3) * 200 * week,
-                isActive: Math.random() > 0.2 // 80% chance of being active
+            investors: investors.filter(inv => inv.current_balance > 0).map(investor => ({
+                name: investor.name,
+                color: getInvestorColor(investor.id),
+                balance: investor.current_balance + (Math.random() - 0.5) * 50 * (week - 2), // Small variance over time
+                isActive: investor.status === 'active'
             }))
         };
         weekData.total = weekData.investors.reduce((sum, inv) => sum + inv.balance, 0);
@@ -1199,6 +1213,31 @@ function generatePortfolioData() {
     }
     
     return weeklyData;
+}
+
+// Generate empty state for new users with no active investors
+function generateEmptyPortfolioData() {
+    const weeklyData = [];
+    for (let week = 1; week <= 4; week++) {
+        const weekData = {
+            week: week,
+            investors: [],
+            total: 0
+        };
+        weeklyData.push(weekData);
+    }
+    
+    return weeklyData;
+}
+
+// Get a consistent color for an investor
+function getInvestorColor(investorId) {
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4'];
+    const hash = investorId.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+    }, 0);
+    return colors[Math.abs(hash) % colors.length];
 }
 
 // Create animated portfolio pie chart
@@ -1216,6 +1255,26 @@ function createPortfolioPieChart() {
         const radius = 100;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Handle empty data case
+        if (!data.investors || data.investors.length === 0 || data.total === 0) {
+            // Draw empty circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#374151';
+            ctx.fill();
+            ctx.strokeStyle = '#4B5563';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Update center text for empty state
+            document.getElementById('portfolio-total').textContent = '$0';
+            document.getElementById('portfolio-period').textContent = 'No Active Investors';
+            
+            // Update legend for empty state
+            updatePortfolioLegend([]);
+            return;
+        }
         
         let startAngle = -Math.PI / 2;
         
@@ -1249,6 +1308,18 @@ function createPortfolioPieChart() {
     
     function updatePortfolioLegend(investors) {
         const legend = document.getElementById('portfolio-legend');
+        
+        if (!investors || investors.length === 0) {
+            legend.innerHTML = `
+                <div class="text-center text-gray-400">
+                    <div class="mb-2">📊</div>
+                    <div class="text-sm">No active investors yet</div>
+                    <div class="text-xs">Create your first investor to see portfolio breakdown</div>
+                </div>
+            `;
+            return;
+        }
+        
         legend.innerHTML = investors.map(investor => `
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
@@ -1269,15 +1340,27 @@ function createPortfolioPieChart() {
     }, 3000);
 }
 
-// Generate balance over time data
+// Generate balance over time data based on actual investors
 function generateBalanceData() {
-    const investors = [
-        { name: 'NBA Value Finder', color: '#3B82F6' },
-        { name: 'Conservative Sports', color: '#10B981' },
-        { name: 'Aggressive NFL', color: '#F59E0B' },
-        { name: 'Recovery Strategy', color: '#8B5CF6' }
-    ];
+    // Check if we have real investors with actual data
+    if (investors && investors.length > 0) {
+        const hasRealData = investors.some(investor => 
+            investor.total_wagers > 0 || 
+            investor.current_balance !== investor.starting_balance ||
+            !investor.id?.includes('demo_')
+        );
+        
+        if (hasRealData) {
+            return generateRealBalanceData();
+        }
+    }
     
+    // Return empty data for new users
+    return [];
+}
+
+// Generate balance data from real investors
+function generateRealBalanceData() {
     const dates = [];
     const now = new Date();
     for (let i = 30; i >= 0; i--) {
@@ -1286,25 +1369,28 @@ function generateBalanceData() {
         dates.push(date);
     }
     
-    return investors.map(investor => {
-        let balance = 1000;
+    return investors.filter(inv => inv.current_balance > 0).map(investor => {
+        let balance = investor.starting_balance || investor.current_balance;
         const balances = dates.map((date, index) => {
-            // Simulate balance changes with some volatility
-            const change = (Math.random() - 0.45) * 50;
-            balance = Math.max(balance + change, 100);
+            // Simulate balance progression towards current balance
+            const progressRatio = index / dates.length;
+            const targetBalance = investor.current_balance;
+            balance = investor.starting_balance + (targetBalance - investor.starting_balance) * progressRatio;
             
-            // Determine if active (some periods inactive)
-            const isActive = index < 10 || index > 20 || Math.random() > 0.3;
+            // Add some realistic volatility
+            const volatility = (Math.random() - 0.5) * Math.min(balance * 0.05, 50);
+            balance = Math.max(balance + volatility, 50);
             
             return {
                 date: date,
                 balance: balance,
-                isActive: isActive
+                isActive: investor.status === 'active'
             };
         });
         
         return {
-            ...investor,
+            name: investor.name,
+            color: getInvestorColor(investor.id),
             balances: balances
         };
     });
@@ -1319,6 +1405,19 @@ function createBalanceChart() {
     const balanceData = generateBalanceData();
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Handle empty data case
+    if (!balanceData || balanceData.length === 0) {
+        // Draw empty state
+        ctx.fillStyle = '#6B7280';
+        ctx.font = '16px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No investor data available', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = '12px Inter, sans-serif';
+        ctx.fillStyle = '#9CA3AF';
+        ctx.fillText('Create your first investor to see balance over time', canvas.width / 2, canvas.height / 2 + 15);
+        return;
+    }
     
     // Chart dimensions
     const padding = 40;
@@ -1653,6 +1752,18 @@ window.showInvestorDetails = function(investorId) {
         }
         strategySelect.appendChild(option);
     });
+
+    // Populate the model dropdown
+    const modelSelect = document.getElementById('modal-model');
+    if (modelSelect && investor.assigned_model_id) {
+        modelSelect.value = investor.assigned_model_id;
+    }
+
+    // Populate the sport dropdown
+    const sportSelect = document.getElementById('modal-sport');
+    if (sportSelect && (investor.sport_filter || investor.sport)) {
+        sportSelect.value = investor.sport_filter || investor.sport;
+    }
 
     // Populate allowable platforms checkboxes
     const allowablePlatforms = investor.allowable_platforms || ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'PointsBet']; // Default to all if not set
@@ -3489,6 +3600,8 @@ if (editInvestorForm) {
         id: form['modal-investor-id'].value,
         name: form['modal-name'].value,
         strategy_id: form['modal-strategy'].value,
+        assigned_model_id: form['modal-model'].value,
+        sport_filter: form['modal-sport'].value,
         bet_percentage: parseFloat(form['modal-bet-percent'].value),
         max_bets_per_week: parseInt(form['modal-max-bets'].value, 10),
         minimum_confidence: parseFloat(form['modal-min-confidence'].value),
