@@ -1176,11 +1176,12 @@ let currentWeek = 4;
 
 // Generate demo portfolio data for the last 4 weeks
 function generatePortfolioData() {
+    // Portfolio should show actual investor balances, not strategy types
     const investors = [
-        { name: 'NBA Value Finder', color: '#3B82F6', baseBalance: 1000 },
-        { name: 'Conservative Sports', color: '#10B981', baseBalance: 500 },
-        { name: 'Aggressive NFL', color: '#F59E0B', baseBalance: 750 },
-        { name: 'Recovery Strategy', color: '#8B5CF6', baseBalance: 600 }
+        { name: 'NBA Value Investor', color: '#3B82F6', baseBalance: 1000 },
+        { name: 'Conservative Investor', color: '#10B981', baseBalance: 500 },
+        { name: 'Aggressive NFL Investor', color: '#F59E0B', baseBalance: 750 },
+        { name: 'Multi-Sport Investor', color: '#8B5CF6', baseBalance: 600 }
     ];
     
     const weeklyData = [];
@@ -2077,9 +2078,49 @@ window.deleteStrategy = async function(strategyId) {
     if (!confirm("Are you sure you want to delete this strategy? This will affect any investors using it.")) return;
     showLoading();
     try {
+        // Handle demo mode or when Firebase is not available
+        if (!firebaseAvailable || !db || userId === 'demo-user' || userId === 'anonymous') {
+            console.log("Deleting strategy in demo mode");
+            
+            // Remove the strategy from the global strategies array
+            const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+            if (strategyIndex !== -1) {
+                const strategyName = strategies[strategyIndex].name;
+                strategies.splice(strategyIndex, 1);
+                window.strategies = strategies;
+                
+                // Refresh display and dropdowns immediately
+                displayStrategies();
+                updateStrategySelects();
+                
+                showMessage(`Strategy "${strategyName}" deleted successfully (Demo Mode)!`);
+                return;
+            } else {
+                showMessage("Strategy not found in demo data", true);
+                return;
+            }
+        }
+        
+        // Production mode - use Firebase
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
         const strategyRef = doc(db, `users/${userId}/strategies`, strategyId);
         await deleteDoc(strategyRef);
-        showMessage("Strategy deleted successfully!");
+        
+        // Also remove from local strategies array to update UI immediately
+        const strategyIndex = strategies.findIndex(s => s.id == strategyId);
+        if (strategyIndex !== -1) {
+            const strategyName = strategies[strategyIndex].name;
+            strategies.splice(strategyIndex, 1);
+            window.strategies = strategies;
+            
+            // Refresh display and dropdowns
+            displayStrategies();
+            updateStrategySelects();
+            
+            showMessage(`Strategy "${strategyName}" deleted successfully!`);
+        } else {
+            showMessage("Strategy deleted successfully!");
+        }
     } catch (e) {
         console.error("Error deleting strategy: ", e);
         showMessage("Failed to delete strategy.", true);
@@ -2647,6 +2688,21 @@ window.clearFilters = function(sport) {
 let currentUser = null;
 let isAuthenticated = false;
 
+// Initialize auth state immediately
+function initializeAuthState() {
+    if (typeof window.currentUser === 'undefined') {
+        window.currentUser = null;
+    }
+    if (typeof window.isAuthenticated === 'undefined') {
+        window.isAuthenticated = false;
+    }
+    currentUser = window.currentUser;
+    isAuthenticated = window.isAuthenticated;
+}
+
+// Call initialization
+initializeAuthState();
+
 window.showAuthForm = function(formType) {
     const signinForm = document.getElementById('signin-form');
     const signupForm = document.getElementById('signup-form');
@@ -2886,6 +2942,70 @@ async function deleteUserAccount() {
     } finally {
         hideLoading();
     }
+}
+
+// Authentication Gate Functions
+function checkAuthAndShowContent() {
+    // Initialize auth state if undefined
+    if (typeof isAuthenticated === 'undefined') {
+        isAuthenticated = false;
+    }
+    if (typeof currentUser === 'undefined') {
+        currentUser = null;
+    }
+    
+    if (isAuthenticated && currentUser) {
+        // Show main app content
+        document.getElementById('auth-gate').classList.add('hidden');
+        document.getElementById('main-app-content').classList.remove('hidden');
+    } else {
+        // Show authentication gate
+        document.getElementById('auth-gate').classList.remove('hidden');
+        document.getElementById('main-app-content').classList.add('hidden');
+    }
+}
+
+function showSigninFromGate() {
+    // Hide signup form, show signin form
+    document.getElementById('gate-signup-form').classList.add('hidden');
+    document.getElementById('gate-signin-form').classList.remove('hidden');
+    
+    // Update button styles
+    document.getElementById('gate-signin-btn').className = 'post9-btn p-3 text-sm bg-blue-600';
+    document.getElementById('gate-signup-btn').className = 'post9-btn p-3 text-sm bg-gray-600';
+}
+
+function showSignupFromGate() {
+    // Hide signin form, show signup form  
+    document.getElementById('gate-signin-form').classList.add('hidden');
+    document.getElementById('gate-signup-form').classList.remove('hidden');
+    
+    // Update button styles
+    document.getElementById('gate-signin-btn').className = 'post9-btn p-3 text-sm bg-gray-600';
+    document.getElementById('gate-signup-btn').className = 'post9-btn p-3 text-sm bg-blue-600';
+}
+
+// Override existing auth functions to trigger content check
+const originalSignInUser = signInUser;
+const originalSignUpUser = signUpUser;
+const originalSignOutUser = signOutUser;
+
+// Update sign in to check auth after success
+signInUser = async function(email, password) {
+    await originalSignInUser(email, password);
+    checkAuthAndShowContent();
+}
+
+// Update sign up to check auth after success  
+signUpUser = async function(email, password, confirmPassword) {
+    await originalSignUpUser(email, password, confirmPassword);
+    checkAuthAndShowContent();
+}
+
+// Update sign out to check auth after success
+signOutUser = async function() {
+    await originalSignOutUser();
+    checkAuthAndShowContent();
 }
 
 function createInvestmentCard(investment) {
@@ -5597,6 +5717,40 @@ window.exportAnalytics = function() {
 
 // Initialize new functionality when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Set up authentication gate form listeners
+    const gateSigninForm = document.getElementById('gate-signin-form');
+    const gateSignupForm = document.getElementById('gate-signup-form');
+    const gateDemoBtn = document.getElementById('gate-demo-btn');
+    
+    if (gateSigninForm) {
+        gateSigninForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            await signInUser(formData.get('email'), formData.get('password'));
+        });
+    }
+    
+    if (gateSignupForm) {
+        gateSignupForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            await signUpUser(formData.get('email'), formData.get('password'), formData.get('confirmPassword'));
+        });
+    }
+    
+    if (gateDemoBtn) {
+        gateDemoBtn.addEventListener('click', function() {
+            // Demo sign in - set authenticated state
+            currentUser = { email: 'demo@example.com', displayName: 'Demo User' };
+            isAuthenticated = true;
+            checkAuthAndShowContent();
+            showMessage('Signed in with demo mode', false);
+        });
+    }
+    
+    // Check authentication state on page load
+    checkAuthAndShowContent();
+    
     setTimeout(() => {
         initializeStrategyBuilder();
         

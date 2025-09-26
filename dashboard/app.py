@@ -1310,8 +1310,7 @@ def update_strategy(strategy_id):
     if not user_id:
         return jsonify({'success': False, 'message': 'User ID is required.'}), 400
     try:
-        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
-        strategy_ref = strategies_collection_user.document(strategy_id)
+        # Update in local data service first
         updates = {}
         if 'name' in data:
             updates['name'] = data['name']
@@ -1321,9 +1320,22 @@ def update_strategy(strategy_id):
             updates['description'] = data['description']
         if 'parameters' in data:
             updates['parameters'] = data['parameters']
-        updates['updated_at'] = datetime.datetime.now().isoformat()
-        strategy_ref.update(updates)
-        return jsonify({'success': True, 'message': 'Strategy updated successfully.'}), 200
+        
+        # Update the data service
+        try:
+            updated_strategy = data_service.update_strategy(strategy_id, updates)
+            print(f"✅ Updated strategy in data service: {strategy_id} -> name: {updated_strategy.name}")
+        except Exception as ds_error:
+            print(f"⚠️ Failed to update data service (proceeding with Firestore): {ds_error}")
+        
+        # Update Firestore
+        strategies_collection_user = db.collection(f'users/{user_id}/strategies')
+        strategy_ref = strategies_collection_user.document(strategy_id)
+        firestore_updates = updates.copy()
+        firestore_updates['updated_at'] = datetime.datetime.now().isoformat()
+        strategy_ref.update(firestore_updates)
+        
+        return jsonify({'success': True, 'message': 'Strategy updated successfully.', 'updated_fields': list(updates.keys())}), 200
     except Exception as e:
         print(f"Failed to update strategy: {e}")
         return jsonify({'success': False, 'message': f'Failed to update strategy: {e}'}), 500
@@ -2764,8 +2776,22 @@ def generate_real_conservative_picks(strategy_data, investor_data, games, max_pi
     return picks
 
 def generate_real_aggressive_picks(strategy_data, investor_data, games, max_picks):
-    """Generate aggressive picks using real game data"""
+    """Generate aggressive picks using real game data with proper error handling"""
     picks = []
+    
+    # Safe extraction helper function
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
     
     # Aggressive parameters
     min_confidence = 60.0
@@ -2775,7 +2801,9 @@ def generate_real_aggressive_picks(strategy_data, investor_data, games, max_pick
         if len(picks) >= max_picks:
             break
             
-        confidence = game.get('true_probability', 0.5) * 100
+        # Safely extract confidence value to handle both numeric and dict formats
+        true_prob = safe_float_extract(game.get('true_probability', 0.5), 0.5)
+        confidence = true_prob * 100
         
         if confidence >= min_confidence:
             bet_amount = investor_data['current_balance'] * (investor_data.get('bet_percentage', 3.0) / 100) * bet_multiplier
@@ -2784,9 +2812,9 @@ def generate_real_aggressive_picks(strategy_data, investor_data, games, max_pick
                 'teams': game.get('teams', 'Unknown vs Unknown'),
                 'sport': game.get('sport', 'NBA'),
                 'bet_type': game.get('bet_type', 'Moneyline'),
-                'odds': game.get('odds', 2.0),
+                'odds': safe_float_extract(game.get('odds', 2.0), 2.0),
                 'recommended_amount': round(bet_amount, 2),
-                'potential_payout': round(bet_amount * game.get('odds', 2.0), 2),
+                'potential_payout': round(bet_amount * safe_float_extract(game.get('odds', 2.0), 2.0), 2),
                 'confidence': round(confidence, 1),
                 'strategy_reason': f"Aggressive: {confidence:.1f}% confidence, high stakes",
                 'game_id': game.get('id', f"real_game_{len(picks)}")
