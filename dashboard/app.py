@@ -2764,8 +2764,22 @@ def generate_real_conservative_picks(strategy_data, investor_data, games, max_pi
     return picks
 
 def generate_real_aggressive_picks(strategy_data, investor_data, games, max_picks):
-    """Generate aggressive picks using real game data"""
+    """Generate aggressive picks using real game data with proper error handling"""
     picks = []
+    
+    # Safe extraction helper function
+    def safe_float_extract(value, default):
+        if isinstance(value, (int, float)):
+            return float(value)
+        elif isinstance(value, dict):
+            return float(value.get('value', default))
+        elif isinstance(value, str):
+            try:
+                return float(value)
+            except ValueError:
+                return default
+        else:
+            return default
     
     # Aggressive parameters
     min_confidence = 60.0
@@ -2775,7 +2789,9 @@ def generate_real_aggressive_picks(strategy_data, investor_data, games, max_pick
         if len(picks) >= max_picks:
             break
             
-        confidence = game.get('true_probability', 0.5) * 100
+        # Safely extract confidence value to handle both numeric and dict formats
+        true_prob = safe_float_extract(game.get('true_probability', 0.5), 0.5)
+        confidence = true_prob * 100
         
         if confidence >= min_confidence:
             bet_amount = investor_data['current_balance'] * (investor_data.get('bet_percentage', 3.0) / 100) * bet_multiplier
@@ -2784,9 +2800,9 @@ def generate_real_aggressive_picks(strategy_data, investor_data, games, max_pick
                 'teams': game.get('teams', 'Unknown vs Unknown'),
                 'sport': game.get('sport', 'NBA'),
                 'bet_type': game.get('bet_type', 'Moneyline'),
-                'odds': game.get('odds', 2.0),
+                'odds': safe_float_extract(game.get('odds', 2.0), 2.0),
                 'recommended_amount': round(bet_amount, 2),
-                'potential_payout': round(bet_amount * game.get('odds', 2.0), 2),
+                'potential_payout': round(bet_amount * safe_float_extract(game.get('odds', 2.0), 2.0), 2),
                 'confidence': round(confidence, 1),
                 'strategy_reason': f"Aggressive: {confidence:.1f}% confidence, high stakes",
                 'game_id': game.get('id', f"real_game_{len(picks)}")

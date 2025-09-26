@@ -476,8 +476,23 @@ class StrategySchema:
         # Handle complex objects
         if 'performance_metrics' in data and isinstance(data['performance_metrics'], dict):
             data['performance_metrics'] = PerformanceMetrics.from_dict(data['performance_metrics'])
-        if 'parameters' in data and isinstance(data['parameters'], dict):
-            data['parameters'] = StrategyParameters.from_dict(data['parameters'])
+        
+        # Ensure parameters are properly converted to StrategyParameters
+        if 'parameters' in data:
+            if isinstance(data['parameters'], dict):
+                try:
+                    data['parameters'] = StrategyParameters.from_dict(data['parameters'])
+                except Exception as e:
+                    # If conversion fails, create default parameters
+                    print(f"Warning: Failed to convert parameters {data['parameters']}: {e}")
+                    data['parameters'] = StrategyParameters()
+            elif not isinstance(data['parameters'], StrategyParameters):
+                # If parameters is not a dict or StrategyParameters, use defaults
+                print(f"Warning: Invalid parameters type {type(data['parameters'])}, using defaults")
+                data['parameters'] = StrategyParameters()
+        else:
+            # If no parameters provided, use defaults
+            data['parameters'] = StrategyParameters()
         
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
@@ -532,8 +547,20 @@ class SchemaValidator:
             issues.append("Strategy name is required")
         if not strategy.strategy_type:
             issues.append("Strategy type is required")
-        if strategy.parameters.min_confidence < 0 or strategy.parameters.min_confidence > 100:
-            issues.append("Min confidence must be between 0 and 100")
+        
+        # Validate parameters with error handling
+        try:
+            if hasattr(strategy.parameters, 'min_confidence'):
+                if strategy.parameters.min_confidence < 0 or strategy.parameters.min_confidence > 100:
+                    issues.append("Min confidence must be between 0 and 100")
+            else:
+                # If min_confidence doesn't exist, parameters might not be properly converted
+                issues.append("Invalid strategy parameters - missing min_confidence field")
+        except AttributeError as e:
+            issues.append(f"Invalid strategy parameters: {e}")
+        except Exception as e:
+            issues.append(f"Parameter validation error: {e}")
+            
         if strategy.bets_per_week_allowed <= 0:
             issues.append("Bets per week allowed must be positive")
         
