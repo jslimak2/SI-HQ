@@ -1395,17 +1395,35 @@ def get_strategy_picks(strategy_id):
         investor_ref = db.collection(f'users/{user_id}/investors').document(investor_id)
         investor_doc = investor_ref.get()
         if not investor_doc.exists:
-            return jsonify({'success': False, 'message': 'Investor not found.'}), 404
+            logger.warning(f"Investor {investor_id} not found for user {user_id}. Falling back to demo picks.")
+            # Instead of hard error, provide demo picks
+            demo_picks = generate_demo_strategy_picks(strategy_id)
+            return jsonify({
+                'success': True,
+                'picks': demo_picks,
+                'remaining_bets': 3,
+                'strategy_name': f'Demo Strategy (Investor not found)',
+                'demo_mode': True,
+                'fallback_reason': 'investor_not_found',
+                'message': 'Investor not found, showing demo recommendations.'
+            })
         investor_data = investor_doc.to_dict()
         
         # Check if investor has a strategy assigned (protection for investors without strategies)
         assigned_strategy = investor_data.get('assigned_strategy_id')
         if not assigned_strategy:
+            logger.warning(f"Investor {investor_id} has no strategy assigned. Providing demo picks.")
+            demo_picks = generate_demo_strategy_picks(strategy_id or 'default')
             return jsonify({
-                'success': False, 
-                'message': 'This investor does not have a strategy assigned. Please select a strategy first.',
+                'success': True,
+                'picks': demo_picks,
+                'remaining_bets': 3,
+                'strategy_name': 'Demo Strategy (No strategy assigned)',
+                'demo_mode': True,
+                'fallback_reason': 'no_strategy_assigned',
+                'message': 'No strategy assigned to this investor. Please assign a strategy.',
                 'requires_strategy_selection': True
-            }), 400
+            })
         
         # If a specific strategy_id is provided in URL, use that; otherwise use investor's assigned strategy
         effective_strategy_id = strategy_id if strategy_id else assigned_strategy
@@ -1414,12 +1432,19 @@ def get_strategy_picks(strategy_id):
         strategy_ref = db.collection(f'users/{user_id}/strategies').document(effective_strategy_id)
         strategy_doc = strategy_ref.get()
         if not strategy_doc.exists:
+            logger.warning(f"Strategy {effective_strategy_id} not found for user {user_id}. Falling back to demo picks.")
+            # Instead of returning 404, provide demo picks as fallback
+            demo_picks = generate_demo_strategy_picks(effective_strategy_id)
             return jsonify({
-                'success': False, 
-                'message': f'Strategy not found. The strategy may have been deleted. Please select a new strategy for this investor.',
-                'strategy_deleted': True,
-                'missing_strategy_id': effective_strategy_id
-            }), 404
+                'success': True,
+                'picks': demo_picks,
+                'remaining_bets': 3,
+                'strategy_name': f'Demo Strategy (Strategy {effective_strategy_id} not found)',
+                'demo_mode': True,
+                'fallback_reason': 'strategy_not_found',
+                'missing_strategy_id': effective_strategy_id,
+                'message': 'Strategy not found, showing demo recommendations. Please update your investor strategy assignment.'
+            })
         strategy_data = strategy_doc.to_dict()
         # Check if investor has reached max bets for the week
         max_bets = investor_data.get('max_bets_per_week', 5)
@@ -1602,14 +1627,17 @@ def generate_conservative_strategy_picks(strategy_data, investor_data, max_picks
 
 def generate_aggressive_strategy_picks(strategy_data, investor_data, max_picks):
     """Generate aggressive strategy picks with enhanced logic."""
-    params = strategy_data.get('parameters', {})
+    # Get strategy parameters (logic-only)
+    strategy_params = strategy_data.get('parameters', {})
     
-    # Safely extract numeric parameters, handling cases where they might be dicts or other types
+    # Get investor risk management (betting configuration)
+    risk_mgmt = investor_data.get('risk_management', {})
+    
+    # Safely extract numeric parameters
     def safe_float_extract(value, default):
         if isinstance(value, (int, float)):
             return float(value)
         elif isinstance(value, dict):
-            # If it's a dict, try to extract a 'value' field or use default
             return float(value.get('value', default))
         elif isinstance(value, str):
             try:
@@ -1619,8 +1647,9 @@ def generate_aggressive_strategy_picks(strategy_data, investor_data, max_picks):
         else:
             return default
     
-    min_confidence = safe_float_extract(params.get('min_confidence', 60), 60)
-    max_bet_pct = safe_float_extract(params.get('max_bet_percentage', 5.0), 5.0)
+    # Aggressive strategy uses more lenient thresholds from risk management
+    min_confidence = safe_float_extract(risk_mgmt.get('minimum_confidence', 60), 60) - 5  # Lower confidence threshold
+    max_bet_pct = safe_float_extract(risk_mgmt.get('max_bet_percentage', 5.0), 5.0)  # Use higher percentage if allowed
     
     basic_picks = generate_basic_strategy_picks(investor_data, max_picks)
     
