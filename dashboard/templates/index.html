@@ -386,7 +386,7 @@
     </style>
     <script>
         function showPage(pageId) {
-            const pages = ['dashboard-page', 'investments-page', 'strategy-builder-page', 'ml-hub-page', 'analytics-page', 'account-page', 'admin-page'];
+            const pages = ['dashboard-page', 'investments-page', 'my-games-page', 'strategy-builder-page', 'ml-hub-page', 'analytics-page', 'account-page', 'admin-page'];
             pages.forEach(id => {
                 const pageElement = document.getElementById(id);
                 if (pageElement) {
@@ -399,6 +399,13 @@
                     window.loadCachedInvestments();
                 } else {
                     console.error("loadCachedInvestments is not defined.");
+                }
+            } else if (pageId === 'my-games-page') {
+                // Load My Games watchlist when page is shown
+                if (typeof window.loadMyGames === 'function') {
+                    setTimeout(() => window.loadMyGames(), 100);
+                } else {
+                    console.error("loadMyGames is not defined.");
                 }
             } else if (pageId === 'account-page') {
                 // Load API status when account page is shown
@@ -518,6 +525,10 @@
         <nav class="flex justify-center space-x-6 mb-6">
             <button onclick="showPage('dashboard-page')" class="nav-btn">Dashboard</button>
             <button onclick="showPage('investments-page')" class="nav-btn">Investments</button>
+            <button onclick="showPage('my-games-page')" class="nav-btn relative">
+                My Games
+                <span id="my-games-count" class="absolute -top-1 -right-1 bg-orange-500 text-white rounded-full text-xs px-1.5 py-0.5 min-w-[1.25rem] text-center hidden">0</span>
+            </button>
             <!-- Strategy Builder temporarily hidden -->
             <!-- <button onclick="showPage('strategy-builder-page')" class="nav-btn">Strategy Builder</button> -->
             
@@ -1096,6 +1107,27 @@
             <!-- Holdings Overlay -->
             <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="closeBetCart()"></div>
         </div>
+        
+        <!-- My Games / Watchlist Page -->
+        <div id="my-games-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">My Games</h2>
+                    <p class="text-gray-400 text-sm mt-1">Track games you're interested in and quickly access their analytics</p>
+                </div>
+                <button onclick="loadMyGames()" class="post9-btn px-4 py-2">
+                    <span class="inline-block mr-2">🔄</span>Refresh
+                </button>
+            </div>
+            
+            <div id="my-games-container" class="mt-6">
+                <!-- Games will be loaded here by loadMyGames() -->
+                <div class="text-center py-12">
+                    <div class="text-gray-400">Loading your watchlist...</div>
+                </div>
+            </div>
+        </div>
+        
         <div id="account-page" class="mt-8 post9-card rounded-lg shadow-lg p-6" style="display: none;">
             <h2 class="text-2xl font-bold mb-6 text-white">Account</h2>
             <div id="api-status-section" class="mb-6 post9-card p-4">

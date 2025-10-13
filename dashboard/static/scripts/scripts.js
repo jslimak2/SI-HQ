@@ -4013,6 +4013,7 @@ async function startListeners() {
         if (isUserAuthenticated()) {
             loadModelsForInvestor();
             updateMLModelStats();
+            updateMyGamesCount();
         }
         
         // Check auto-refresh for demo mode too
@@ -4050,6 +4051,7 @@ async function startListeners() {
             if (isUserAuthenticated()) {
                 loadModelsForInvestor();
                 updateMLModelStats();
+                updateMyGamesCount();
             }
             
             // Check auto-refresh after everything is loaded AND settings are available
@@ -6136,8 +6138,71 @@ window.exportGameAnalytics = function() {
 };
 
 // Add game to watchlist
+// Store current game data for the analytics modal
+let currentAnalyticsGame = null;
+
+// Update showGameAnalytics to store current game data
+const originalShowGameAnalytics = window.showGameAnalytics;
+window.showGameAnalytics = function(gameId, teams, sport, commenceTime) {
+    // Store the current game data for later use
+    currentAnalyticsGame = {
+        gameId: gameId,
+        teams: teams,
+        sport: sport,
+        commenceTime: commenceTime,
+        addedAt: new Date().toISOString()
+    };
+    
+    // Call the original function
+    originalShowGameAnalytics(gameId, teams, sport, commenceTime);
+};
+
+// Add game to watchlist/My Games
 window.addGameToWatchlist = function() {
-    showMessage('Game added to your watchlist', false);
+    if (!currentAnalyticsGame) {
+        showMessage('No game data available to add', true);
+        return;
+    }
+    
+    // Get existing watchlist from localStorage
+    let watchlist = [];
+    try {
+        const stored = localStorage.getItem('my_games_watchlist');
+        if (stored) {
+            watchlist = JSON.parse(stored);
+        }
+    } catch (error) {
+        console.error('Error loading watchlist:', error);
+    }
+    
+    // Check if game already in watchlist
+    const existingIndex = watchlist.findIndex(game => 
+        game.gameId === currentAnalyticsGame.gameId || 
+        (game.teams === currentAnalyticsGame.teams && game.commenceTime === currentAnalyticsGame.commenceTime)
+    );
+    
+    if (existingIndex >= 0) {
+        showMessage('This game is already in your watchlist', true);
+        return;
+    }
+    
+    // Add to watchlist
+    watchlist.push({
+        ...currentAnalyticsGame,
+        addedAt: new Date().toISOString()
+    });
+    
+    // Save to localStorage
+    try {
+        localStorage.setItem('my_games_watchlist', JSON.stringify(watchlist));
+        showMessage(`✅ ${currentAnalyticsGame.teams} added to My Games!`, false);
+        
+        // Update the My Games count if the page is loaded
+        updateMyGamesCount();
+    } catch (error) {
+        console.error('Error saving to watchlist:', error);
+        showMessage('Failed to add game to watchlist', true);
+    }
 };
 
 let availableModels = [];
@@ -8847,3 +8912,178 @@ window.loadModelComparisonDemo = async function() {
         showMessage('Error loading model data', true);
     }
 };
+
+// --- MY GAMES / WATCHLIST FUNCTIONALITY ---
+
+// Update My Games count badge
+function updateMyGamesCount() {
+    try {
+        const stored = localStorage.getItem('my_games_watchlist');
+        const watchlist = stored ? JSON.parse(stored) : [];
+        const count = watchlist.length;
+        
+        const countElement = document.getElementById('my-games-count');
+        if (countElement) {
+            if (count > 0) {
+                countElement.textContent = count;
+                countElement.classList.remove('hidden');
+            } else {
+                countElement.classList.add('hidden');
+            }
+        }
+    } catch (error) {
+        console.error('Error updating My Games count:', error);
+    }
+}
+
+// Load and display My Games
+window.loadMyGames = function() {
+    const container = document.getElementById('my-games-container');
+    if (!container) {
+        console.error('My Games container not found');
+        return;
+    }
+    
+    try {
+        const stored = localStorage.getItem('my_games_watchlist');
+        const watchlist = stored ? JSON.parse(stored) : [];
+        
+        if (watchlist.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-6xl mb-4">🎯</div>
+                    <div class="text-gray-400 text-lg mb-4">No games in your watchlist yet</div>
+                    <div class="text-gray-500 text-sm mb-6">
+                        Browse available investments and click "Add to Watchlist" in the game analytics to track games you're interested in.
+                    </div>
+                    <button onclick="showPage('investments-page')" class="post9-btn p-3">
+                        Browse Investments
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort games by commence time (soonest first)
+        watchlist.sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
+        
+        // Generate game cards
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+        
+        watchlist.forEach((game, index) => {
+            const gameDate = new Date(game.commenceTime);
+            const now = new Date();
+            const isPast = gameDate < now;
+            const timeRemaining = isPast ? 'Game started' : formatTimeRemaining(gameDate);
+            
+            html += `
+                <div class="bg-gray-800 rounded-lg p-4 border-2 border-gray-700 hover:border-orange-500 transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-400 mb-1">${game.sport}</div>
+                            <div class="font-bold text-white text-lg">${game.teams}</div>
+                        </div>
+                        <button onclick="removeFromWatchlist(${index})" 
+                                class="text-gray-400 hover:text-red-500 transition-colors"
+                                title="Remove from watchlist">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between text-gray-300">
+                            <span>📅 Game Time:</span>
+                            <span class="font-medium">${gameDate.toLocaleDateString()} ${gameDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="flex justify-between ${isPast ? 'text-red-400' : 'text-green-400'}">
+                            <span>⏰ Status:</span>
+                            <span class="font-medium">${timeRemaining}</span>
+                        </div>
+                        <div class="flex justify-between text-gray-400 text-xs">
+                            <span>Added:</span>
+                            <span>${new Date(game.addedAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="showGameAnalytics('${game.gameId}', '${game.teams}', '${game.sport}', '${game.commenceTime}')" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded transition-colors">
+                            📊 Analytics
+                        </button>
+                        <button onclick="viewGameInInvestments('${game.gameId}')" 
+                                class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-3 rounded transition-colors">
+                            💰 Invest
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Update count
+        updateMyGamesCount();
+    } catch (error) {
+        console.error('Error loading My Games:', error);
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <div class="text-red-400 text-lg mb-4">Error loading watchlist</div>
+                <button onclick="loadMyGames()" class="post9-btn p-3">Try Again</button>
+            </div>
+        `;
+    }
+};
+
+// Remove game from watchlist
+window.removeFromWatchlist = function(index) {
+    try {
+        const stored = localStorage.getItem('my_games_watchlist');
+        let watchlist = stored ? JSON.parse(stored) : [];
+        
+        if (index >= 0 && index < watchlist.length) {
+            const game = watchlist[index];
+            watchlist.splice(index, 1);
+            localStorage.setItem('my_games_watchlist', JSON.stringify(watchlist));
+            
+            showMessage(`Removed ${game.teams} from My Games`, false);
+            loadMyGames();
+        }
+    } catch (error) {
+        console.error('Error removing from watchlist:', error);
+        showMessage('Failed to remove game', true);
+    }
+};
+
+// View game in investments page
+window.viewGameInInvestments = function(gameId) {
+    showPage('investments-page');
+    showMessage('Showing investments page - look for the game to place bets', false);
+};
+
+// Helper function to format time remaining
+function formatTimeRemaining(gameDate) {
+    const now = new Date();
+    const diff = gameDate - now;
+    
+    if (diff < 0) {
+        return 'Game started';
+    }
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) {
+        return `${days}d ${hours}h`;
+    } else if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    } else {
+        return `${minutes}m`;
+    }
+}
+
+// Make functions globally available
+window.updateMyGamesCount = updateMyGamesCount;
