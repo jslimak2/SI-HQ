@@ -159,6 +159,19 @@ service cloud.firestore {
 
 ### Common Issues
 
+#### "Missing or insufficient permissions" Errors
+If you see Firebase permission errors in the browser console, you need to configure Firestore security rules.
+
+**Quick Fix:**
+See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for detailed instructions on deploying security rules.
+
+**Summary:**
+1. Go to Firebase Console → Firestore Database → Rules
+2. Copy the rules from `firestore.rules` file
+3. Click Publish
+
+The app will automatically fall back to demo mode if permissions are denied, so you can continue using the app while configuring Firebase.
+
 #### "Missing .env file"
 ```bash
 cp .env.production .env
