@@ -275,9 +275,16 @@ async function fetchStrategies() {
             displayStrategies();
             updateStrategySelects();
             hideLoading();
-        }, (error) => {
+        }, async (error) => {
             console.error("Error fetching strategies:", error);
-            showMessage("Failed to load strategies.", true);
+            // Check if this is a permission error
+            if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
+                console.log("Permission denied, falling back to demo strategies");
+                showMessage("Firebase permissions not configured. Loading demo data instead.", false);
+                await loadDemoStrategies();
+            } else {
+                showMessage("Failed to load strategies.", true);
+            }
             hideLoading();
         });
     } catch (e) {
@@ -310,9 +317,16 @@ async function fetchInvestors() {
             updateOverallStats();
             setupStatsCardClicks();
             hideLoading();
-        }, (error) => {
+        }, async (error) => {
             console.error("Error fetching investors:", error);
-            showMessage("Failed to load investors.", true);
+            // Check if this is a permission error
+            if (error.code === 'permission-denied' || error.message.includes('Missing or insufficient permissions')) {
+                console.log("Permission denied, falling back to demo investors");
+                showMessage("Firebase permissions not configured. Loading demo data instead.", false);
+                await loadDemoInvestors();
+            } else {
+                showMessage("Failed to load investors.", true);
+            }
             hideLoading();
         });
     } catch (e) {
@@ -870,10 +884,26 @@ async function initializeDemoDataIfNeeded() {
         // Only initialize if we have very few strategies or investors (new user)
         if (firebaseAvailable && db && userId !== 'demo-user' && userId !== 'anonymous') {
             const strategiesQuery = collection(db, `users/${userId}/strategies`);
-            const strategiesSnapshot = await getDocs(strategiesQuery);
+            const strategiesSnapshot = await getDocs(strategiesQuery).catch(error => {
+                console.log("Permission denied checking strategies, skipping demo initialization:", error);
+                return null;
+            });
+            
+            if (!strategiesSnapshot) {
+                // Permissions denied, skip initialization
+                return;
+            }
             
             const investorsQuery = collection(db, `users/${userId}/investors`);
-            const investorsSnapshot = await getDocs(investorsQuery);
+            const investorsSnapshot = await getDocs(investorsQuery).catch(error => {
+                console.log("Permission denied checking investors, skipping demo initialization:", error);
+                return null;
+            });
+            
+            if (!investorsSnapshot) {
+                // Permissions denied, skip initialization
+                return;
+            }
             
             // If user has no strategies, create starter strategies
             if (strategiesSnapshot.empty) {

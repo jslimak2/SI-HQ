@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users (including anonymous) to read and write their own data
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Alternative: Allow all authenticated users (including anonymous) full access
+    // Use this rule if you want simpler permissions for development/demo
+    // match /{document=**} {
+    //   allow read, write: if request.auth != null;
+    // }
+  }
+}
